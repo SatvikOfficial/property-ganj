@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { ChevronRight, ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import Header from "@/components/header"
@@ -8,11 +8,24 @@ import SearchBar from "@/components/search-bar"
 
 export default function HomePage() {
   const [selectedTab, setSelectedTab] = useState("Buy")
+  const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0)
   const [agentCarouselIndex, setAgentCarouselIndex] = useState(0)
   const [localityCarouselIndex, setLocalityCarouselIndex] = useState(0)
+  const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 })
+  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
 
-  const propertyTabs = ["Buy", "Rent", "Sell", "PG", "Plot", "Commercial"]
+  const propertyTabs = ["Buy", "Rent", "New Projects", "PG", "Plot", "Commercial"]
+  const allTabs = [...propertyTabs, "Post Free Property Ad"]
+
+  useEffect(() => {
+    const activeTab = hoveredTab || selectedTab
+    const tabElement = tabRefs.current[activeTab]
+    if (tabElement) {
+      const { offsetLeft, offsetWidth } = tabElement
+      setUnderlineStyle({ left: offsetLeft, width: offsetWidth })
+    }
+  }, [selectedTab, hoveredTab])
 
   const quickCards = [
     {
@@ -322,21 +335,38 @@ export default function HomePage() {
           </h1>
 
           {/* Property Type Tabs */}
-          <div className="flex gap-2 md:gap-6 mb-6 overflow-x-auto pb-2 mt-8">
+          <div className="relative flex gap-2 md:gap-6 mb-6 overflow-x-auto pb-2 mt-8">
             {propertyTabs.map((tab) => (
               <button
                 key={tab}
+                ref={(el) => { tabRefs.current[tab] = el }}
                 onClick={() => setSelectedTab(tab)}
-                className={`whitespace-nowrap text-sm md:text-base font-semibold pb-2 transition-colors ${
-                  selectedTab === tab ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-primary"
+                onMouseEnter={() => setHoveredTab(tab)}
+                onMouseLeave={() => setHoveredTab(null)}
+                className={`relative whitespace-nowrap text-sm md:text-base font-semibold pb-2 transition-all duration-300 ${
+                  selectedTab === tab ? "text-primary" : "text-muted-foreground hover:text-primary hover:scale-105"
                 }`}
               >
                 {tab}
               </button>
             ))}
-            <button className="whitespace-nowrap text-sm md:text-base font-semibold pb-2 text-muted-foreground">
+            <button 
+              ref={(el) => { tabRefs.current["Post Free Property Ad"] = el }}
+              onMouseEnter={() => setHoveredTab("Post Free Property Ad")}
+              onMouseLeave={() => setHoveredTab(null)}
+              className="relative whitespace-nowrap text-sm md:text-base font-semibold pb-2 text-muted-foreground hover:text-primary hover:scale-105 transition-all duration-300"
+            >
               Post Free Property Ad
             </button>
+            
+            {/* Animated Underline */}
+            <span
+              className="absolute bottom-0 h-0.5 bg-black rounded-full transition-all duration-300 ease-out"
+              style={{
+                left: `${underlineStyle.left}px`,
+                width: `${underlineStyle.width}px`,
+              }}
+            />
           </div>
 
           {/* Search Bar */}
