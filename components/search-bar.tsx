@@ -86,19 +86,19 @@ export default function SearchBar() {
             onClick={handleAutoDetect}
             variant="ghost"
             size="sm"
-            className="h-7 px-2 hover:bg-muted rounded-md"
+            className="h-7 px-2 hover:bg-secondary/20 rounded-md transition-all group"
             title="Auto-detect location"
           >
-            <Locate className="w-3.5 h-3.5 text-muted-foreground hover:text-primary transition-colors" />
+            <Locate className="w-3.5 h-3.5 text-muted-foreground group-hover:text-secondary group-hover:scale-110 transition-all duration-200" />
           </Button>
           <Button
             onClick={handleVoiceInput}
             variant="ghost"
             size="sm"
-            className="h-7 px-2 hover:bg-muted rounded-md"
+            className="h-7 px-2 hover:bg-primary/10 rounded-md transition-all group"
             title="Voice input"
           >
-            <Mic className={`w-3.5 h-3.5 transition-colors ${isListening ? 'text-primary animate-pulse' : 'text-muted-foreground hover:text-primary'}`} />
+            <Mic className={`w-3.5 h-3.5 transition-all duration-200 ${isListening ? 'text-primary animate-pulse scale-110' : 'text-muted-foreground group-hover:text-primary group-hover:scale-110'}`} />
           </Button>
         </div>
 
@@ -127,7 +127,7 @@ export default function SearchBar() {
         </div>
 
         {/* Search Button */}
-        <Button onClick={handleSearch} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 py-2 h-9 transition-all hover:scale-105">
+        <Button onClick={handleSearch} className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 py-2 h-9 transition-all hover:scale-105 active:scale-95">
           <Search className="w-4 h-4" />
         </Button>
       </div>

@@ -19,11 +19,20 @@ export default function HomePage() {
   const allTabs = [...propertyTabs, "Post Free Property Ad"]
 
   useEffect(() => {
-    const activeTab = hoveredTab || selectedTab
-    const tabElement = tabRefs.current[activeTab]
-    if (tabElement) {
-      const { offsetLeft, offsetWidth } = tabElement
-      setUnderlineStyle({ left: offsetLeft, width: offsetWidth })
+    const updateUnderline = () => {
+      const activeTab = hoveredTab || selectedTab
+      const tabElement = tabRefs.current[activeTab]
+      if (tabElement) {
+        const { offsetLeft, offsetWidth } = tabElement
+        setUnderlineStyle({ left: offsetLeft, width: offsetWidth })
+      }
+    }
+    
+    if (hoveredTab) {
+      updateUnderline()
+    } else {
+      const timeout = setTimeout(updateUnderline, 150)
+      return () => clearTimeout(timeout)
     }
   }, [selectedTab, hoveredTab])
 
@@ -335,7 +344,7 @@ export default function HomePage() {
           </h1>
 
           {/* Property Type Tabs */}
-          <div className="relative flex gap-2 md:gap-6 mb-6 overflow-x-auto pb-2 mt-8">
+          <div className="relative flex gap-2 md:gap-6 mb-6 overflow-x-auto pb-3 mt-8">
             {propertyTabs.map((tab) => (
               <button
                 key={tab}
@@ -343,7 +352,7 @@ export default function HomePage() {
                 onClick={() => setSelectedTab(tab)}
                 onMouseEnter={() => setHoveredTab(tab)}
                 onMouseLeave={() => setHoveredTab(null)}
-                className={`relative whitespace-nowrap text-sm md:text-base font-semibold pb-2 transition-all duration-300 ${
+                className={`relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 transition-all duration-300 ${
                   selectedTab === tab ? "text-primary" : "text-muted-foreground hover:text-primary hover:scale-105"
                 }`}
               >
@@ -354,14 +363,14 @@ export default function HomePage() {
               ref={(el) => { tabRefs.current["Post Free Property Ad"] = el }}
               onMouseEnter={() => setHoveredTab("Post Free Property Ad")}
               onMouseLeave={() => setHoveredTab(null)}
-              className="relative whitespace-nowrap text-sm md:text-base font-semibold pb-2 text-muted-foreground hover:text-primary hover:scale-105 transition-all duration-300"
+              className="relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 text-muted-foreground hover:text-primary hover:scale-105 transition-all duration-300"
             >
               Post Free Property Ad
             </button>
             
             {/* Animated Underline */}
             <span
-              className="absolute bottom-0 h-0.5 bg-black rounded-full transition-all duration-300 ease-out"
+              className="absolute bottom-0 h-1 bg-primary rounded-full transition-all duration-500 ease-in-out"
               style={{
                 left: `${underlineStyle.left}px`,
                 width: `${underlineStyle.width}px`,
