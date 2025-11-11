@@ -5,6 +5,7 @@ import { ChevronRight, ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import Header from "@/components/header"
 import SearchBar from "@/components/search-bar"
+import DynamicGreeting from "@/components/dynamic-greeting"
 
 export default function HomePage() {
   const [selectedTab, setSelectedTab] = useState("Buy")
@@ -336,12 +337,9 @@ export default function HomePage() {
       <Header />
 
       {/* Hero & Search Section */}
-      <section className="bg-background pt-8 pb-6 px-4">
+      <section className="bg-background pt-8 pb-6 px-4 relative z-0">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold text-foreground mb-3">
-            Welcome back! Start your <br />
-            <span className="text-primary">#PataBadloLifeBadlo Journey</span>
-          </h1>
+          <DynamicGreeting />
 
           {/* Property Type Tabs */}
           <div className="relative flex gap-2 md:gap-6 mb-6 overflow-x-auto pb-3 mt-8">

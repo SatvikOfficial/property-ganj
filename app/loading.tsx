@@ -1,3 +1,5 @@
+import Preloader from '@/components/preloader';
+
 export default function Loading() {
-  return null
+  return <Preloader />;
 }

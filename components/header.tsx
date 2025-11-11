@@ -11,8 +11,8 @@ export default function Header() {
   const [buyDropdownOpen, setBuyDropdownOpen] = useState(false)
 
   return (
-    <header className="bg-background text-foreground sticky top-0 z-50 border-b border-border">
-      {/* Top Bar */}
+    <header className="bg-background text-foreground sticky top-0 z-[9999] border-b border-border">
+    {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
           <Image src="/logo.jpg" alt="PropertyGanj Logo" width={40} height={40} className="rounded" />
@@ -37,7 +37,7 @@ export default function Header() {
 
       {/* Navigation Menu */}
       <div className="border-t border-border relative">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4 md:gap-8 text-sm md:text-base overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4 md:gap-8 text-sm md:text-base">
           <div 
             className="relative"
             onMouseEnter={() => setBuyDropdownOpen(true)}
@@ -51,7 +51,7 @@ export default function Header() {
             
             {buyDropdownOpen && (
               <div 
-                className="absolute top-full left-0 pt-2 z-50"
+                className="absolute top-full left-0 pt-2 z-[1000]"
               >
                 <div className="bg-background border border-border rounded-lg shadow-lg p-6 w-[800px] animate-in fade-in slide-in-from-top-2 duration-200">
                 <div className="grid grid-cols-4 gap-6">
