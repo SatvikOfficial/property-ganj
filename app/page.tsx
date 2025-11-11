@@ -6,6 +6,7 @@ import Link from "next/link"
 import Header from "@/components/header"
 import SearchBar from "@/components/search-bar"
 import DynamicGreeting from "@/components/dynamic-greeting"
+import PropertyCarousel from "@/components/property-carousel"
 
 export default function HomePage() {
   const [selectedTab, setSelectedTab] = useState("Buy")
@@ -339,45 +340,57 @@ export default function HomePage() {
       {/* Hero & Search Section */}
       <section className="bg-background pt-8 pb-6 px-4 relative z-0">
         <div className="max-w-7xl mx-auto">
-          <DynamicGreeting />
+          <div className="flex flex-col md:flex-row gap-8">
+            {/* Left side: Content */}
+            <div className="flex-1">
+              <DynamicGreeting />
 
-          {/* Property Type Tabs */}
-          <div className="relative flex gap-2 md:gap-6 mb-6 overflow-x-auto pb-3 mt-8">
-            {propertyTabs.map((tab) => (
-              <button
-                key={tab}
-                ref={(el) => { tabRefs.current[tab] = el }}
-                onClick={() => setSelectedTab(tab)}
-                onMouseEnter={() => setHoveredTab(tab)}
-                onMouseLeave={() => setHoveredTab(null)}
-                className={`relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 transition-all duration-300 ${
-                  selectedTab === tab ? "text-primary" : "text-muted-foreground hover:text-primary hover:scale-105"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
-            <button 
-              ref={(el) => { tabRefs.current["Post Free Property Ad"] = el }}
-              onMouseEnter={() => setHoveredTab("Post Free Property Ad")}
-              onMouseLeave={() => setHoveredTab(null)}
-              className="relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 text-muted-foreground hover:text-primary hover:scale-105 transition-all duration-300"
-            >
-              Post Free Property Ad
-            </button>
-            
-            {/* Animated Underline */}
-            <span
-              className="absolute bottom-0 h-1 bg-primary rounded-full transition-all duration-500 ease-in-out"
-              style={{
-                left: `${underlineStyle.left}px`,
-                width: `${underlineStyle.width}px`,
-              }}
-            />
+              {/* Property Type Tabs */}
+              <div className="relative flex gap-2 md:gap-6 mb-6 mt-4 overflow-x-auto pb-3">
+                {propertyTabs.map((tab) => (
+                  <button
+                    key={tab}
+                    ref={(el) => { tabRefs.current[tab] = el }}
+                    onClick={() => setSelectedTab(tab)}
+                    onMouseEnter={() => setHoveredTab(tab)}
+                    onMouseLeave={() => setHoveredTab(null)}
+                    className={`relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 transition-all duration-300 ${
+                      selectedTab === tab ? "text-primary" : "text-muted-foreground hover:text-primary hover:scale-105"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                ))}
+                <button 
+                  ref={(el) => { tabRefs.current["Post Free Property Ad"] = el }}
+                  onMouseEnter={() => setHoveredTab("Post Free Property Ad")}
+                  onMouseLeave={() => setHoveredTab(null)}
+                  className="relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 text-muted-foreground hover:text-primary hover:scale-105 transition-all duration-300"
+                >
+                  Post Free Property Ad
+                </button>
+                
+                {/* Animated Underline */}
+                <span
+                  className="absolute bottom-0 h-1 bg-primary rounded-full transition-all duration-500 ease-in-out"
+                  style={{
+                    left: `${underlineStyle.left}px`,
+                    width: `${underlineStyle.width}px`,
+                  }}
+                />
+              </div>
+
+              {/* Search Bar */}
+              <div className="w-full max-w-2xl">
+                <SearchBar />
+              </div>
+            </div>
+
+            {/* Right side: Carousel */}
+            <div className="md:order-last">
+              <PropertyCarousel />
+            </div>
           </div>
-
-          {/* Search Bar */}
-          <SearchBar />
         </div>
       </section>
 
