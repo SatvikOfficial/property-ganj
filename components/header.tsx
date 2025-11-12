@@ -47,9 +47,26 @@ export default function Header() {
                       <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors block">My Profile</a></li>
                       <li><a href="#" className="text-muted-foreground hover:text-primary transition-colors block">Liked Properties</a></li>
                       <li className="pt-2 border-t border-border">
-                        <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold py-2 h-auto transition-all">
-                          Login/Sign Up
-                        </Button>
+                        <Link href="/auth">
+                          <Button
+  className="
+    w-full
+    text-white
+    font-semibold
+    py-2
+    h-auto
+    transition-all
+    rounded-lg
+    bg-[#eb6239]               /* Flamingo base */
+    border-b-[4px] border-[#d6522f]  /* darker Flamingo for depth */
+    hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px]
+    active:brightness-90 active:translate-y-[2px] active:border-b-[2px]
+  "
+>
+  Login / Sign Up
+</Button>
+
+                        </Link>
                       </li>
                     </ul>
                   </div>
@@ -245,9 +262,15 @@ export default function Header() {
           <Link href="/about" className="block text-foreground hover:text-primary transition-colors">About</Link>
           <button className="block text-foreground hover:text-primary transition-colors">Help</button>
           <div className="space-y-2">
-            <Button variant="outline" className="w-full bg-transparent">
-              Sign In
-            </Button>
+            <Link href="/auth">
+              <Button 
+                variant="outline" 
+                className="w-full bg-transparent"
+                onClick={() => setIsOpen(false)} // Close mobile menu
+              >
+                Sign In
+              </Button>
+            </Link>
             <Button className="w-full bg-primary hover:bg-primary/90">List Property</Button>
           </div>
         </div>

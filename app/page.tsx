@@ -339,14 +339,28 @@ export default function HomePage() {
 
       {/* Hero & Search Section */}
       <section className="bg-background pt-8 pb-6 px-4 relative z-0">
-        <div className="max-w-7xl mx-auto">
+        {/* Video Background */}
+        <div className="absolute inset-0 -z-10 overflow-hidden">
+          <video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline
+            className="w-full h-full object-cover opacity-60"
+          >
+            <source src="hero_brightener.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        </div>
+        
+        <div className="max-w-7xl mx-auto pl-12">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Left side: Content */}
-            <div className="flex-1">
+            <div className="flex-1 pl-8">
               <DynamicGreeting />
 
               {/* Property Type Tabs */}
-              <div className="relative flex gap-2 md:gap-6 mb-6 mt-4 overflow-x-auto pb-3">
+              <div className="relative flex gap-2 md:gap-6 mb-6 mt-4 overflow-x-auto pb-1">
                 {propertyTabs.map((tab) => (
                   <button
                     key={tab}
@@ -381,13 +395,13 @@ export default function HomePage() {
               </div>
 
               {/* Search Bar */}
-              <div className="w-full max-w-2xl">
+              <div className="w-full max-w-2xl pl-5">
                 <SearchBar />
               </div>
             </div>
 
             {/* Right side: Carousel */}
-            <div className="md:order-last">
+            <div className="md:order-last pr-8">
               <PropertyCarousel />
             </div>
           </div>
