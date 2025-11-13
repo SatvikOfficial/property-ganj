@@ -7,6 +7,7 @@ import Header from "@/components/header"
 import SearchBar from "@/components/search-bar"
 import DynamicGreeting from "@/components/dynamic-greeting"
 import PropertyCarousel from "@/components/property-carousel"
+import FeaturedStackCard from "@/components/FeaturedStackCard"
 
 export default function HomePage() {
   const [selectedTab, setSelectedTab] = useState("Buy")
@@ -84,6 +85,24 @@ export default function HomePage() {
       builder: "by Property Boss Real Infrastructure LLP",
       image: "/residential-plots.jpg",
       badge: "OFFER: 50Rs. discount per sqft on the current price.",
+    },
+    {
+      id: 3,
+      name: "Sahu City Phase 2",
+      location: "Sultanpur Road, Lucknow",
+      type: "2, 3 BHK Flats",
+      price: "₹57.9 Lac onwards",
+      builder: "by Sahu Land Developers Pvt Ltd",
+      image: "/featured-property.jpg",
+    },
+    {
+      id: 4,
+      name: "Excella Kutumb",
+      location: "Sultanpur Road, Lucknow",
+      type: "2 BHK Flats",
+      price: "₹51.5 Lac onwards",
+      builder: "by Township Experts",
+      image: "/modern-apartment.jpg",
     },
   ]
 
@@ -426,7 +445,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Projects Carousel */}
+      {/* Featured Projects Section with Stacked Cards */}
       <section className="bg-background py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
@@ -435,50 +454,10 @@ export default function HomePage() {
               See all Projects →
             </a>
           </div>
-          <div className="relative">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {featuredProjects.map((project, index) => (
-                <div
-                  key={project.id}
-                  className={`transition-opacity duration-500 ${
-                    index === currentCarouselIndex ? "opacity-100" : "opacity-0 hidden lg:block"
-                  }`}
-                >
-                  <div className="bg-card rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
-                    <div className="relative h-64 overflow-hidden">
-                      <img
-                        src={project.image || "/placeholder.svg"}
-                        alt={project.name}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform"
-                      />
-                      {project.badge && (
-                        <div className="absolute top-0 left-0 right-0 bg-accent text-accent-foreground text-center py-2 font-semibold text-sm">
-                          {project.badge}
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <h3 className="font-bold text-foreground text-lg mb-2">{project.name}</h3>
-                      <p className="text-sm text-muted-foreground mb-1">{project.location}</p>
-                      <p className="text-sm text-muted-foreground mb-3">{project.type}</p>
-                      <p className="font-semibold text-foreground mb-1">{project.price}</p>
-                      <p className="text-sm text-muted-foreground mb-4">Marketed by {project.builder}</p>
-                      <Link href={`/property/${project.id}`}>
-                        <button className="w-full bg-primary text-primary-foreground py-2 font-semibold hover:bg-primary/90 transition-colors rounded">
-                          View Details
-                        </button>
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-4 bg-background rounded-full p-2 shadow-lg hover:shadow-xl z-10">
-              <ChevronLeft className="w-6 h-6 text-foreground" />
-            </button>
-            <button className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-4 bg-background rounded-full p-2 shadow-lg hover:shadow-xl z-10">
-              <ChevronRight className="w-6 h-6 text-foreground" />
-            </button>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {featuredProjects.map((project) => (
+              <FeaturedStackCard key={project.id} project={project} />
+            ))}
           </div>
         </div>
       </section>
