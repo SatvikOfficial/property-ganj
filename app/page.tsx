@@ -84,7 +84,6 @@ export default function HomePage() {
       price: "₹7.6 Lac onwards",
       builder: "by Property Boss Real Infrastructure LLP",
       image: "/residential-plots.jpg",
-      badge: "OFFER: 50Rs. discount per sqft on the current price.",
     },
     {
       id: 3,

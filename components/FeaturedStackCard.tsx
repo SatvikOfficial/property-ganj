@@ -21,31 +21,40 @@ interface FeaturedStackCardProps {
 const Card: React.FC<FeaturedStackCardProps> = ({ project }) => {
   return (
     <StyledWrapper>
-      <div className="stack">
-        <div className="card">
-          <div className="relative aspect-video overflow-hidden">
-            <img
-              src={project.image || "/placeholder.svg"}
-              alt={project.name}
-              className="w-full h-full object-cover"
-            />
+      <div>
+        <p className="browser-warning">
+          If this looks wonky to you it's because this browser doesn't support the CSS
+          property 'aspect-ratio'.
+        </p>
+        <div className="stack">
+          <div className="card">
+            {/* Position the badge above the image */}
             {project.badge && (
-              <div className="absolute top-0 left-0 right-0 bg-accent text-accent-foreground text-center py-2 font-semibold text-xs sm:text-sm">
+              <div className="offer-badge mb-2 w-max mx-auto bg-accent text-accent-foreground text-center py-1 px-2 font-semibold text-[10px] max-w-[80%]">
                 {project.badge}
               </div>
             )}
-          </div>
-          <div className="pt-2">
-            <h3 className="font-bold text-foreground text-base sm:text-lg mb-1 truncate">{project.name}</h3>
-            <p className="text-xs sm:text-sm text-muted-foreground mb-1 truncate">{project.location}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mb-2 truncate">{project.type}</p>
-            <p className="font-semibold text-foreground text-sm mb-1">{project.price}</p>
-            <p className="text-xs sm:text-sm text-muted-foreground mb-3 truncate">Marketed by {project.builder}</p>
-            <Link href={`/property/${project.id}`}>
-              <button className="w-full bg-primary text-primary-foreground py-2 font-semibold hover:bg-primary/90 transition-colors rounded text-xs sm:text-sm">
-                View Details
-              </button>
-            </Link>
+            
+            {/* Main image area */}
+            <div className="image-section">
+              <img
+                src={project.image || "/placeholder.svg"}
+                alt={project.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
+            
+            {/* Content */}
+            <div className="content-section pt-2 text-center">
+              <h3 className="font-bold text-foreground text-lg sm:text-xl mb-1">{project.name}</h3>
+              <p className="text-sm sm:text-base text-muted-foreground mb-1">{project.location}</p>
+              <p className="text-sm sm:text-base text-muted-foreground mb-2">{project.type}</p>
+              <p className="font-semibold text-foreground text-base sm:text-lg mb-1">{project.price}</p>
+              <p className="text-sm sm:text-base text-muted-foreground mb-3">Marketed by {project.builder}</p>
+              <Link href={`/property/${project.id}`}>
+                <CustomViewDetailsButton />
+              </Link>
+            </div>
           </div>
         </div>
       </div>
@@ -54,6 +63,11 @@ const Card: React.FC<FeaturedStackCardProps> = ({ project }) => {
 }
 
 const StyledWrapper = styled.div`
+  img {
+    display: block;
+    max-width: 100%;
+  }
+
   .stack {
     
     transition: 0.25s ease;
@@ -75,20 +89,14 @@ const StyledWrapper = styled.div`
     position: relative;
     transition: 0.15s ease;
     cursor: pointer;
-    padding: 5% 5% 15% 5%;
-    border-radius: 0.5rem;
-    overflow: visible; /* Allow the frame to be visible */
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border-color: var(--border);
-    background-color: rgba(214, 218, 220, 0.85); /* Apply the blue shade you specified */
-
+    padding: 8% 8% 20% 8%;
     &:before,
     &:after {
       content: "";
       display: block;
       position: absolute;
       height: 100%;
-      width: 105%;
+      width: 100%;
       border: 4px solid;
       background-color: #fff;
       transform-origin: center center;
@@ -96,10 +104,6 @@ const StyledWrapper = styled.div`
       transition: 0.15s ease;
       top: 0;
       left: 0;
-      border-radius: 0.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-      border-color: var(--border);
-      background-color: var(--card);
     }
 
     &:before {
@@ -107,16 +111,24 @@ const StyledWrapper = styled.div`
     }
 
     &:after {
-      transform: translatey(2\%) rotate(6deg);
+      transform: translatey(2%) rotate(6deg);
     }
   }
   
-  .image {
-    width: 100%;
-    border: 4px solid;
-    background-color: #eee;
-    aspect-ratio: 1 / 1;
+  .image-section {
     position: relative;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    border: 4px solid;
+    border-radius: 0.25rem;
+  }
+  
+  .content-section {
+    position: relative;
+  }
+  
+  .offer-badge {
+    z-index: 10; /* Make sure it appears above other elements */
   }
 
   .browser-warning {
