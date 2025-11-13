@@ -4,10 +4,11 @@ import { useState } from "react"
 import { MapPin, ChevronDown, Search, Mic, Locate } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import MultiSelectDropdown from "@/components/MultiSelectDropdown"
 
 export default function SearchBar() {
   const [location, setLocation] = useState("Lucknow")
-  const [propertyType, setPropertyType] = useState("Flat +2")
+  const [propertyType, setPropertyType] = useState<string[]>([])
   const [budget, setBudget] = useState("Budget")
   const [isListening, setIsListening] = useState(false)
   const router = useRouter()
@@ -15,7 +16,7 @@ export default function SearchBar() {
   const handleSearch = () => {
     const params = new URLSearchParams({
       location,
-      type: propertyType,
+      type: propertyType.join(','),
       budget,
     })
     router.push(`/search?${params.toString()}`)
@@ -103,15 +104,36 @@ export default function SearchBar() {
         </div>
 
         {/* Property Type Dropdown */}
-        <div className="flex items-center gap-2 px-3 border-l border-border">
-          <input
-            type="text"
+        <div className="flex items-center gap-2 px-3 border-l border-border min-w-[140px]">
+          <MultiSelectDropdown
+            options={[
+              // Residential options
+              { id: 'flat', label: 'Flat', type: 'residential' },
+              { id: 'house', label: 'House/Villa', type: 'residential' },
+              { id: 'plot', label: 'Plot', type: 'residential' },
+              { id: '1bhk', label: '1 BHK', type: 'residential' },
+              { id: '2bhk', label: '2 BHK', type: 'residential' },
+              { id: '3bhk', label: '3 BHK', type: 'residential' },
+              { id: '4bhk', label: '4 BHK', type: 'residential' },
+              { id: '5bhk', label: '5 BHK', type: 'residential' },
+              { id: '5+bhk', label: '5+ BHK', type: 'residential' },
+              
+              // Commercial options
+              { id: 'office', label: 'Office Space', type: 'commercial' },
+              { id: 'shop', label: 'Shop/Showroom', type: 'commercial' },
+              { id: 'commercial-land', label: 'Commercial Land', type: 'commercial' },
+              { id: 'warehouse', label: 'Warehouse/Godown', type: 'commercial' },
+              { id: 'industrial-building', label: 'Industrial Building', type: 'commercial' },
+              { id: 'industrial-shed', label: 'Industrial Shed', type: 'commercial' },
+              
+              // Other Property Types
+              { id: 'agricultural-land', label: 'Agricultural Land', type: 'other' },
+              { id: 'farmhouse', label: 'Farm House', type: 'other' },
+            ]}
+            selected={propertyType}
+            onChange={setPropertyType}
             placeholder="Flat +2"
-            value={propertyType}
-            onChange={(e) => setPropertyType(e.target.value)}
-            className="outline-none text-foreground bg-transparent w-20 text-sm"
           />
-          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
         </div>
 
         {/* Budget Dropdown */}
