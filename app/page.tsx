@@ -346,9 +346,9 @@ export default function HomePage() {
             loop 
             muted 
             playsInline
-            className="w-full h-full object-cover opacity-60"
+            className="w-full h-full object-cover opacity-40"
           >
-            <source src="hero_brightener.mp4" type="video/mp4" />
+            <source src="/hero_brightener.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </div>
@@ -395,7 +395,7 @@ export default function HomePage() {
               </div>
 
               {/* Search Bar */}
-              <div className="w-full max-w-2xl pl-5">
+              <div className="w-full max-w-4xl pl-5">
                 <SearchBar />
               </div>
             </div>

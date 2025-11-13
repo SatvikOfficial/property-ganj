@@ -90,3 +90,20 @@
     @apply bg-background text-foreground;
   }
 }
+
+
+/* Subtle glow animation for CTA buttons */
+@keyframes subtleGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px color-mix(in srgb, var(--primary) 50%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 16px color-mix(in srgb, var(--primary) 80%, transparent);
+  }
+}
+
+.button-glow {
+  animation: subtleGlow 2s ease-in-out infinite;
+}
+
+

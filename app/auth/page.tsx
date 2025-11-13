@@ -44,7 +44,7 @@ export default function AuthPage() {
       </div>
 
       {/* 🏠 Back Button */}
-      <Link href="/" className="absolute top-6 left-6 flex items-center text-[#25abc2] hover:underline z-10">
+      <Link href="/" className="absolute top-6 left-6 flex items-center text-[#eb6239] hover:text-[#d6522f] hover:underline z-10 font-medium">
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
       </Link>
 

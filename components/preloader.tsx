@@ -17,8 +17,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#b1)" 
               d="M 8,4 V 60 M 8,4 h 20 c 11,0 20,9 20,20 s -9,20 -20,20 H 8" 
@@ -36,8 +36,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#c1)" 
               d="M 8,4 V 60 M 8,4 h 20 c 11,0 20,9 20,20 s -9,20 -20,20 H 8 M 28,44 L 48,60" 
@@ -55,8 +55,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="10" 
               stroke="url(#d1)" 
               d="M 32 32 m 0 -27 a 27 27 0 1 1 0 54 a 27 27 0 1 1 0 -54" 
@@ -74,8 +74,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#b1b)" 
               d="M 8,4 V 60 M 8,4 h 20 c 11,0 20,9 20,20 s -9,20 -20,20 H 8" 
@@ -93,8 +93,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#c1b)" 
               d="M 8,4 V 60 M 8,4 H 48 M 8,32 H 40 M 8,60 H 48" 
@@ -112,8 +112,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#d1b)" 
               d="M 8,4 V 60 M 8,4 h 20 c 11,0 20,9 20,20 s -9,20 -20,20 H 8 M 28,44 L 48,60" 
@@ -131,8 +131,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#b1c)" 
               d="M 4,4 H 60 M 32,4 V 60" 
@@ -150,8 +150,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#c1c)" 
               d="M 4,4 L 32,32 L 60,4 M 32,32 V 60" 
@@ -172,8 +172,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#b2)" 
               d="M 54,8 C 47,4 39,4 32,4 C 16,4 4,16 4,32 C 4,48 16,60 32,60 C 48,60 60,48 60,32 V 32 H 36 V 40 H 52 C 50,50 42,56 32,56 C 20,56 10,46 10,32 C 10,20 20,10 32,10 C 38,10 43,12 47,16" 
@@ -191,8 +191,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#c2)" 
               d="M 8,60 L 32,4 L 56,60 M 16,42 H 48" 
@@ -210,8 +210,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#d2)" 
               d="M 8,60 V 4 L 56,60 V 4" 
@@ -229,8 +229,8 @@ const Preloader = () => {
               </linearGradient>
             </defs>
             <path 
-              stroke-linejoin="round" 
-              stroke-linecap="round" 
+              strokeLinejoin="round" 
+              strokeLinecap="round" 
               strokeWidth="8" 
               stroke="url(#b2b)" 
               d="M 48,4 V 44 C 48,54 40,60 32,60 C 24,60 16,54 16,44 V 36" 
