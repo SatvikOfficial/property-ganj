@@ -11,7 +11,7 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <header className="bg-blue-50 text-foreground sticky top-0 z-[9999] border-b border-blue-200">
+    <header className="bg-gray-100/90 text-foreground sticky top-0 z-[9999] backdrop-blur-sm">
     {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
@@ -20,7 +20,7 @@ export default function Header() {
         </Link>
 
         <div className="flex items-center gap-2 md:gap-6">
-          <button className="text-blue-600 text-sm md:text-base hover:text-blue-800 flex items-center gap-1 transition-colors font-medium">
+          <button className="text-foreground text-sm md:text-base hover:text-primary flex items-center gap-1 transition-colors font-medium">
             Lucknow <ChevronDown className="w-4 h-4" />
           </button>
           <div className="hidden md:flex items-center gap-4">
@@ -63,7 +63,7 @@ export default function Header() {
 
       {/* Navigation Menu */}
       <div className="border-t border-border relative bg-white">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4 md:gap-8 text-sm md:text-base">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-4 md:gap-8 text-sm md:text-base text-foreground">
           <StyledDropdown
             title="Buy"
             sections={[
