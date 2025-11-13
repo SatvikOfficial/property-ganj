@@ -364,11 +364,13 @@ export default function HomePage() {
             loop 
             muted 
             playsInline
-            className="w-full h-full object-cover opacity-40"
+            className="w-full h-full object-cover"
           >
             <source src="/hero_brightener.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
+          {/* Dark overlay to enhance text contrast */}
+          <div className="absolute inset-0 bg-black/40"></div>
         </div>
         
         <div className="max-w-7xl mx-auto pl-12">
@@ -387,7 +389,7 @@ export default function HomePage() {
                     onMouseEnter={() => setHoveredTab(tab)}
                     onMouseLeave={() => setHoveredTab(null)}
                     className={`relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 transition-all duration-300 ${
-                      selectedTab === tab ? "text-primary" : "text-muted-foreground hover:text-primary hover:scale-105"
+                      selectedTab === tab ? "text-primary" : "text-white/80 hover:text-primary hover:scale-105"
                     }`}
                   >
                     {tab}
@@ -397,7 +399,7 @@ export default function HomePage() {
                   ref={(el) => { tabRefs.current["Post Free Property Ad"] = el }}
                   onMouseEnter={() => setHoveredTab("Post Free Property Ad")}
                   onMouseLeave={() => setHoveredTab(null)}
-                  className="relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 text-muted-foreground hover:text-primary hover:scale-105 transition-all duration-300"
+                  className="relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 text-white/80 hover:text-primary hover:scale-105 transition-all duration-300"
                 >
                   Post Free Property Ad
                 </button>
