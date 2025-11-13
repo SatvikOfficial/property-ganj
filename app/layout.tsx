@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   description: 'Made by Satvik Mudgal',
   generator: 'Satvik Mudgal',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/logo.jpg',
     apple: '/logo.jpg',
   },
 }
@@ -24,7 +24,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html>
       <body className={`font-sans antialiased`}>
         <StyledComponentsRegistry>
           <ThemeProvider
