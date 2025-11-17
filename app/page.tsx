@@ -8,6 +8,7 @@ import SearchBar from "@/components/search-bar"
 import DynamicGreeting from "@/components/dynamic-greeting"
 import PropertyCarousel from "@/components/property-carousel"
 import FeaturedStackCard from "@/components/FeaturedStackCard"
+import LikeButton from "@/components/LikeButton"
 
 export default function HomePage() {
   const [selectedTab, setSelectedTab] = useState("Buy")
@@ -16,6 +17,8 @@ export default function HomePage() {
   const [agentCarouselIndex, setAgentCarouselIndex] = useState(0)
   const [localityCarouselIndex, setLocalityCarouselIndex] = useState(0)
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 })
+  const [liveProperties, setLiveProperties] = useState<any[]>([])
+  const [likedProperties, setLikedProperties] = useState<string[]>([])
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
 
   const propertyTabs = ["Buy", "Rent", "New Projects", "PG", "Plot", "Commercial"]
@@ -39,17 +42,144 @@ export default function HomePage() {
     }
   }, [selectedTab, hoveredTab])
 
+  // Generate placeholder properties for home page with real images
+  const propertyImages = [
+    "/2bhk-apartment.jpg",
+    "/3bhk-apartment.jpg",
+    "/4bhk-apartment.jpg",
+    "/modern-apartment.jpg",
+    "/luxury-apartment.jpg",
+    "/apartment-complex.jpg",
+    "/residential-property.jpg",
+    "/2bhk-flat.jpg",
+    "/3bhk-flat.jpg",
+    "/4bhk-flat.jpg",
+    "/premium-apartment.jpg",
+    "/modern-2bhk-apartment.jpg",
+  ]
+
+  const generatePlaceholderProperties = (count: number) => {
+    const locations = ["Gomti Nagar", "Hazratganj", "Aliganj", "Indira Nagar", "Aminabad", "Chowk", "Mahanagar"]
+    const propertyTypes = ["Apartment", "Independent House/Villa", "Plot/Land"]
+    const bhkOptions = [1, 2, 3, 4]
+    
+    return Array.from({ length: count }, (_, i) => ({
+      _id: `placeholder-${i}`,
+      specs: {
+        bedrooms: bhkOptions[i % bhkOptions.length],
+        carpetArea: 1000 + (i * 100),
+        areaUnit: "sqft"
+      },
+      propertyType: propertyTypes[i % propertyTypes.length],
+      price: (5000000 + i * 500000) * (i % 2 === 0 ? 1 : 0.3),
+      purpose: i % 2 === 0 ? 'sale' : 'rent',
+      location: {
+        locality: locations[i % locations.length],
+        city: "Lucknow"
+      },
+      media: {
+        photos: [{ url: propertyImages[i % propertyImages.length] }]
+      },
+      isPlaceholder: true
+    }))
+  }
+
+  useEffect(() => {
+    const fetchLiveProperties = async () => {
+      try {
+        const response = await fetch('/api/properties?limit=12')
+        const data = await response.json()
+        if (response.ok) {
+          const fetchedProperties = data.properties || []
+          // Add placeholders if we have less than 12 properties
+          if (fetchedProperties.length < 12) {
+            const placeholders = generatePlaceholderProperties(12 - fetchedProperties.length)
+            setLiveProperties([...fetchedProperties, ...placeholders])
+          } else {
+            setLiveProperties(fetchedProperties)
+          }
+        } else {
+          // Show placeholders even on error
+          setLiveProperties(generatePlaceholderProperties(12))
+        }
+      } catch (error) {
+        console.error('Failed to load live properties', error)
+        // Show placeholders on error
+        setLiveProperties(generatePlaceholderProperties(12))
+      }
+    }
+
+    const fetchLikedProperties = async () => {
+      try {
+        const response = await fetch('/api/profile/liked-properties')
+        if (response.ok) {
+          const data = await response.json()
+          setLikedProperties(data.likedProperties.map((p: any) => p._id))
+        }
+      } catch (error) {
+        console.error('Failed to load liked properties', error)
+      }
+    }
+
+    fetchLiveProperties()
+    fetchLikedProperties()
+  }, [])
+
+  const formatPrice = (value?: number) => {
+    if (!value) return '₹ —'
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(value)
+  }
+
+  const derivedProperties = liveProperties.map((property) => ({
+    id: property._id?.toString?.() ?? property.id ?? '',
+    bhk: property.specs?.bedrooms
+      ? `${property.specs.bedrooms} BHK ${property.propertyType}`
+      : property.propertyType,
+    price: formatPrice(property.price),
+    sqft: property.specs?.carpetArea || property.specs?.builtUpArea || '—',
+    location: [property.location?.locality, property.location?.city]
+      .filter(Boolean)
+      .join(', '),
+    status: property.purpose === 'rent' ? 'Available for Rent' : 'Available',
+    imageCount: property.media?.photos?.length || 0,
+    image: property.media?.photos?.[0]?.url || '/placeholder.svg',
+    isLiked: likedProperties.includes(property._id?.toString?.() ?? property.id ?? ''),
+  }))
+
+  const trendingFeed = derivedProperties.slice(0, 4)
+  const exclusiveFeed = derivedProperties.slice(4, 8)
+  const popularFeed = derivedProperties.slice(8, 12)
+
+  const renderEmptyState = (label: string) => (
+    <div className="col-span-full bg-card border border-dashed border-border rounded-xl p-8 text-center">
+      <p className="text-foreground font-semibold mb-2">No {label} yet</p>
+      <p className="text-sm text-muted-foreground mb-4">
+        Be the first to showcase your property here.
+      </p>
+      <Link
+        href="/list-property"
+        className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition"
+      >
+        List your property
+      </Link>
+    </div>
+  )
+
   const quickCards = [
     {
       id: 1,
-      title: "12K+ Properties listed for you",
-      subtitle: "Continue last search",
+      title: "Over 10,000+ Properties waiting for you",
+      subtitle: "Continue your last search",
       bgColor: "bg-accent/20",
     },
     {
       id: 2,
-      title: "Share your story and WIN vouchers worth ₹5000",
-      subtitle: "#PataBadloLifeBadlo",
+      title: "Share your Property Ganj story and WIN vouchers worth ₹5000",
+      subtitle: "#MeriPropertyMeraGanj",
       bgColor: "bg-accent/40",
     },
     {
@@ -102,49 +232,6 @@ export default function HomePage() {
       price: "₹51.5 Lac onwards",
       builder: "by Township Experts",
       image: "/modern-apartment.jpg",
-    },
-  ]
-
-  const trendingProperties = [
-    {
-      id: 1,
-      bhk: "2 BHK Residential House",
-      price: "₹42 Lac",
-      sqft: "1200 sqft",
-      location: "Jankipuram, Lucknow",
-      status: "Ready to Move",
-      imageCount: 2,
-      image: "/2bhk-residential-house.jpg",
-    },
-    {
-      id: 2,
-      bhk: "3 BHK Multistorey Apartment",
-      price: "₹98 Lac",
-      sqft: "1775 sqft",
-      location: "Gomtinagar Extension, Lucknow",
-      status: "Ready to Move",
-      imageCount: 7,
-      image: "/3bhk-multistorey-apartment.jpg",
-    },
-    {
-      id: 3,
-      bhk: "2 BHK Residential House",
-      price: "₹70 Lac",
-      sqft: "1000 sqft",
-      location: "Manas Vihar, Lucknow",
-      status: "Ready to Move",
-      imageCount: 20,
-      image: "/2bhk-house-manas-vihar.jpg",
-    },
-    {
-      id: 4,
-      bhk: "4 BHK Multistorey Apartment",
-      price: "₹90 Lac",
-      sqft: "2287 sqft",
-      location: "Gomti Nagar Extension Bypass Road",
-      status: "Under Construction",
-      imageCount: 1,
-      image: "/4bhk-apartment.jpg",
     },
   ]
 
@@ -230,65 +317,30 @@ export default function HomePage() {
     },
   ]
 
-  const exclusiveProperties = [
-    {
-      id: 1,
-      bhk: "2 BHK Flat",
-      price: "₹42 Lac",
-      sqft: "1200 sqft",
-      imageCount: 2,
-      image: "/2bhk-flat.jpg",
-    },
-    {
-      id: 2,
-      bhk: "3 BHK Flat",
-      price: "₹98 Lac",
-      sqft: "1775 sqft",
-      imageCount: 7,
-      image: "/3bhk-flat.jpg",
-    },
-    {
-      id: 3,
-      bhk: "2 BHK Flat",
-      price: "₹70 Lac",
-      sqft: "1000 sqft",
-      imageCount: 20,
-      image: "/2bhk-flat.jpg",
-    },
-    {
-      id: 4,
-      bhk: "4 BHK Flat",
-      price: "₹90 Lac",
-      sqft: "2287 sqft",
-      imageCount: 1,
-      image: "/4bhk-flat.jpg",
-    },
-  ]
-
   const industryInsights = [
     {
       id: 1,
-      title: "Occupancy Certificate (OC) - Meaning, Documents Required, and Importance",
+      title: "Understanding Circle Rates in Lucknow",
       icon: "circle",
     },
     {
       id: 2,
-      title: "15+ Vastu Tips for Residential Building",
+      title: "Vastu Shastra for a Happy Home",
       icon: "document",
     },
     {
       id: 3,
-      title: "Ready Reckoner Rate - What Does it Mean and How to Calculate It?",
+      title: "What is Stamp Duty and How is it Calculated?",
       icon: "document",
     },
     {
       id: 4,
-      title: "Lucknow Kanpur Expressway - Route, Map and Other Details",
+      title: "Lucknow's Metro Network: A Homebuyer's Guide",
       icon: "document",
     },
     {
       id: 5,
-      title: "Lucknow Development Authority: All You Need to Know",
+      title: "LDA vs. RERA: What You Need to Know",
       icon: "document",
     },
   ]
@@ -296,50 +348,15 @@ export default function HomePage() {
   const legalUpdates = [
     {
       id: 1,
-      title: "Format of Will and How to Write a Will?",
+      title: "How to Create a Legally Binding Will?",
       type: "Watch video",
       image: "/legal-document-stack.png",
     },
     {
       id: 2,
-      title: "What is a Conveyance Deed and Why Is It Important?",
+      title: "The Importance of a Clear Title Deed",
       type: "Read article",
       image: "/conveyance-deed.jpg",
-    },
-  ]
-
-  const popularProperties = [
-    {
-      id: 1,
-      bhk: "2 BHK Flat",
-      price: "₹42 Lac",
-      sqft: "1200 sqft",
-      imageCount: 2,
-      image: "/2bhk-flat.jpg",
-    },
-    {
-      id: 2,
-      bhk: "3 BHK Flat",
-      price: "₹98 Lac",
-      sqft: "1775 sqft",
-      imageCount: 7,
-      image: "/3bhk-flat.jpg",
-    },
-    {
-      id: 3,
-      bhk: "2 BHK Flat",
-      price: "₹70 Lac",
-      sqft: "1000 sqft",
-      imageCount: 20,
-      image: "/2bhk-flat.jpg",
-    },
-    {
-      id: 4,
-      bhk: "4 BHK Flat",
-      price: "₹90 Lac",
-      sqft: "2287 sqft",
-      imageCount: 1,
-      image: "/4bhk-flat.jpg",
     },
   ]
 
@@ -356,7 +373,7 @@ export default function HomePage() {
       <Header />
 
       {/* Hero & Search Section */}
-      <section className="bg-background pt-8 pb-6 px-4 relative z-0">
+      <section id="hero-section" className="bg-background pt-8 pb-6 px-4 sm:px-6 md:px-8 relative z-0">
         {/* Video Background */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <video 
@@ -373,10 +390,10 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
         
-        <div className="max-w-7xl mx-auto pl-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Left side: Content */}
-            <div className="flex-1 pl-8">
+            <div className="flex-1">
               <DynamicGreeting />
 
               {/* Property Type Tabs */}
@@ -395,14 +412,15 @@ export default function HomePage() {
                     {tab}
                   </button>
                 ))}
-                <button 
+                <Link 
+                  href="/list-property"
                   ref={(el) => { tabRefs.current["Post Free Property Ad"] = el }}
                   onMouseEnter={() => setHoveredTab("Post Free Property Ad")}
                   onMouseLeave={() => setHoveredTab(null)}
                   className="relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 text-white/80 hover:text-primary hover:scale-105 transition-all duration-300"
                 >
                   Post Free Property Ad
-                </button>
+                </Link>
                 
                 {/* Animated Underline */}
                 <span
@@ -415,13 +433,13 @@ export default function HomePage() {
               </div>
 
               {/* Search Bar */}
-              <div className="w-full max-w-4xl pl-5">
-                <SearchBar />
+              <div className="w-full max-w-4xl">
+                <SearchBar activeFilter={selectedTab} />
               </div>
             </div>
 
             {/* Right side: Carousel */}
-            <div className="md:order-last pr-8">
+            <div className="hidden md:block md:order-last">
               <PropertyCarousel />
             </div>
           </div>
@@ -429,61 +447,69 @@ export default function HomePage() {
       </section>
 
       {/* Quick Cards Section */}
-      <section className="bg-accent/20 py-8 px-4">
+      <section className="bg-accent/20 py-4 md:py-8 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-foreground font-bold text-lg mb-6">Because you searched Lucknow</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <h2 className="text-foreground font-bold text-base md:text-lg mb-3 md:mb-6">Discover Properties in Lucknow</h2>
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
             {quickCards.map((card) => (
-              <div
+              <Link
                 key={card.id}
-                className={`${card.bgColor} rounded-lg p-6 cursor-pointer hover:shadow-md transition-shadow`}
+                href={card.id === 1 ? "/search?q=Lucknow" : card.id === 2 ? "/about" : card.id === 3 ? "/search?purpose=sale" : "/search?ownerType=owner"}
+                className={`${card.bgColor} rounded-lg p-3 md:p-6 cursor-pointer hover:shadow-md transition-shadow active:scale-95 touch-manipulation block`}
               >
-                <p className="text-primary font-bold text-lg mb-2">{card.title}</p>
-                <p className="text-primary text-sm hover:underline">{card.subtitle}</p>
-              </div>
+                <p className="text-primary font-bold text-sm md:text-lg mb-1 md:mb-2 leading-tight">{card.title}</p>
+                <p className="text-primary text-xs md:text-sm hover:underline line-clamp-1">{card.subtitle}</p>
+              </Link>
             ))}
           </div>
         </div>
       </section>
 
       {/* Featured Projects Section with Stacked Cards */}
-      <section className="bg-background py-12 px-4">
+      <section className="bg-background py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-foreground">Featured Projects</h2>
-            <a href="#" className="text-primary font-semibold hover:underline">
-              See all Projects →
-            </a>
+          <div className="flex items-center justify-between mb-4 md:mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">Featured Projects</h2>
+            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base">
+              See all →
+            </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
             {featuredProjects.map((project) => (
-              <FeaturedStackCard key={project.id} project={project} />
+              <div key={project.id} className="min-w-[280px] snap-start flex-shrink-0">
+                <FeaturedStackCard project={project} />
+              </div>
             ))}
           </div>
         </div>
       </section>
 
       {/* Trending in Lucknow section */}
-      <section className="bg-accent/20 py-12 px-4">
+      <section className="bg-accent/20 py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-foreground">Trending in Lucknow</h2>
-            <a href="#" className="text-primary font-semibold hover:underline">
-              See all Properties →
-            </a>
+          <div className="flex items-center justify-between mb-4 md:mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">Trending in Lucknow</h2>
+            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base">
+              See all →
+            </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {trendingProperties.map((property) => (
-              <Link key={property.id} href={`/property/${property.id}`}>
-                <div className="cursor-pointer group">
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
+            {trendingFeed.length === 0 && <div className="min-w-full">{renderEmptyState("trending properties")}</div>}
+            {trendingFeed.map((property, index) => {
+              const isPlaceholder = property.id?.toString().startsWith('placeholder-')
+              const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
+              return (
+                <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0">
+                <div className="cursor-pointer active:scale-95 transition-transform touch-manipulation">
                   <div className="relative mb-3 bg-muted rounded-lg overflow-hidden h-48">
+                    {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
                     <img
                       src={property.image || "/placeholder.svg"}
                       alt={property.bhk}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2 left-2 bg-foreground text-background px-2 py-1 rounded text-xs font-semibold">
-                      {property.imageCount}
+                      {property.imageCount || "0"}
                     </div>
                   </div>
                   <p className="text-muted-foreground font-semibold mb-1">{property.bhk}</p>
@@ -494,32 +520,23 @@ export default function HomePage() {
                   <p className="text-sm text-muted-foreground">{property.status}</p>
                 </div>
               </Link>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
 
       {/* Popular Localities section */}
-      <section className="bg-background py-12 px-4">
+      <section className="bg-background py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground mb-8">Popular Localities in Lucknow</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4 md:mb-8">Popular Localities in Lucknow</h2>
           <div className="relative">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {/* Cyclone card */}
-              <div className="bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-lg p-8 flex flex-col justify-center items-center text-center">
-                <h3 className="text-2xl font-bold text-secondary mb-2">Cyclone</h3>
-                <p className="text-muted-foreground font-semibold">
-                  Popular Localities
-                  <br />
-                  in Lucknow
-                </p>
-              </div>
-
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-locality-scroll>
               {/* Locality cards */}
-              {localities.slice(0, 3).map((locality) => (
+              {localities.map((locality) => (
                 <div
                   key={locality.id}
-                  className="bg-card border border-border rounded-lg p-4 hover:shadow-lg transition-shadow"
+                  className="bg-card border border-border rounded-lg p-4 min-w-[280px] snap-start active:scale-95 transition-transform touch-manipulation"
                 >
                   <h3 className="font-bold text-foreground text-lg mb-2 flex items-center gap-2">
                     {locality.name}
@@ -537,26 +554,39 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
-            <button className="absolute -right-4 top-1/2 transform -translate-y-1/2 bg-background rounded-full p-2 shadow-lg hover:shadow-xl z-10">
+            <button 
+              onClick={() => {
+                const container = document.querySelector('[data-locality-scroll]');
+                if (container) {
+                  container.scrollBy({ left: 300, behavior: 'smooth' });
+                }
+              }}
+              className="hidden md:block absolute right-0 md:-right-4 top-1/2 transform -translate-y-1/2 bg-background rounded-full p-2 shadow-lg hover:shadow-xl active:shadow-md active:scale-95 z-10 touch-manipulation"
+              aria-label="Scroll right"
+            >
               <ChevronRight className="w-6 h-6 text-foreground" />
             </button>
           </div>
         </div>
       </section>
 
-      {/* MB Preferred Agents section */}
-      <section className="bg-accent/20 py-12 px-4">
+      {/* Top Agents in Lucknow section */}
+      <section className="bg-accent/20 py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-foreground">MB Preferred Agents in Lucknow</h2>
-            <a href="#" className="text-primary font-semibold hover:underline">
+          <div className="flex items-center justify-between mb-4 md:mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">Ganj Trusted Agents in Lucknow</h2>
+            <Link href="/search?ownerType=agent" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base">
               See all →
-            </a>
+            </Link>
           </div>
           <div className="relative">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {agents.slice(agentCarouselIndex, agentCarouselIndex + 4).map((agent) => (
-                <div key={agent.id} className="bg-card rounded-lg p-6 hover:shadow-lg transition-shadow">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-agent-scroll>
+              {agents.map((agent) => (
+                <Link 
+                  key={agent.id} 
+                  href={`/agent/${agent.id}`}
+                  className="bg-card rounded-lg p-6 min-w-[280px] snap-start active:scale-95 transition-transform touch-manipulation flex-shrink-0"
+                >
                   <div className="flex items-start gap-3 mb-4">
                     <img
                       src={agent.image || "/placeholder.svg"}
@@ -564,7 +594,6 @@ export default function HomePage() {
                       className="w-16 h-16 rounded-lg object-cover"
                     />
                     <div>
-                      <p className="text-xs text-secondary font-bold mb-1">MB Preferred</p>
                       <h3 className="font-bold text-foreground">{agent.name}</h3>
                     </div>
                     <span className="text-xs bg-foreground text-background px-2 py-1 rounded">✓</span>
@@ -592,12 +621,18 @@ export default function HomePage() {
                       </div>
                     )}
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
             <button
-              onClick={nextAgentCarousel}
-              className="absolute -right-4 top-1/2 transform -translate-y-1/2 bg-background rounded-full p-2 shadow-lg hover:shadow-xl z-10"
+              onClick={() => {
+                const container = document.querySelector('[data-agent-scroll]');
+                if (container) {
+                  container.scrollBy({ left: 300, behavior: 'smooth' });
+                }
+              }}
+              className="hidden md:block absolute right-0 md:-right-4 top-1/2 transform -translate-y-1/2 bg-background rounded-full p-2 shadow-lg active:shadow-md active:scale-95 z-10 touch-manipulation"
+              aria-label="Scroll right"
             >
               <ChevronRight className="w-6 h-6 text-foreground" />
             </button>
@@ -606,26 +641,31 @@ export default function HomePage() {
       </section>
 
       {/* Exclusive Owner Properties section */}
-      <section className="bg-background py-12 px-4">
+      <section className="bg-background py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-foreground">Exclusive Owner Properties in Lucknow</h2>
-            <a href="#" className="text-primary font-semibold hover:underline">
-              See all Properties →
-            </a>
+          <div className="flex items-center justify-between mb-4 md:mb-8">
+            <h2 className="text-xl md:text-2xl font-bold text-foreground">Exclusive Owner Properties in Lucknow</h2>
+            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base">
+              See all →
+            </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {exclusiveProperties.map((property) => (
-              <Link key={property.id} href={`/property/${property.id}`}>
-                <div className="cursor-pointer group">
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
+            {exclusiveFeed.length === 0 && <div className="min-w-full">{renderEmptyState("exclusive listings")}</div>}
+            {exclusiveFeed.map((property, index) => {
+              const isPlaceholder = property.id?.toString().startsWith('placeholder-')
+              const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
+              return (
+                <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0">
+                <div className="cursor-pointer active:scale-95 transition-transform touch-manipulation">
                   <div className="relative mb-3 bg-muted rounded-lg overflow-hidden h-48">
+                    {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
                     <img
                       src={property.image || "/placeholder.svg"}
                       alt={property.bhk}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                      className="w-full h-full object-cover"
                     />
                     <div className="absolute top-2 left-2 bg-foreground text-background px-2 py-1 rounded text-xs font-semibold">
-                      {property.imageCount}
+                      {property.imageCount || "0"}
                     </div>
                   </div>
                   <p className="text-muted-foreground font-semibold mb-1">{property.bhk}</p>
@@ -634,7 +674,8 @@ export default function HomePage() {
                   </p>
                 </div>
               </Link>
-            ))}
+              )
+            })}
           </div>
         </div>
       </section>
@@ -646,7 +687,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Industry Insights */}
             <div className="border-2 border-primary rounded-lg p-6">
-              <h3 className="text-xl font-bold text-foreground mb-4">Industry Insights</h3>
+              <h3 className="text-xl font-bold text-foreground mb-4">Property Ganj Insights</h3>
               <ul className="space-y-3">
                 {industryInsights.map((insight) => (
                   <li
@@ -658,14 +699,14 @@ export default function HomePage() {
                   </li>
                 ))}
               </ul>
-              <a href="#" className="text-primary font-semibold text-sm mt-6 inline-block hover:underline">
+              <Link href="/about" className="text-primary font-semibold text-sm mt-6 inline-block hover:underline active:opacity-70 touch-manipulation">
                 See all →
-              </a>
+              </Link>
             </div>
 
             {/* Legal Updates */}
             <div className="border-2 border-primary rounded-lg p-6">
-              <h3 className="text-xl font-bold text-foreground mb-4">Legal Updates</h3>
+              <h3 className="text-xl font-bold text-foreground mb-4">Legal Guidance</h3>
               <div className="space-y-4">
                 {legalUpdates.map((update) => (
                   <div key={update.id} className="flex items-start gap-4 pb-4 border-b border-border last:border-0">
@@ -696,23 +737,28 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-bold text-foreground">Popular Owner Properties</h2>
-            <a href="#" className="text-primary font-semibold hover:underline">
+            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation">
               See all Properties →
-            </a>
+            </Link>
           </div>
           <div className="relative">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {popularProperties.map((property) => (
-                <Link key={property.id} href={`/property/${property.id}`}>
-                  <div className="cursor-pointer group">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-popular-scroll>
+              {popularFeed.length === 0 && <div className="min-w-full">{renderEmptyState("popular listings")}</div>}
+            {popularFeed.map((property, index) => {
+              const isPlaceholder = property.id?.toString().startsWith('placeholder-')
+              const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
+              return (
+                <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0">
+                  <div className="cursor-pointer active:scale-95 transition-transform touch-manipulation">
                     <div className="relative mb-3 bg-muted rounded-lg overflow-hidden h-48">
+                      {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
                       <img
                         src={property.image || "/placeholder.svg"}
                         alt={property.bhk}
-                        className="w-full h-full object-cover group-hover:.scale-105 transition-transform"
+                        className="w-full h-full object-cover"
                       />
                       <div className="absolute top-2 left-2 bg-foreground text-background px-2 py-1 rounded text-xs font-semibold">
-                        {property.imageCount}
+                        {property.imageCount || "0"}
                       </div>
                     </div>
                     <p className="text-muted-foreground font-semibold mb-1">{property.bhk}</p>
@@ -721,9 +767,19 @@ export default function HomePage() {
                     </p>
                   </div>
                 </Link>
-              ))}
+                )
+              })}
             </div>
-            <button className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2 bg-background rounded-full p-2 shadow-lg hover:shadow-xl">
+            <button 
+              onClick={() => {
+                const container = document.querySelector('[data-popular-scroll]');
+                if (container) {
+                  container.scrollBy({ left: 300, behavior: 'smooth' });
+                }
+              }}
+              className="hidden md:block absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-2 bg-background rounded-full p-2 shadow-lg hover:shadow-xl active:shadow-md active:scale-95 touch-manipulation"
+              aria-label="Scroll right"
+            >
               <ChevronRight className="w-6 h-6 text-foreground" />
             </button>
           </div>
@@ -733,7 +789,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="bg-primary text-primary-foreground py-8 px-4">
         <div className="max-w-7xl mx-auto text-center text-sm">
-          <p>&copy; 2025 MagicBricks. All rights reserved.</p>
+          <p>&copy; 2025 Property Ganj. All rights reserved.</p>
         </div>
       </footer>
     </main>

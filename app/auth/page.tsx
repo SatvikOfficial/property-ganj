@@ -1,35 +1,160 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, EyeOff, User, Mail, Lock, ArrowLeft } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  User,
+  Mail,
+  Lock,
+  ArrowLeft,
+} from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+import { useToast } from '@/hooks/use-toast';
+
+const initialFormState = {
+  name: '',
+  email: '',
+  phone: '',
+  password: '',
+  confirmPassword: '',
+  identifier: '',
+};
 
 export default function AuthPage() {
+  const router = useRouter();
+  const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
-  });
+  const [formData, setFormData] = useState(initialFormState);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const resetForm = () => {
+    setFormData(initialFormState);
+  };
+
+  const toggleMode = () => {
+    setIsLogin(!isLogin);
+    resetForm();
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const toggleMode = () => setIsLogin(!isLogin);
+  const autoLogin = async (identifierOverride?: string, passwordOverride?: string) => {
+    const loginIdentifier =
+      identifierOverride || formData.email || formData.phone;
+    const loginPassword = passwordOverride || formData.password;
 
-  const handleSubmit = (e: React.FormEvent) => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        identifier: loginIdentifier,
+        password: loginPassword,
+      }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to login');
+    }
+
+    toast({
+      title: `Welcome back, ${data.user.name}`,
+      description: 'Redirecting you to the home page...',
+    });
+    router.push('/');
+    router.refresh();
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(isLogin ? 'Login' : 'Register', formData);
+    setIsSubmitting(true);
+
+    try {
+      if (isLogin) {
+        const loginIdentifier =
+          formData.identifier || formData.email || formData.phone;
+
+        if (!loginIdentifier) {
+          throw new Error('Enter your email or phone number');
+        }
+
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            identifier: loginIdentifier,
+            password: formData.password,
+          }),
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Failed to login');
+        }
+
+        toast({
+          title: `Welcome back, ${data.user.name}`,
+          description: 'Redirecting you to the home page...',
+        });
+        router.push('/');
+        router.refresh();
+        return;
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+
+      if (!formData.phone) {
+        throw new Error('Phone number is required');
+      }
+
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email || undefined,
+          phone: formData.phone,
+          password: formData.password,
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to register');
+      }
+
+      toast({
+        title: 'Account created',
+        description: 'Logging you in...',
+      });
+
+      await autoLogin(formData.phone, formData.password);
+    } catch (error) {
+      toast({
+        title: 'Something went wrong',
+        description:
+          error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col relative overflow-hidden">
-      {/* 🎬 Video Background */}
       <div className="absolute inset-0 -z-10">
         <video
           autoPlay
@@ -43,12 +168,13 @@ export default function AuthPage() {
         <div className="absolute inset-0 bg-black/70" />
       </div>
 
-      {/* 🏠 Back Button */}
-      <Link href="/" className="absolute top-6 left-6 flex items-center text-[#eb6239] hover:text-[#d6522f] hover:underline z-10 font-medium">
+      <Link
+        href="/"
+        className="absolute top-6 left-6 flex items-center text-[#eb6239] hover:text-[#d6522f] hover:underline z-10 font-medium"
+      >
         <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
       </Link>
 
-      {/* 🌸 Form Box */}
       <div className="flex-1 flex items-center justify-center p-4">
         <div
           className="flex flex-col items-center text-center p-8 rounded-2xl shadow-2xl backdrop-blur-lg"
@@ -63,12 +189,20 @@ export default function AuthPage() {
             {isLogin ? 'SIGN IN' : 'SIGN UP'}
           </p>
 
-          <form onSubmit={handleSubmit} className="flex flex-col items-center space-y-5">
+          <form
+            onSubmit={handleSubmit}
+            className="flex flex-col items-center space-y-5"
+          >
             {!isLogin && (
               <div className="flex flex-col text-left">
-                <label className="font-semibold text-[#264143] mb-1">Name</label>
+                <label className="font-semibold text-[#264143] mb-1">
+                  Name
+                </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-3.5 text-[#264143]" size={18} />
+                  <User
+                    className="absolute left-3 top-3.5 text-[#264143]"
+                    size={18}
+                  />
                   <input
                     type="text"
                     name="name"
@@ -82,26 +216,81 @@ export default function AuthPage() {
               </div>
             )}
 
-            <div className="flex flex-col text-left">
-              <label className="font-semibold text-[#264143] mb-1">Email</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3.5 text-[#264143]" size={18} />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="Enter your email"
-                  required
-                  className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
-                />
+            {isLogin ? (
+              <div className="flex flex-col text-left">
+                <label className="font-semibold text-[#264143] mb-1">
+                  Email or Phone
+                </label>
+                <div className="relative">
+                  <Mail
+                    className="absolute left-3 top-3.5 text-[#264143]"
+                    size={18}
+                  />
+                  <input
+                    type="text"
+                    name="identifier"
+                    value={formData.identifier}
+                    onChange={handleChange}
+                    placeholder="you@example.com or 9876543210"
+                    required
+                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
+                  />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="flex flex-col text-left">
+                <label className="font-semibold text-[#264143] mb-1">
+                  Email <span className="text-xs text-muted-foreground">(optional)</span>
+                </label>
+                <div className="relative">
+                  <Mail
+                    className="absolute left-3 top-3.5 text-[#264143]"
+                    size={18}
+                  />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="you@example.com"
+                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
+                  />
+                </div>
+              </div>
+            )}
+
+            {!isLogin && (
+              <div className="flex flex-col text-left">
+                <label className="font-semibold text-[#264143] mb-1">
+                  Phone Number
+                </label>
+                <div className="relative">
+                  <div className="absolute left-3 top-3.5 text-[#264143] flex items-center">
+                    <span className="text-sm font-bold mr-1">+91</span>
+                    <div className="w-px h-5 bg-[#264143]" />
+                  </div>
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="9876543210"
+                    required
+                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-12 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="flex flex-col text-left">
-              <label className="font-semibold text-[#264143] mb-1">Password</label>
+              <label className="font-semibold text-[#264143] mb-1">
+                Password
+              </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3.5 text-[#264143]" size={18} />
+                <Lock
+                  className="absolute left-3 top-3.5 text-[#264143]"
+                  size={18}
+                />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
@@ -123,9 +312,14 @@ export default function AuthPage() {
 
             {!isLogin && (
               <div className="flex flex-col text-left">
-                <label className="font-semibold text-[#264143] mb-1">Confirm Password</label>
+                <label className="font-semibold text-[#264143] mb-1">
+                  Confirm Password
+                </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3.5 text-[#264143]" size={18} />
+                  <Lock
+                    className="absolute left-3 top-3.5 text-[#264143]"
+                    size={18}
+                  />
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     name="confirmPassword"
@@ -148,14 +342,19 @@ export default function AuthPage() {
 
             <button
               type="submit"
-              className="bg-[#eb6239] text-white font-extrabold py-3 w-[290px] rounded-lg shadow-[3px_3px_0px_0px_#eec78e] hover:opacity-90 transition-all active:translate-y-[3px]"
+              disabled={isSubmitting}
+              className="bg-[#eb6239] text-white font-extrabold py-3 w-[290px] rounded-lg shadow-[3px_3px_0px_0px_#eec78e] hover:opacity-90 transition-all active:translate-y-[3px] disabled:opacity-60"
             >
-              {isLogin ? 'SIGN IN' : 'SIGN UP'}
+              {isSubmitting ? 'Please wait...' : isLogin ? 'SIGN IN' : 'SIGN UP'}
             </button>
 
             <p className="text-sm mt-3 text-[#264143] font-medium">
-              {isLogin ? "Don't have an account?" : "Already have an account?"}{' '}
-              <button onClick={toggleMode} className="text-[#25abc2] font-bold hover:underline">
+              {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
+              <button
+                type="button"
+                onClick={toggleMode}
+                className="text-[#25abc2] font-bold hover:underline"
+              >
                 {isLogin ? 'Sign Up' : 'Sign In'}
               </button>
             </p>

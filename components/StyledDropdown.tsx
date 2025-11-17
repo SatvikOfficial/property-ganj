@@ -83,7 +83,7 @@ const StyledWrapper = styled.div`
     pointer-events: none;
     list-style: none;
     padding: 16px;
-    background-color: #ffffff;
+    background-color: lab(90.952% 0 -.0000119209);
   }
 
   /* Make rent dropdown smaller but keep 4 columns */

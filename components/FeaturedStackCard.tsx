@@ -21,41 +21,26 @@ interface FeaturedStackCardProps {
 const Card: React.FC<FeaturedStackCardProps> = ({ project }) => {
   return (
     <StyledWrapper>
-      <div>
-        <p className="browser-warning">
-          If this looks wonky to you it's because this browser doesn't support the CSS
-          property 'aspect-ratio'.
-        </p>
-        <div className="stack">
-          <div className="card">
-            {/* Position the badge above the image */}
-            {project.badge && (
-              <div className="offer-badge mb-2 w-max mx-auto bg-accent text-accent-foreground text-center py-1 px-2 font-semibold text-[10px] max-w-[80%]">
-                {project.badge}
-              </div>
-            )}
-            
-            {/* Main image area */}
-            <div className="image-section">
-              <img
-                src={project.image || "/placeholder.svg"}
-                alt={project.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            
-            {/* Content */}
-            <div className="content-section pt-2 text-center">
-              <h3 className="font-bold text-foreground text-lg sm:text-xl mb-1">{project.name}</h3>
-              <p className="text-sm sm:text-base text-muted-foreground mb-1">{project.location}</p>
-              <p className="text-sm sm:text-base text-muted-foreground mb-2">{project.type}</p>
-              <p className="font-semibold text-foreground text-base sm:text-lg mb-1">{project.price}</p>
-              <p className="text-sm sm:text-base text-muted-foreground mb-3">Marketed by {project.builder}</p>
-              <Link href={`/property/${project.id}`}>
-                <CustomViewDetailsButton />
-              </Link>
-            </div>
-          </div>
+      <div className="card">
+        {/* Image */}
+        <div className="image-section">
+          <img
+            src={project.image || "/placeholder.svg"}
+            alt={project.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        
+        {/* Content */}
+        <div className="content-section">
+          <h3 className="font-bold text-foreground text-sm sm:text-base mb-1 line-clamp-2">{project.name}</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground mb-1">{project.location}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mb-1">{project.type}</p>
+          <p className="font-semibold text-foreground text-sm sm:text-base mb-1">{project.price}</p>
+          <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-1">{project.builder}</p>
+          <Link href={`/property/placeholder/featured-${project.id}`}>
+            <CustomViewDetailsButton />
+          </Link>
         </div>
       </div>
     </StyledWrapper>
@@ -63,82 +48,76 @@ const Card: React.FC<FeaturedStackCardProps> = ({ project }) => {
 }
 
 const StyledWrapper = styled.div`
-  img {
-    display: block;
-    max-width: 100%;
-  }
-
-  .stack {
-    
-    transition: 0.25s ease;
-    &:hover {
-      transform: rotate(5deg);
-      .card:before {
-        transform: translatey(-2%) rotate(-4deg);
-      }
-      .card:after {
-        transform: translatey(2%) rotate(4deg);
-      }
-    }
-  }
-
   .card {
-    aspect-ratio: 3 / 2;
-    border: 4px solid;
-    background-color: #fff;
+    width: 380px;
+    height: 450px;
+    background: #07182E;
     position: relative;
-    transition: 0.15s ease;
-    cursor: pointer;
-    padding: 8% 8% 20% 8%;
-    &:before,
-    &:after {
-      content: "";
-      display: block;
-      position: absolute;
-      height: 100%;
-      width: 100%;
-      border: 4px solid;
-      background-color: #fff;
-      transform-origin: center center;
-      z-index: -1;
-      transition: 0.15s ease;
-      top: 0;
-      left: 0;
-    }
+    display: flex;
+    flex-direction: column;
+    place-content: center;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 20px;
+    padding: 12px;
+  }
 
-    &:before {
-      transform: translatey(-2%) rotate(-6deg);
-    }
+  .card::before {
+    content: '';
+    position: absolute;
+    width: 100px;
+    background-image: linear-gradient(180deg, oklch(0.659 0.18 36.25), oklch(0.671 0.11 228.44));
+    height: 130%;
+    animation: rotBGimg 3s linear infinite;
+    transition: all 0.2s linear;
+  }
 
-    &:after {
-      transform: translatey(2%) rotate(6deg);
+  @keyframes rotBGimg {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
     }
   }
-  
+
+  .card::after {
+    content: '';
+    position: absolute;
+    background: #FFF;
+    inset: 3px;
+    border-radius: 15px;
+    z-index: 0;
+  }
+
+  .card:hover:before {
+    background-image: linear-gradient(180deg, oklch(0.659 0.18 36.25), oklch(0.659 0.18 36.25));
+    animation: rotBGimg 3.5s linear infinite;
+  }
+
   .image-section {
     position: relative;
-    aspect-ratio: 16/9;
+    width: 100%;
     overflow: hidden;
-    border: 4px solid;
-    border-radius: 0.25rem;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    z-index: 1;
   }
-  
+
   .content-section {
     position: relative;
-  }
-  
-  .offer-badge {
-    z-index: 10; /* Make sure it appears above other elements */
-  }
-
-  .browser-warning {
-    margin-bottom: 4rem;
+    z-index: 1;
+    width: 100%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
-  @supports (aspect-ratio: 1 / 1) {
-    .browser-warning {
-      display: none;
-    }
-  }`;
+  .content-section h3,
+  .content-section p {
+    color: #1f2a2e;
+  }
+`;
 
 export default Card;
