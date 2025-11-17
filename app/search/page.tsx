@@ -6,6 +6,7 @@ import { ChevronDown, X, Heart, Share2 } from "lucide-react"
 import Link from "next/link"
 import Header from "@/components/header"
 import LikeButton from "@/components/LikeButton"
+import LucknowLocationAutocomplete, { ResolvedLucknowLocation } from "@/components/location/LucknowLocationAutocomplete"
 
 const propertyTypeOptions = ["Apartment", "Independent House/Villa", "Plot/Land", "Office", "Retail"]
 const bhkOptions = ["1 BHK", "2 BHK", "3 BHK", "4 BHK", "5+ BHK"]
@@ -18,6 +19,21 @@ const sortOptions = [
   { value: "area-low", label: "Area: Low to High" },
   { value: "area-high", label: "Area: High to Low" },
 ]
+
+type SearchFiltersState = {
+  purpose: "sale" | "rent"
+  location: string
+  locality?: string
+  propertyTypes: string[]
+  budgetMin?: number
+  budgetMax?: number
+  bhk: string[]
+  ownerType: string
+  tags: string[]
+  sortBy: string
+  lat?: number
+  lng?: number
+}
 const parseBudgetInput = (value: string) => {
   if (!value) return undefined
   const normalized = value.trim().toLowerCase().replace(/,/g, "")
@@ -62,12 +78,13 @@ const propertyImages = [
 ]
 
 const generatePlaceholderProperties = (count: number, filters?: any) => {
-  const allLocations = ["Gomti Nagar", "Hazratganj", "Aliganj", "Indira Nagar", "Aminabad", "Chowk", "Mahanagar", "Meerut", "Kanpur", "Delhi", "Noida", "Ghaziabad"]
+  const fallbackLocations = ["Gomti Nagar", "Hazratganj", "Aliganj", "Indira Nagar", "Aminabad", "Chowk", "Mahanagar", "Vrindavan Yojna", "Shaheed Path", "Gomti Nagar Extension", "Sushant Golf City", "Jankipuram", "Rajajipuram", "Alambagh", "Kalyanpur"]
   const allPropertyTypes = ["Apartment", "Independent House/Villa", "Plot/Land", "Office", "Retail"]
   const bhkOptions = [1, 2, 3, 4, 5]
   
   // Use filter criteria if available
-  const locations = filters?.location ? [filters.location, ...allLocations] : allLocations
+  const targetLocation = filters?.locality || filters?.location || ""
+  const locations = targetLocation ? [targetLocation] : fallbackLocations
   const propertyTypes = filters?.propertyTypes?.length ? filters.propertyTypes : allPropertyTypes
   const purpose = filters?.purpose || 'sale'
   const minPrice = filters?.budgetMin || 0
@@ -78,7 +95,7 @@ const generatePlaceholderProperties = (count: number, filters?: any) => {
     const baseIndex = Date.now() % 1000 + i // Add variety based on time
     const bhk = selectedBhk || bhkOptions[baseIndex % bhkOptions.length]
     const propertyType = propertyTypes[baseIndex % propertyTypes.length]
-    const locationIndex = baseIndex % locations.length
+    const locationIndex = locations.length === 1 ? 0 : baseIndex % locations.length
     const priceBase = minPrice > 0 ? minPrice : (5000000 + baseIndex * 500000)
     const priceRange = maxPrice > minPrice ? (maxPrice - minPrice) : 10000000
     const price = purpose === 'rent' 
@@ -93,7 +110,7 @@ const generatePlaceholderProperties = (count: number, filters?: any) => {
       propertyType: propertyType,
       location: {
         locality: locations[locationIndex],
-        city: locations[locationIndex] === "Meerut" ? "Meerut" : locations[locationIndex] === "Kanpur" ? "Kanpur" : "Lucknow"
+        city: "Lucknow"
       },
       specs: {
         bedrooms: bhk,
@@ -119,9 +136,11 @@ function SearchFiltersContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [filters, setFilters] = useState(() => ({
+  const initialLocation = searchParams.get("q") || "Lucknow"
+  const [filters, setFilters] = useState<SearchFiltersState>(() => ({
     purpose: searchParams.get("purpose") === "rent" ? "rent" : "sale",
-    location: searchParams.get("q") || "Lucknow",
+    location: initialLocation,
+    locality: searchParams.get("locality") || undefined,
     propertyTypes: searchParams.get("propertyType")?.split(",").filter(Boolean) || [],
     budgetMin: searchParams.get("minPrice") ? Number(searchParams.get("minPrice")) : undefined,
     budgetMax: searchParams.get("maxPrice") ? Number(searchParams.get("maxPrice")) : undefined,
@@ -129,7 +148,10 @@ function SearchFiltersContent() {
     ownerType: searchParams.get("ownerType") || "all",
     tags: searchParams.get("tags")?.split(",").filter(Boolean) || [],
     sortBy: searchParams.get("sortBy") || "newest",
+    lat: searchParams.get("lat") ? Number(searchParams.get("lat")) : undefined,
+    lng: searchParams.get("lng") ? Number(searchParams.get("lng")) : undefined,
   }))
+  const [locationQuery, setLocationQuery] = useState(initialLocation)
 
   const [properties, setProperties] = useState<any[]>([])
   const [likedProperties, setLikedProperties] = useState<string[]>([])
@@ -143,11 +165,35 @@ function SearchFiltersContent() {
   const [showSortModal, setShowSortModal] = useState(false)
   const [tempBudgetMin, setTempBudgetMin] = useState(filters.budgetMin ? `${filters.budgetMin}` : "")
   const [tempBudgetMax, setTempBudgetMax] = useState(filters.budgetMax ? `${filters.budgetMax}` : "")
+  const handleLocationFilterChange = (value: string) => {
+    setLocationQuery(value)
+    const trimmed = value.trim()
+    if (!trimmed) {
+      setFilters((prev) => ({ ...prev, location: "", locality: undefined, lat: undefined, lng: undefined }))
+      return
+    }
+    if (trimmed.length >= 2) {
+      setFilters((prev) => ({ ...prev, location: trimmed, locality: trimmed, lat: undefined, lng: undefined }))
+    }
+  }
+
+  const handleLocationFilterSelect = (resolved: ResolvedLucknowLocation) => {
+    setLocationQuery(resolved.label)
+    setFilters((prev) => ({
+      ...prev,
+      location: resolved.label,
+      locality: resolved.locality || resolved.area || resolved.label,
+      lat: resolved.latitude,
+      lng: resolved.longitude,
+    }))
+  }
 
   const buildQuery = (state = filters) => {
     const params = new URLSearchParams()
     params.set("purpose", state.purpose as string)
     if (state.location) params.set("q", state.location)
+    params.set("city", "Lucknow")
+    if (state.locality) params.set("locality", state.locality)
     if (state.propertyTypes.length) params.set("propertyType", state.propertyTypes.join(","))
     if (state.budgetMin) params.set("minPrice", String(state.budgetMin))
     if (state.budgetMax) params.set("maxPrice", String(state.budgetMax))
@@ -158,6 +204,8 @@ function SearchFiltersContent() {
     }
     if (state.tags.length) params.set("tags", state.tags.join(","))
     if (state.sortBy) params.set("sortBy", state.sortBy)
+    if (state.lat !== undefined && !Number.isNaN(state.lat)) params.set("lat", String(state.lat))
+    if (state.lng !== undefined && !Number.isNaN(state.lng)) params.set("lng", String(state.lng))
     return params
   }
 
@@ -265,6 +313,17 @@ function SearchFiltersContent() {
             >
               {filters.purpose === "rent" ? "Rent" : "Buy"} <ChevronDown className="w-4 h-4" />
             </button>
+
+            <div className="w-full md:w-72 flex-1 min-w-[250px]">
+              <LucknowLocationAutocomplete
+                value={locationQuery}
+                onChange={handleLocationFilterChange}
+                onSelect={handleLocationFilterSelect}
+                showDetectButton
+                dense
+                className="w-full"
+              />
+            </div>
 
             <div className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm">
               {filters.location}

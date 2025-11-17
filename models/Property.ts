@@ -32,10 +32,18 @@ export interface IProperty extends Document {
   location: {
     address?: string;
     locality?: string;
+    area?: string;
+    sector?: string;
+    block?: string;
+    road?: string;
+    neighbourhood?: string;
     city: string;
     state?: string;
     pincode?: string;
     landmark?: string;
+    latitude?: number;
+    longitude?: number;
+    geoSource?: 'geoapify' | 'manual';
   };
   specs: {
     bedrooms?: number;
@@ -132,10 +140,22 @@ const PropertySchema = new Schema<IProperty>(
     location: {
       address: { type: String, trim: true },
       locality: { type: String, trim: true },
+      area: { type: String, trim: true },
+      sector: { type: String, trim: true },
+      block: { type: String, trim: true },
+      road: { type: String, trim: true },
+      neighbourhood: { type: String, trim: true },
       city: { type: String, required: true, trim: true },
       state: { type: String, trim: true },
       pincode: { type: String, trim: true },
       landmark: { type: String, trim: true },
+      latitude: { type: Number },
+      longitude: { type: Number },
+      geoSource: {
+        type: String,
+        enum: ['geoapify', 'manual'],
+        default: 'manual',
+      },
     },
     specs: {
       bedrooms: { type: Number },

@@ -1,8 +1,9 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { MapPin, ChevronDown, Search, Mic, Locate } from "lucide-react"
+import { ChevronDown, Search, Mic } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import LucknowLocationAutocomplete, { ResolvedLucknowLocation } from "@/components/location/LucknowLocationAutocomplete"
 import { useRouter } from "next/navigation"
 
 type PropertyTypeItem = {
@@ -121,6 +122,7 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
   const normalizedFilter = normalizeFilter(activeFilter)
 
   const [location, setLocation] = useState(defaultLocation)
+  const [resolvedLocation, setResolvedLocation] = useState<ResolvedLucknowLocation | null>(null)
   const [isListening, setIsListening] = useState(false)
   const [selectedPropertyTypes, setSelectedPropertyTypes] = useState<string[]>([])
   const [selectedBedroom, setSelectedBedroom] = useState<number | null>(null)
@@ -164,6 +166,20 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
     }
   }, [showPropertyDropdown, showBudgetDropdown])
 
+  const handleLocationInputChange = (text: string) => {
+    setLocation(text)
+    if (!text.trim()) {
+      setResolvedLocation(null)
+    } else {
+      setResolvedLocation(null)
+    }
+  }
+
+  const handleResolvedLocation = (resolved: ResolvedLucknowLocation) => {
+    setLocation(resolved.label)
+    setResolvedLocation(resolved)
+  }
+
   const togglePropertyType = (value: string) => {
     setSelectedPropertyTypes((prev) =>
       prev.includes(value) ? prev.filter((item) => item !== value) : [...prev, value]
@@ -186,7 +202,17 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
 
   const handleSearch = () => {
     const params = new URLSearchParams()
-    params.set("q", location)
+    const trimmedLocation = location.trim() || "Lucknow"
+    params.set("q", trimmedLocation)
+
+    if (resolvedLocation?.locality) {
+      params.set("locality", resolvedLocation.locality)
+    }
+    params.set("city", "Lucknow")
+    if (resolvedLocation?.latitude && resolvedLocation?.longitude) {
+      params.set("lat", resolvedLocation.latitude.toString())
+      params.set("lng", resolvedLocation.longitude.toString())
+    }
 
     const purpose = normalizedFilter === "rental" || normalizedFilter === "pg" ? "rent" : "sale"
     params.set("purpose", purpose)
@@ -212,35 +238,6 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
     router.push(`/search?${params.toString()}`)
   }
 
-  const handleAutoDetect = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser")
-      return
-    }
-    setLocation("Detecting location...")
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-          )
-          const data = await response.json()
-          const city = data.address?.city || data.address?.town || data.address?.village || "Unknown Location"
-          setLocation(city)
-        } catch (error) {
-          console.error("Error reverse geocoding:", error)
-          setLocation(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`)
-        }
-      },
-      (error) => {
-        console.error("Error detecting location:", error)
-        setLocation(defaultLocation)
-        alert("Unable to detect location. Please enable location services.")
-      }
-    )
-  }
-
   const handleVoiceInput = () => {
     if (!("webkitSpeechRecognition" in window || "SpeechRecognition" in window)) {
       alert("Voice recognition is not supported in your browser")
@@ -254,6 +251,7 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
     recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript
       setLocation(transcript)
+      setResolvedLocation(null)
     }
     recognition.start()
   }
@@ -376,24 +374,15 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
     <div className="max-w-3xl w-full search-bar-container">
       <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-stretch md:items-center bg-background rounded-md md:rounded-full border-2 border-black shadow-sm md:hover:shadow-md transition-shadow p-0.5 md:p-1.5 active:shadow-md md:active:shadow-md">
         <div className="flex items-center gap-0.5 md:gap-2 px-1 md:px-3 flex-1 min-w-0 overflow-hidden">
-          <MapPin className="w-2.5 h-2.5 md:w-4 md:h-4 text-primary flex-shrink-0" />
-          <input
-            type="text"
-            placeholder="Lucknow"
+          <LucknowLocationAutocomplete
             value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="flex-1 outline-none text-foreground bg-transparent text-xs md:text-sm min-w-0 overflow-hidden text-ellipsis"
-            style={{ maxWidth: 'calc(100% - 60px)' }}
+            onChange={handleLocationInputChange}
+            onSelect={handleResolvedLocation}
+            dense
+            showDetectButton
+            className="flex-1"
+            inputClassName="text-xs md:text-sm"
           />
-          <Button
-            onClick={handleAutoDetect}
-            variant="ghost"
-            size="sm"
-            className="h-4 w-4 md:h-7 md:w-auto md:px-2 p-0 hover:bg-secondary/20 rounded-md transition-all group flex-shrink-0"
-            title="Auto-detect location"
-          >
-            <Locate className="w-2 h-2 md:w-3.5 md:h-3.5 text-muted-foreground group-hover:text-secondary transition-all duration-200" />
-          </Button>
           <Button
             onClick={handleVoiceInput}
             variant="ghost"

@@ -24,6 +24,14 @@ type PropertyDetail = {
     city?: string;
     locality?: string;
     address?: string;
+    area?: string;
+    sector?: string;
+    block?: string;
+    road?: string;
+    pincode?: string;
+    landmark?: string;
+    latitude?: number;
+    longitude?: number;
   };
   specs?: {
     bedrooms?: number;
@@ -90,9 +98,40 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
     setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
   };
 
-  const locationLine = [property.location.locality, property.location.city]
+  const locationLine = [property.location.locality, property.location.area, property.location.city]
     .filter(Boolean)
     .join(', ');
+
+  const geoapifyKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
+  const mapPreviewUrl =
+    property.location.latitude !== undefined &&
+    property.location.longitude !== undefined &&
+    geoapifyKey
+      ? `https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=600&height=320&center=lonlat:${property.location.longitude},${property.location.latitude}&zoom=15&marker=lonlat:${property.location.longitude},${property.location.latitude};color:%23eb6239;size:large&apiKey=${geoapifyKey}`
+      : null;
+
+  type LocationFact = { label: string; value: string };
+  const locationFacts: LocationFact[] = ([
+    property.location.locality
+      ? { label: 'Colony / Locality', value: property.location.locality }
+      : null,
+    property.location.area ? { label: 'Area / Zone', value: property.location.area } : null,
+    property.location.sector || property.location.block
+      ? {
+          label: 'Sector / Block',
+          value: [property.location.sector, property.location.block].filter(Boolean).join(', '),
+        }
+      : null,
+    property.location.road ? { label: 'Primary Road', value: property.location.road } : null,
+    property.location.landmark ? { label: 'Landmark', value: property.location.landmark } : null,
+    property.location.pincode ? { label: 'Pincode', value: property.location.pincode } : null,
+    property.location.latitude !== undefined && property.location.longitude !== undefined
+      ? {
+          label: 'Coordinates',
+          value: `${property.location.latitude.toFixed(5)}, ${property.location.longitude.toFixed(5)}`,
+        }
+      : null,
+  ] as (LocationFact | null)[]).filter((item): item is LocationFact => Boolean(item && item.value));
 
   const specifications = [
     { key: 'Bedrooms', value: property.specs?.bedrooms },
@@ -268,6 +307,28 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
             <p className="text-xs md:text-sm text-muted-foreground">
               {property.location.address || 'Address details shared on request'}
             </p>
+            {locationFacts.length > 0 && (
+              <dl className="mt-4 space-y-2 text-sm">
+                {locationFacts.map((fact) => (
+                  <div key={fact.label} className="flex justify-between gap-4 border border-border rounded-lg px-3 py-2">
+                    <dt className="text-muted-foreground">{fact.label}</dt>
+                    <dd className="font-semibold text-right">{fact.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+            {mapPreviewUrl ? (
+              <img
+                src={mapPreviewUrl}
+                alt={`Map preview for ${property.location.locality || 'Lucknow'} property`}
+                className="mt-4 w-full rounded-xl border border-border object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <p className="text-xs text-muted-foreground mt-4">
+                Add precise latitude & longitude to unlock the map preview for this listing.
+              </p>
+            )}
           </div>
         </aside>
       </section>
