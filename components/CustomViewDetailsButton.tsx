@@ -21,7 +21,8 @@ const StyledWrapper = styled.div`
     display: inline-flex;
     align-items: center;
     justify-content: space-between;
-    background: #40B3A2;
+    background: oklch(0.7 0.16 36.25);
+    background: rgb(235, 98, 57); /* Fallback for browsers that don't support oklch */
     min-width: 200px;
     border: 0;
     border-radius: 4px;
