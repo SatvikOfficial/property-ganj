@@ -412,7 +412,7 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
 
     "longitude": 80.9329,
 
-  }
+  },
   {
     "label": "Patel Nagar",
     "locality": "Patel Nagar, Indira Nagar",
@@ -483,7 +483,7 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     "pincode": "226028",
     "latitude": 26.875,
     "longitude": 81.035,
-  }
+  },
   {
     "label": "Gola Ganj",
     "locality": "Gola Ganj",
