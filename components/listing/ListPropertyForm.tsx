@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import FileUploadButton from '@/components/FileUploadButton';
+import LucknowLocationAutocomplete, { ResolvedLucknowLocation } from '@/components/location/LucknowLocationAutocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeYouTubeUrl } from '@/lib/utils';
 import type { PhotoCategory } from '@/models/Property';
@@ -49,6 +50,15 @@ const PROPERTY_TYPES = [
   'Retail/Shop',
   'Warehouse',
   'Industrial',
+] as const;
+
+const AREA_UNIT_OPTIONS = [
+  { value: 'sqft', label: 'Sq-ft' },
+  { value: 'sq-yrd', label: 'Sq-yrd' },
+  { value: 'sqm', label: 'Sq-m' },
+  { value: 'acre', label: 'Acre' },
+  { value: 'bigha', label: 'Bigha' },
+  { value: 'hectare', label: 'Hectare' },
 ] as const;
 
 const AMENITIES = [
@@ -107,9 +117,16 @@ type FormState = {
   location: {
     city: string;
     locality: string;
+    area: string;
+    sector: string;
+    block: string;
+    road: string;
     address: string;
     pincode: string;
     landmark: string;
+    latitude: string;
+    longitude: string;
+    geoSource: 'geoapify' | 'manual';
   };
   specs: {
     bedrooms: string;
@@ -117,6 +134,7 @@ type FormState = {
     balconies: string;
     carpetArea: string;
     builtUpArea: string;
+    plotArea: string;
     areaUnit: string;
     floorNo: string;
     totalFloors: string;
@@ -152,9 +170,16 @@ const initialFormState: FormState = {
   location: {
     city: 'Lucknow',
     locality: '',
+    area: '',
+    sector: '',
+    block: '',
+    road: '',
     address: '',
     pincode: '',
     landmark: '',
+    latitude: '',
+    longitude: '',
+    geoSource: 'manual',
   },
   specs: {
     bedrooms: '',
@@ -162,6 +187,7 @@ const initialFormState: FormState = {
     balconies: '',
     carpetArea: '',
     builtUpArea: '',
+    plotArea: '',
     areaUnit: 'sqft',
     floorNo: '',
     totalFloors: '',
@@ -193,7 +219,10 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
   const router = useRouter();
   const { toast } = useToast();
 
+  const defaultLocationQuery = initialFormState.location.locality || '';
+
   const [form, setForm] = useState<FormState>(initialFormState);
+  const [locationQuery, setLocationQuery] = useState(defaultLocationQuery);
   const [contact, setContact] = useState({
     name: user.name,
     phone: user.phone,
@@ -206,6 +235,66 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
   const [uploadingCategory, setUploadingCategory] = useState<PhotoCategory | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+
+  const formatCoordinate = (value?: number) =>
+    typeof value === 'number' && Number.isFinite(value) ? value.toFixed(6) : '';
+
+  const parseCoordinate = (value?: string) => {
+    if (!value) return undefined;
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : undefined;
+  };
+
+  const sanitizeOptional = (value: string) => value.trim() || undefined;
+
+  const handleLocationQueryChange = (value: string) => {
+    setLocationQuery(value);
+    setForm((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        locality: value,
+        city: prev.location.city || 'Lucknow',
+        geoSource: 'manual',
+      },
+    }));
+  };
+
+  const buildLocationPayload = (location: FormState['location']) => ({
+    city: location.city.trim() || 'Lucknow',
+    locality: location.locality.trim() || '',
+    area: sanitizeOptional(location.area),
+    sector: sanitizeOptional(location.sector),
+    block: sanitizeOptional(location.block),
+    road: sanitizeOptional(location.road),
+    address: sanitizeOptional(location.address),
+    pincode: sanitizeOptional(location.pincode),
+    landmark: sanitizeOptional(location.landmark),
+    latitude: parseCoordinate(location.latitude),
+    longitude: parseCoordinate(location.longitude),
+    geoSource: location.geoSource,
+  });
+
+  const handleLucknowLocationSelect = (resolved: ResolvedLucknowLocation) => {
+    setLocationQuery(resolved.label);
+    setForm((prev) => ({
+      ...prev,
+      location: {
+        ...prev.location,
+        city: resolved.city || 'Lucknow',
+        locality: resolved.locality || prev.location.locality,
+        area: resolved.area || prev.location.area,
+        sector: resolved.sector || prev.location.sector,
+        block: resolved.block || prev.location.block,
+        road: resolved.road || prev.location.road,
+        address: resolved.formattedAddress || prev.location.address,
+        pincode: resolved.pincode || prev.location.pincode,
+        latitude: resolved.latitude ? formatCoordinate(resolved.latitude) : prev.location.latitude,
+        longitude: resolved.longitude ? formatCoordinate(resolved.longitude) : prev.location.longitude,
+        geoSource: 'geoapify',
+      },
+    }));
+  };
 
   const handleSaveDraft = async () => {
     if (!form.title.trim()) {
@@ -229,19 +318,14 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
         price: form.price ? Number(form.price) : 0,
         maintenance: form.maintenance ? Number(form.maintenance) : undefined,
         bookingAmount: form.bookingAmount ? Number(form.bookingAmount) : undefined,
-        location: {
-          city: form.location.city.trim() || 'Lucknow',
-          locality: form.location.locality.trim() || '',
-          address: form.location.address.trim() || '',
-          pincode: form.location.pincode.trim() || '',
-          landmark: form.location.landmark.trim() || '',
-        },
+        location: buildLocationPayload(form.location),
         specs: {
           bedrooms: form.specs.bedrooms ? Number(form.specs.bedrooms) : undefined,
           bathrooms: form.specs.bathrooms ? Number(form.specs.bathrooms) : undefined,
           balconies: form.specs.balconies ? Number(form.specs.balconies) : undefined,
           carpetArea: form.specs.carpetArea ? Number(form.specs.carpetArea) : undefined,
           builtUpArea: form.specs.builtUpArea ? Number(form.specs.builtUpArea) : undefined,
+          plotArea: form.specs.plotArea ? Number(form.specs.plotArea) : undefined,
           areaUnit: form.specs.areaUnit,
           floorNo: form.specs.floorNo ? Number(form.specs.floorNo) : undefined,
           totalFloors: form.specs.totalFloors ? Number(form.specs.totalFloors) : undefined,
@@ -435,19 +519,14 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
         price: Number(form.price),
         maintenance: form.maintenance ? Number(form.maintenance) : undefined,
         bookingAmount: form.bookingAmount ? Number(form.bookingAmount) : undefined,
-        location: {
-          city: form.location.city.trim(),
-          locality: form.location.locality.trim(),
-          address: form.location.address.trim(),
-          pincode: form.location.pincode.trim(),
-          landmark: form.location.landmark.trim(),
-        },
+        location: buildLocationPayload(form.location),
         specs: {
           bedrooms: form.specs.bedrooms ? Number(form.specs.bedrooms) : undefined,
           bathrooms: form.specs.bathrooms ? Number(form.specs.bathrooms) : undefined,
           balconies: form.specs.balconies ? Number(form.specs.balconies) : undefined,
           carpetArea: form.specs.carpetArea ? Number(form.specs.carpetArea) : undefined,
           builtUpArea: form.specs.builtUpArea ? Number(form.specs.builtUpArea) : undefined,
+          plotArea: form.specs.plotArea ? Number(form.specs.plotArea) : undefined,
           areaUnit: form.specs.areaUnit,
           floorNo: form.specs.floorNo ? Number(form.specs.floorNo) : undefined,
           totalFloors: form.specs.totalFloors ? Number(form.specs.totalFloors) : undefined,
@@ -563,6 +642,34 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
           <option value="Yes">Yes</option>
         </select>
       </div>
+      <div className="md:col-span-3 grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block">Plot Area</label>
+          <input
+            type="number"
+            name="plotArea"
+            value={form.specs.plotArea}
+            onChange={(e) => handleInputChange(e, 'specs')}
+            className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]"
+            placeholder="e.g. 2150"
+          />
+        </div>
+        <div>
+          <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block">Area Unit</label>
+          <select
+            name="areaUnit"
+            value={form.specs.areaUnit}
+            onChange={(e) => handleInputChange(e, 'specs')}
+            className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]"
+          >
+            {AREA_UNIT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </>
   );
 
@@ -611,6 +718,34 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
           <input type="date" name="availableFrom" value={form.specs.availableFrom} onChange={(e) => handleInputChange(e, 'specs')} className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]" />
         </div>
       )}
+      <div className="md:col-span-3 grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block">Carpet Area</label>
+          <input
+            type="number"
+            name="carpetArea"
+            value={form.specs.carpetArea}
+            onChange={(e) => handleInputChange(e, 'specs')}
+            className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]"
+            placeholder="e.g. 1250"
+          />
+        </div>
+        <div>
+          <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block">Area Unit</label>
+          <select
+            name="areaUnit"
+            value={form.specs.areaUnit}
+            onChange={(e) => handleInputChange(e, 'specs')}
+            className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]"
+          >
+            {AREA_UNIT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
     </>
   );
 
@@ -739,11 +874,33 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
           </div>
           <div>
             <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block capitalize">Locality <span className="text-red-500">*</span></label>
-            <input type="text" name="locality" value={form.location.locality} onChange={(event) => handleInputChange(event, 'location')} className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]" required />
+            <LucknowLocationAutocomplete
+              value={locationQuery}
+              onChange={handleLocationQueryChange}
+              onSelect={handleLucknowLocationSelect}
+              showDetectButton
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block capitalize">Area / Zone</label>
+            <input type="text" name="area" value={form.location.area} onChange={(event) => handleInputChange(event, 'location')} className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]" />
+          </div>
+          <div>
+            <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block capitalize">Sector / Block</label>
+            <input type="text" name="sector" value={form.location.sector} onChange={(event) => handleInputChange(event, 'location')} className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]" placeholder="e.g. Sector 5, Block D" />
+          </div>
+          <div>
+            <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block capitalize">Sub-block / Colony</label>
+            <input type="text" name="block" value={form.location.block} onChange={(event) => handleInputChange(event, 'location')} className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]" placeholder="e.g. Awadh Vihar, Pocket 2" />
           </div>
           <div>
             <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block capitalize">Address</label>
             <input type="text" name="address" value={form.location.address} onChange={(event) => handleInputChange(event, 'location')} className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]" />
+          </div>
+          <div>
+            <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block capitalize">Primary Road</label>
+            <input type="text" name="road" value={form.location.road} onChange={(event) => handleInputChange(event, 'location')} className="w-full rounded-2xl border border-[#e5e7eb] bg-white px-4 py-3 outline-none focus:border-[#eb6239]" placeholder="e.g. Shaheed Path" />
           </div>
           <div>
             <label className="font-semibold text-sm text-[#1f2a2e] mb-2 block capitalize">Pincode</label>
@@ -976,6 +1133,7 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
             setTags([]);
             setHighlights(['']);
             setPhotos(createEmptyPhotoState());
+            setLocationQuery(defaultLocationQuery);
           }}
           className="rounded-full border border-[#e5e7eb] px-6 py-3 font-semibold text-[#1f2a2e]"
         >
