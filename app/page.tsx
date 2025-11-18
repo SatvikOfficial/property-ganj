@@ -689,44 +689,60 @@ export default function HomePage() {
             <div className="border-2 border-primary rounded-lg p-6">
               <h3 className="text-xl font-bold text-foreground mb-4">Property Ganj Insights</h3>
               <ul className="space-y-3">
-                {industryInsights.map((insight) => (
-                  <li
-                    key={insight.id}
-                    className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors"
-                  >
-                    <span className="text-primary text-xl">●</span>
-                    <span className="text-muted-foreground text-sm">{insight.title}</span>
-                  </li>
-                ))}
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/1" className="text-muted-foreground text-sm">Understanding Circle Rates in Lucknow</Link>
+                </li>
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/2" className="text-muted-foreground text-sm">Vastu Shastra for a Happy Home</Link>
+                </li>
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/3" className="text-muted-foreground text-sm">What is Stamp Duty and How is it Calculated?</Link>
+                </li>
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/4" className="text-muted-foreground text-sm">Lucknow's Metro Network: A Homebuyer's Guide</Link>
+                </li>
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/5" className="text-muted-foreground text-sm">LDA vs. RERA: What You Need to Know</Link>
+                </li>
               </ul>
-              <Link href="/about" className="text-primary font-semibold text-sm mt-6 inline-block hover:underline active:opacity-70 touch-manipulation">
+              <Link href="/blog" className="text-primary font-semibold text-sm mt-6 inline-block hover:underline active:opacity-70 touch-manipulation">
                 See all →
               </Link>
             </div>
 
-            {/* Legal Updates */}
+            {/* Loan & Finance */}
             <div className="border-2 border-primary rounded-lg p-6">
-              <h3 className="text-xl font-bold text-foreground mb-4">Legal Guidance</h3>
-              <div className="space-y-4">
-                {legalUpdates.map((update) => (
-                  <div key={update.id} className="flex items-start gap-4 pb-4 border-b border-border last:border-0">
-                    <img
-                      src={update.image || "/placeholder.svg"}
-                      alt={update.title}
-                      className="w-16 h-16 rounded object-cover"
-                    />
-                    <div>
-                      <p className="font-semibold text-foreground text-sm mb-2">{update.title}</p>
-                      <a href="#" className="text-primary text-sm font-semibold hover:underline">
-                        {update.type} →
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <a href="#" className="text-primary font-semibold text-sm mt-4 inline-block hover:underline">
+              <h3 className="text-xl font-bold text-foreground mb-4">Loan & Finance</h3>
+              <ul className="space-y-3">
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/1" className="text-muted-foreground text-sm">Home Loan Eligibility: How to Check Your Qualification</Link>
+                </li>
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/2" className="text-muted-foreground text-sm">Interest Rates and EMI Calculations: A Complete Guide</Link>
+                </li>
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/3" className="text-muted-foreground text-sm">Top Banks for Home Loans in Lucknow: Compare Interest Rates</Link>
+                </li>
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/4" className="text-muted-foreground text-sm">Home Loan Documents: Complete Checklist for Property Buyers</Link>
+                </li>
+                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
+                  <span className="text-primary text-xl">●</span>
+                  <Link href="/blog/5" className="text-muted-foreground text-sm">Pre-EMI vs Full EMI: Which Option is Right for You?</Link>
+                </li>
+              </ul>
+              <Link href="/loan-finance" className="text-primary font-semibold text-sm mt-6 inline-block hover:underline">
                 See all →
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -805,6 +821,7 @@ export default function HomePage() {
               <li><Link href="/" className="text-primary-foreground/80 hover:text-white text-sm">Home</Link></li>
               <li><Link href="/search" className="text-primary-foreground/80 hover:text-white text-sm">Search</Link></li>
               <li><Link href="/list-property" className="text-primary-foreground/80 hover:text-white text-sm">List Property</Link></li>
+              <li><Link href="/blog" className="text-primary-foreground/80 hover:text-white text-sm">Property Insights</Link></li>
               <li><Link href="/about" className="text-primary-foreground/80 hover:text-white text-sm">About Us</Link></li>
             </ul>
           </div>

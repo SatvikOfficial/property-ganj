@@ -219,6 +219,33 @@ export default function Header() {
               }
             ]}
           />
+          <StyledDropdown
+            title="Blogs"
+            sections={[
+              {
+                title: "Property Ganj Insights",
+                items: [
+                  { href: "/blog/1", label: "Understanding Circle Rates" },
+                  { href: "/blog/2", label: "Vastu Shastra Guidelines" },
+                  { href: "/blog/3", label: "Stamp Duty & Registration" },
+                  { href: "/blog/4", label: "Metro Network Impact" },
+                  { href: "/blog/5", label: "LDA vs RERA" },
+                  { href: "/blog/6", label: "Top Investment Areas" }
+                ]
+              },
+              {
+                title: "Loan & Finance",
+                items: [
+                  { href: "/blog/1", label: "Home Loan Eligibility" },
+                  { href: "/blog/2", label: "Interest Rates & EMI" },
+                  { href: "/blog/3", label: "Top Banks for Home Loans" },
+                  { href: "/blog/4", label: "Home Loan Documents" },
+                  { href: "/blog/5", label: "Pre-EMI vs Full EMI" },
+                  { href: "/blog/6", label: "Tax Benefits on Home Loans" }
+                ]
+              }
+            ]}
+          />
           <button className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors">
             Home Loans <ChevronDown className="w-4 h-4" />
           </button>
@@ -289,6 +316,33 @@ export default function Header() {
                     label: "Post Property FREE" 
                   },
                   { href: "#", label: "My Dashboard" },
+                ]
+              }
+            ]}
+          />
+          <StyledDropdown
+            title="Blogs"
+            sections={[
+              {
+                title: "Property Ganj Insights",
+                items: [
+                  { href: "/blog/1", label: "Understanding Circle Rates" },
+                  { href: "/blog/2", label: "Vastu Shastra Guidelines" },
+                  { href: "/blog/3", label: "Stamp Duty & Registration" },
+                  { href: "/blog/4", label: "Metro Network Impact" },
+                  { href: "/blog/5", label: "LDA vs RERA" },
+                  { href: "/blog/6", label: "Top Investment Areas" }
+                ]
+              },
+              {
+                title: "Loan & Finance",
+                items: [
+                  { href: "/blog/1", label: "Home Loan Eligibility" },
+                  { href: "/blog/2", label: "Interest Rates & EMI" },
+                  { href: "/blog/3", label: "Top Banks for Home Loans" },
+                  { href: "/blog/4", label: "Home Loan Documents" },
+                  { href: "/blog/5", label: "Pre-EMI vs Full EMI" },
+                  { href: "/blog/6", label: "Tax Benefits on Home Loans" }
                 ]
               }
             ]}
