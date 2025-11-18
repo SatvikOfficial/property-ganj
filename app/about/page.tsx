@@ -1,3 +1,5 @@
+"use client";
+
 import Header from '@/components/header';
 import Link from 'next/link';
 import { Building2, Search, Users, Shield, TrendingUp, Heart, MapPin, Phone, Mail } from 'lucide-react';
@@ -194,6 +196,74 @@ export default function AboutPage() {
                 </li>
               </ul>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Blog Insights Section */}
+      <section className="bg-accent/20 py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Property Ganj Insights</h2>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
+              Stay updated with our latest articles on property trends, investment tips, and market analysis in Lucknow
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            <Link href="/blog/1" className="block group">
+              <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="h-40 bg-gradient-to-r from-primary to-accent"></div>
+                <div className="p-6">
+                  <h3 className="font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">Understanding Circle Rates in Lucknow: A Complete Guide</h3>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 group-hover:text-foreground transition-colors">Learn how circle rates affect property prices in Lucknow and how they impact your property investment decisions.</p>
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>Nov 15, 2025</span>
+                    <span>5 min read</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/blog/3" className="block group">
+              <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="h-40 bg-gradient-to-r from-secondary to-accent"></div>
+                <div className="p-6">
+                  <h3 className="font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">Stamp Duty and Registration Charges in Lucknow: What You Need to Know</h3>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 group-hover:text-foreground transition-colors">Complete guide to stamp duty and registration charges for property transactions in Lucknow.</p>
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>Nov 10, 2025</span>
+                    <span>6 min read</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/blog/6" className="block group">
+              <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="h-40 bg-gradient-to-r from-accent to-primary"></div>
+                <div className="p-6">
+                  <h3 className="font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">Top Localities for Property Investment in Lucknow 2025</h3>
+                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 group-hover:text-foreground transition-colors">Explore the best localities in Lucknow for real estate investment this year.</p>
+                  <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    <span>Nov 2, 2025</span>
+                    <span>8 min read</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          <div className="text-center mt-8">
+            <Link
+              href="/blog"
+              className="inline-flex items-center gap-2 text-primary font-semibold hover:underline"
+            >
+              View All Articles
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
         </div>
       </section>
