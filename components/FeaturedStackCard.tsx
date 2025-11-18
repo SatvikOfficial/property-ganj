@@ -49,8 +49,8 @@ const Card: React.FC<FeaturedStackCardProps> = ({ project }) => {
 
 const StyledWrapper = styled.div`
   .card {
-    width: 380px;
-    height: 450px;
+    width: 220px;
+    height: 280px;
     background: #07182E;
     position: relative;
     display: flex;
@@ -58,18 +58,33 @@ const StyledWrapper = styled.div`
     place-content: center;
     place-items: center;
     overflow: hidden;
-    border-radius: 20px;
-    padding: 12px;
+    border-radius: 16px;
+    padding: 8px;
+  }
+
+  @media (min-width: 768px) {
+    .card {
+      width: 380px;
+      height: 450px;
+      border-radius: 20px;
+      padding: 12px;
+    }
   }
 
   .card::before {
     content: '';
     position: absolute;
-    width: 100px;
+    width: 70px;
     background-image: linear-gradient(180deg, oklch(0.659 0.18 36.25), oklch(0.671 0.11 228.44));
     height: 130%;
     animation: rotBGimg 3s linear infinite;
     transition: all 0.2s linear;
+  }
+
+  @media (min-width: 768px) {
+    .card::before {
+      width: 100px;
+    }
   }
 
   @keyframes rotBGimg {
@@ -85,9 +100,16 @@ const StyledWrapper = styled.div`
     content: '';
     position: absolute;
     background: #FFF;
-    inset: 3px;
-    border-radius: 15px;
+    inset: 2px;
+    border-radius: 12px;
     z-index: 0;
+  }
+
+  @media (min-width: 768px) {
+    .card::after {
+      inset: 3px;
+      border-radius: 15px;
+    }
   }
 
   .card:hover:before {
@@ -99,9 +121,18 @@ const StyledWrapper = styled.div`
     position: relative;
     width: 100%;
     overflow: hidden;
-    border-radius: 8px;
-    margin-bottom: 8px;
+    border-radius: 6px;
+    margin-bottom: 6px;
     z-index: 1;
+    height: 130px;
+  }
+
+  @media (min-width: 768px) {
+    .image-section {
+      border-radius: 8px;
+      margin-bottom: 8px;
+      height: 200px;
+    }
   }
 
   .content-section {
