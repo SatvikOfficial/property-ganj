@@ -1,30 +1,8 @@
-import { cookies } from 'next/headers';
-
 import Header from '@/components/header';
 import ListPropertyForm from '@/components/listing/ListPropertyForm';
-import connectDB from '@/lib/db';
-import { verifyAuthToken } from '@/lib/auth';
-import User from '@/models/User';
 
 export default async function ListPropertyPage() {
-  await connectDB();
-
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-  const payload = verifyAuthToken(token);
-
-  // Get user data if authenticated
-  let userData = null;
-  if (payload) {
-    const user = await User.findById(payload.userId).select('name phone email');
-    if (user) {
-      userData = {
-        name: user.name,
-        phone: user.phone,
-        email: user.email,
-      };
-    }
-  }
+  const userData = null;
 
   return (
     <main className="min-h-screen">

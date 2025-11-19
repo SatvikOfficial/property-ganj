@@ -15,7 +15,16 @@ import FileUploadButton from '@/components/FileUploadButton';
 import LucknowLocationAutocomplete, { ResolvedLucknowLocation } from '@/components/location/LucknowLocationAutocomplete';
 import { useToast } from '@/hooks/use-toast';
 import { normalizeYouTubeUrl } from '@/lib/utils';
-import type { PhotoCategory } from '@/models/Property';
+type PhotoCategory =
+  | 'siteView'
+  | 'exterior'
+  | 'commonArea'
+  | 'livingRoom'
+  | 'bedrooms'
+  | 'bathrooms'
+  | 'kitchen'
+  | 'floorPlan'
+  | 'other';
 
 type UserProfile = {
   name: string;
@@ -300,98 +309,7 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
     }));
   };
 
-  const handleSaveDraft = async () => {
-    if (!form.title.trim()) {
-      toast({
-        title: 'Title required',
-        description: 'Give your property a catchy name to save as draft.',
-        variant: 'destructive',
-      });
-      return;
-    }
 
-    setIsSavingDraft(true);
-
-    try {
-      const payload = {
-        title: form.title.trim(),
-        description: form.description.trim() || '',
-        purpose: form.purpose,
-        propertyType: form.propertyType,
-        ownerType: form.ownerType,
-        price: form.price ? Number(form.price) : 0,
-        maintenance: form.maintenance ? Number(form.maintenance) : undefined,
-        bookingAmount: form.bookingAmount ? Number(form.bookingAmount) : undefined,
-        location: buildLocationPayload(form.location),
-        specs: {
-          bedrooms: form.specs.bedrooms ? Number(form.specs.bedrooms) : undefined,
-          bathrooms: form.specs.bathrooms ? Number(form.specs.bathrooms) : undefined,
-          balconies: form.specs.balconies ? Number(form.specs.balconies) : undefined,
-          carpetArea: form.specs.carpetArea ? Number(form.specs.carpetArea) : undefined,
-          builtUpArea: form.specs.builtUpArea ? Number(form.specs.builtUpArea) : undefined,
-          plotArea: form.specs.plotArea ? Number(form.specs.plotArea) : undefined,
-          areaUnit: form.specs.areaUnit,
-          floorNo: form.specs.floorNo ? Number(form.specs.floorNo) : undefined,
-          totalFloors: form.specs.totalFloors ? Number(form.specs.totalFloors) : undefined,
-          furnishing: form.specs.furnishing,
-          age: form.specs.age,
-          facing: form.specs.facing,
-          parking: form.specs.parking ? Number(form.specs.parking) : undefined,
-          noOfOpenSides: form.specs.noOfOpenSides ? Number(form.specs.noOfOpenSides) : undefined,
-          widthOfRoadFacing: form.specs.widthOfRoadFacing ? Number(form.specs.widthOfRoadFacing) : undefined,
-          anyConstructionDone: form.specs.anyConstructionDone === 'Yes',
-          boundaryWallMade: form.specs.boundaryWallMade === 'Yes',
-          isInGatedColony: form.specs.isInGatedColony === 'Yes',
-          isCornerPlot: form.specs.isCornerPlot === 'Yes',
-          furnishedStatus: form.specs.furnishedStatus,
-          floorsAllowedForConstruction: form.specs.floorsAllowedForConstruction ? Number(form.specs.floorsAllowedForConstruction) : undefined,
-          possessionStatus: form.specs.possessionStatus,
-          availableFrom: form.specs.availableFrom ? new Date(form.specs.availableFrom) : undefined,
-        },
-        amenities,
-        tags,
-        contact: {
-          name: contact.name.trim(),
-          phone: contact.phone.trim(),
-          email: contact.email.trim() || undefined,
-        },
-        media: {
-          photos: Object.values(photos).flat(),
-          videoUrl: normalizeYouTubeUrl(form.videoUrl.trim()),
-        },
-        highlights: highlights.filter((item) => item.trim().length > 0),
-        status: 'draft',
-      };
-
-      const response = await fetch('/api/properties', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to save draft');
-      }
-
-      toast({
-        title: 'Draft saved',
-        description: 'Your property has been saved as draft.',
-      });
-
-      router.push('/profile/my-ads');
-      router.refresh();
-    } catch (error) {
-      toast({
-        title: 'Unable to save draft',
-        description: error instanceof Error ? error.message : 'Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSavingDraft(false);
-    }
-  };
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
@@ -426,28 +344,17 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
     setUploadingCategory(category);
     try {
       for (const file of Array.from(files)) {
-        const body = new FormData();
-        body.append('file', file);
-        body.append('category', category);
-
-        const response = await fetch('/api/uploads/photos', {
-          method: 'POST',
-          body,
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to upload image');
-        }
+        // Simulate upload by creating a temporary URL for the file
+        const tempUrl = URL.createObjectURL(file);
 
         setPhotos((prev) => ({
           ...prev,
           [category]: [
             ...prev[category],
             {
-              url: data.url,
-              publicId: data.publicId,
-              provider: data.provider,
+              url: tempUrl,
+              publicId: 'placeholder', // Placeholder publicId
+              provider: 'local', // Placeholder provider
               category,
             },
           ],
@@ -513,117 +420,28 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
 
     // Check if user is logged in
     if (!user) {
-      // Show toast prompting user to login
       toast({
-        title: "Login Required",
-        description: "You need to login or register to post your property listing. Saving your form data...",
+        title: "Feature Not Available",
+        description: "This feature requires a backend. Please try again later.",
+        variant: "destructive",
       });
-
-      // Save form data to localStorage
-      try {
-        const formDataToSave = {
-          form,
-          contact,
-          amenities,
-          tags,
-          highlights,
-          photos
-        };
-        localStorage.setItem('propertyFormData', JSON.stringify(formDataToSave));
-      } catch (error) {
-        console.error('Error saving form data:', error);
-        toast({
-          title: "Save Failed",
-          description: "Could not save your form data. Please complete it again after login.",
-          variant: "destructive",
-        });
-      }
-
-      // Redirect to login after a delay to let the user see the toast
-      setTimeout(() => {
-        router.push('/auth');
-      }, 3000); // 3 seconds delay
+      setIsSubmitting(false);
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const payload = {
-        title: form.title.trim(),
-        description: form.description.trim(),
-        purpose: form.purpose,
-        propertyType: form.propertyType,
-        ownerType: form.ownerType,
-        price: Number(form.price),
-        maintenance: form.maintenance ? Number(form.maintenance) : undefined,
-        bookingAmount: form.bookingAmount ? Number(form.bookingAmount) : undefined,
-        location: buildLocationPayload(form.location),
-        specs: {
-          bedrooms: form.specs.bedrooms ? Number(form.specs.bedrooms) : undefined,
-          bathrooms: form.specs.bathrooms ? Number(form.specs.bathrooms) : undefined,
-          balconies: form.specs.balconies ? Number(form.specs.balconies) : undefined,
-          carpetArea: form.specs.carpetArea ? Number(form.specs.carpetArea) : undefined,
-          builtUpArea: form.specs.builtUpArea ? Number(form.specs.builtUpArea) : undefined,
-          plotArea: form.specs.plotArea ? Number(form.specs.plotArea) : undefined,
-          areaUnit: form.specs.areaUnit,
-          floorNo: form.specs.floorNo ? Number(form.specs.floorNo) : undefined,
-          totalFloors: form.specs.totalFloors ? Number(form.specs.totalFloors) : undefined,
-          furnishing: form.specs.furnishing,
-          age: form.specs.age,
-          facing: form.specs.facing,
-          parking: form.specs.parking ? Number(form.specs.parking) : undefined,
-          // Plot specific
-          noOfOpenSides: form.specs.noOfOpenSides ? Number(form.specs.noOfOpenSides) : undefined,
-          widthOfRoadFacing: form.specs.widthOfRoadFacing ? Number(form.specs.widthOfRoadFacing) : undefined,
-          anyConstructionDone: form.specs.anyConstructionDone === 'Yes',
-          boundaryWallMade: form.specs.boundaryWallMade === 'Yes',
-          isInGatedColony: form.specs.isInGatedColony === 'Yes',
-          isCornerPlot: form.specs.isCornerPlot === 'Yes',
-          // Residential specific
-          furnishedStatus: form.specs.furnishedStatus,
-          floorsAllowedForConstruction: form.specs.floorsAllowedForConstruction ? Number(form.specs.floorsAllowedForConstruction) : undefined,
-          possessionStatus: form.specs.possessionStatus,
-          availableFrom: form.specs.availableFrom ? new Date(form.specs.availableFrom) : undefined,
-        },
-        amenities,
-        tags,
-        contact: {
-          name: contact.name.trim(),
-          phone: contact.phone.trim(),
-          email: contact.email.trim() || undefined,
-        },
-        media: {
-          photos: Object.values(photos).flat(),
-          videoUrl: normalizeYouTubeUrl(form.videoUrl.trim()),
-        },
-        highlights: highlights.filter((item) => item.trim().length > 0),
-      };
-
-      const response = await fetch('/api/properties', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to post property');
-      }
+      // Simulate API call success
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
 
       toast({
         title: 'Listing published',
-        description: 'Your property is live now.',
+        description: 'Your property is live now (frontend simulation).',
       });
 
-      // Redirect to property detail page
-      const propertyId = data.property._id || data.property.id;
-      if (propertyId) {
-        router.push(`/property/${propertyId}`);
-      } else {
-        router.push('/profile/my-ads');
-      }
+      // Redirect to a placeholder page or home
+      router.push('/');
       router.refresh();
     } catch (error) {
       toast({

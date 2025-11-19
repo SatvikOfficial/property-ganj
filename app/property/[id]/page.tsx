@@ -1,84 +1,90 @@
-import { notFound } from 'next/navigation';
-import { cookies } from 'next/headers';
-
 import Header from '@/components/header';
-import connectDB from '@/lib/db';
-import Property from '@/models/Property';
-import User from '@/models/User';
 import { PropertyDetailClient } from '@/components/property/PropertyDetailClient';
-import { verifyAuthToken } from '@/lib/auth';
 
-export default async function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  await connectDB();
+export default async function PropertyDetailPage({ params }: { params: Promise<{ id:string }> }) {
   const { id } = await params;
 
-  const propertyDoc = await Property.findById(id).lean();
-
-  if (!propertyDoc) {
-    notFound();
-  }
-
-  const similarDocs = await Property.find({
-    _id: { $ne: propertyDoc._id },
-    purpose: propertyDoc.purpose,
-    propertyType: propertyDoc.propertyType,
-    status: 'published',
-  })
-    .limit(4)
-    .lean();
-
+  // Placeholder data
   const property = {
-    id: propertyDoc._id.toString(),
-    title: propertyDoc.title,
-    description: propertyDoc.description,
-    price: propertyDoc.price,
-    currency: propertyDoc.currency,
-    purpose: propertyDoc.purpose,
-    propertyType: propertyDoc.propertyType,
+    id: id,
+    title: 'Spacious 3BHK Apartment in the Heart of the City',
+    description:
+      'A beautiful and spacious 3BHK apartment located in a prime location. This property is perfect for families looking for a comfortable and modern living space. The apartment is well-ventilated and receives ample natural light. It is situated in a friendly neighborhood with easy access to schools, hospitals, and shopping centers.',
+    price: 7500000,
+    currency: 'INR',
+    purpose: 'sell',
+    propertyType: 'apartment',
     location: {
-      city: propertyDoc.location?.city,
-      locality: propertyDoc.location?.locality,
-      area: propertyDoc.location?.area,
-      sector: propertyDoc.location?.sector,
-      block: propertyDoc.location?.block,
-      road: propertyDoc.location?.road,
-      address: propertyDoc.location?.address,
-      landmark: propertyDoc.location?.landmark,
-      pincode: propertyDoc.location?.pincode,
-      latitude: propertyDoc.location?.latitude,
-      longitude: propertyDoc.location?.longitude,
+      city: 'Lucknow',
+      locality: 'Hazratganj',
+      area: '1800 sqft',
+      address: '123, MG Marg, Hazratganj, Lucknow, Uttar Pradesh 226001',
     },
-    specs: propertyDoc.specs || {},
-    amenities: propertyDoc.amenities || [],
-    highlights: propertyDoc.highlights || [],
+    specs: {
+      bedrooms: 3,
+      bathrooms: 3,
+      balconies: 2,
+      carpetArea: '1800',
+      areaUnit: 'sqft',
+    },
+    amenities: ['Lift', 'Power Backup', 'Security', 'Parking', 'Gymnasium'],
+    highlights: [
+      'Prime location',
+      'Modern architecture',
+      'Close to metro station',
+      '24/7 water supply',
+    ],
     media: {
-      photos: propertyDoc.media?.photos || [],
-      videoUrl: propertyDoc.media?.videoUrl,
+      photos: [
+        { url: '/3bhk-apartment-interior.jpg' },
+        { url: '/3bhk-apartment.jpg' },
+        { url: '/3bhk-flat-staircase.jpg' },
+      ],
+      videoUrl: '',
     },
-    contact: propertyDoc.contact,
+    contact: {
+      name: 'Satvik Mudgal',
+      phone: '+91-9876543210',
+      email: 'satvik.mudgal@example.com',
+    },
   };
 
-  const similar = similarDocs.map((item) => ({
-    id: item._id.toString(),
-    title: item.title,
-    location: [item.location?.locality, item.location?.city].filter(Boolean).join(', '),
-    price: item.price,
-    area: item.specs?.carpetArea
-      ? `${item.specs.carpetArea} ${item.specs?.areaUnit || 'sqft'}`
-      : undefined,
-    image: item.media?.photos?.[0]?.url,
-  }));
+  const similar = [
+    {
+      id: '1',
+      title: '2BHK Flat for Sale',
+      location: 'Indiranagar, Lucknow',
+      price: 5000000,
+      area: '1200 sqft',
+      image: '/2bhk-flat.jpg',
+    },
+    {
+      id: '2',
+      title: 'Luxury Villa in Gomti Nagar',
+      location: 'Gomti Nagar, Lucknow',
+      price: 15000000,
+      area: '3000 sqft',
+      image: '/modern-villa-exterior.png',
+    },
+    {
+      id: '3',
+      title: '4BHK Penthouse with City View',
+      location: 'Hazratganj, Lucknow',
+      price: 25000000,
+      area: '4000 sqft',
+      image: '/penthouse-city-view.png',
+    },
+    {
+      id: '4',
+      title: '1BHK Studio Apartment',
+      location: 'Aliganj, Lucknow',
+      price: 3000000,
+      area: '800 sqft',
+      image: '/studio-apartment-modern.jpg',
+    },
+  ];
 
-  const cookieStore = await cookies();
-  const token = cookieStore.get('token')?.value;
-  const payload = verifyAuthToken(token);
-  let isLiked = false;
-  if (payload) {
-    const user = await User.findById(payload.userId).lean();
-    if (user) {
-      isLiked = user.likedProperties.some((id) => id.toString() === property.id);
-    }
-  }
+  const isLiked = false;
 
   return (
     <main className="min-h-screen bg-background">
