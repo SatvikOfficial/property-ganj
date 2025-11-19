@@ -1,11 +1,27 @@
-"use client"
+'use client'
 
-import { Search, MapPin } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { Search, MapPin } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { EmiCalculator } from '@/components/property/EmiCalculator'
 
 export default function SearchFilters({ filters, setFilters }: any) {
+  const quickDefaultAmount = (() => {
+    switch (filters?.priceRange) {
+      case 'under50':
+        return 3500000
+      case '50to1cr':
+        return 7500000
+      case '1to2cr':
+        return 13000000
+      case 'above2cr':
+        return 21000000
+      default:
+        return filters?.budgetMax || filters?.budgetMin || 5000000
+    }
+  })()
+
   return (
-    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border">
+    <div className="bg-card rounded-2xl shadow-lg p-6 border border-border space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Location */}
         <div>
@@ -59,6 +75,12 @@ export default function SearchFilters({ filters, setFilters }: any) {
           </Button>
         </div>
       </div>
+
+      <EmiCalculator
+        defaultAmount={quickDefaultAmount}
+        heading="Know your EMI before you search"
+        variant="compact"
+      />
     </div>
   )
 }

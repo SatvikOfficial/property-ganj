@@ -9,6 +9,7 @@ import DynamicGreeting from "@/components/dynamic-greeting"
 import PropertyCarousel from "@/components/property-carousel"
 import FeaturedStackCard from "@/components/FeaturedStackCard"
 import LikeButton from "@/components/LikeButton"
+import { TOOL_DEFINITIONS } from "@/data/tools"
 
 export default function HomePage() {
   const [selectedTab, setSelectedTab] = useState("Buy")
@@ -19,7 +20,7 @@ export default function HomePage() {
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 })
   const [liveProperties, setLiveProperties] = useState<any[]>([])
   const [likedProperties, setLikedProperties] = useState<string[]>([])
-  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
+  const tabRefs = useRef<{ [key: string]: HTMLButtonElement | HTMLAnchorElement | null }>({})
 
   const propertyTabs = ["Buy", "Rent", "New Projects", "PG", "Plot", "Commercial"]
   const allTabs = [...propertyTabs, "Post Free Property Ad"]
@@ -520,6 +521,48 @@ export default function HomePage() {
                   <p className="text-sm text-muted-foreground">{property.status}</p>
                 </div>
               </Link>
+              )
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Tools Section */}
+      <section className="bg-background py-8 md:py-12 px-4">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">Tools</p>
+              <h2 className="text-2xl font-bold text-foreground">Plan your finances in minutes</h2>
+              <p className="text-sm text-muted-foreground max-w-2xl">
+                EMIs, mortgages, rental budgets or investment yields — pick the calculator that suits your journey.
+              </p>
+            </div>
+            <Link
+              href="/tools"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:opacity-80"
+            >
+              Explore all tools →
+            </Link>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {TOOL_DEFINITIONS.map((tool) => {
+              const Icon = tool.icon
+              return (
+                <Link
+                  key={tool.slug}
+                  href={tool.href}
+                  className="group border border-border rounded-2xl p-4 flex items-start gap-4 hover:border-primary hover:-translate-y-1 transition"
+                >
+                  <span className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/20 transition">
+                    <Icon className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <p className="text-xs uppercase text-muted-foreground">{tool.highlight}</p>
+                    <h3 className="text-lg font-semibold text-foreground">{tool.name}</h3>
+                    <p className="text-sm text-muted-foreground">{tool.description}</p>
+                  </div>
+                </Link>
               )
             })}
           </div>

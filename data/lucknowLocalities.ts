@@ -1,3 +1,14 @@
+export type LocalityInsight = {
+  averagePricePerSqft?: number;
+  ranking?: number;
+  safetyRating?: number;
+  nearbyAmenities?: string[];
+  pros?: string[];
+  cons?: string[];
+  priceTrend?: { year: number; price: number }[];
+  trendConfidence?: 'High' | 'Medium' | 'Low' | string;
+};
+
 export type PopularLucknowLocality = {
   label: string;
   locality: string;
@@ -10,6 +21,7 @@ export type PopularLucknowLocality = {
   latitude?: number;
   longitude?: number;
   aliases?: string[];
+  insights?: LocalityInsight;
 };
 
 export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
@@ -21,6 +33,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     latitude: 26.8537,
     longitude: 81.001,
     aliases: ['Gomti Nagar Phase 1', 'Gomtinagar'],
+    insights: {
+      averagePricePerSqft: 7800,
+      ranking: 1,
+      safetyRating: 4.6,
+      nearbyAmenities: ['Phoenix Palassio', 'International schools', 'Medanta Hospital'],
+      pros: ['Planned township with landscaped greens', 'Premium cafes & offices', 'Upcoming metro corridor'],
+      cons: ['Peak hour traffic near Patrakarpuram', 'Premium ticket sizes'],
+      priceTrend: [
+        { year: 2022, price: 7200 },
+        { year: 2023, price: 7600 },
+        { year: 2024, price: 7900 },
+        { year: 2025, price: 8200 },
+      ],
+      trendConfidence: 'High',
+    },
   },
   {
     label: 'Gomti Nagar Extension',
@@ -30,6 +57,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     latitude: 26.8154,
     longitude: 80.9956,
     aliases: ['Gomti Extension'],
+    insights: {
+      averagePricePerSqft: 6600,
+      ranking: 2,
+      safetyRating: 4.4,
+      nearbyAmenities: ['Ekana Stadium', 'IT parks', 'Upcoming metro'],
+      pros: ['Newer gated townships', 'Wider roads with better drainage', 'Close to Shaheed Path expressway'],
+      cons: ['Limited retail high-streets today', 'Construction dust in pockets'],
+      priceTrend: [
+        { year: 2022, price: 5900 },
+        { year: 2023, price: 6200 },
+        { year: 2024, price: 6550 },
+        { year: 2025, price: 6800 },
+      ],
+      trendConfidence: 'High',
+    },
   },
   {
     label: 'Vrindavan Yojna Sector 2',
@@ -40,6 +82,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     latitude: 26.7392,
     longitude: 81.0047,
     aliases: ['Vrindavan Yojana', 'Vrinda'],
+    insights: {
+      averagePricePerSqft: 5200,
+      ranking: 5,
+      safetyRating: 4,
+      nearbyAmenities: ['PGI Lucknow', 'Proposed metro line', 'International schools'],
+      pros: ['Affordable plotted developments', 'Good rental demand from PGI staff', 'Green belt around sectors'],
+      cons: ['Limited nightlife/retail', 'Road work ongoing in pockets'],
+      priceTrend: [
+        { year: 2022, price: 4700 },
+        { year: 2023, price: 4950 },
+        { year: 2024, price: 5150 },
+        { year: 2025, price: 5400 },
+      ],
+      trendConfidence: 'Medium',
+    },
   },
   {
     label: 'Shaheed Path',
@@ -50,6 +107,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     latitude: 26.7898,
     longitude: 81.0193,
     aliases: ['Amar Shaheed Path'],
+    insights: {
+      averagePricePerSqft: 6100,
+      ranking: 4,
+      safetyRating: 4.2,
+      nearbyAmenities: ['Ekana Stadium', 'Phoenix Palassio', 'IT City'],
+      pros: ['Expressway connectivity', 'Mix of villas & plotted townships', 'Close to Sushant Golf City'],
+      cons: ['Sound pollution along expressway', 'Sparse public transport late night'],
+      priceTrend: [
+        { year: 2022, price: 5600 },
+        { year: 2023, price: 5850 },
+        { year: 2024, price: 6050 },
+        { year: 2025, price: 6400 },
+      ],
+      trendConfidence: 'High',
+    },
   },
   {
     label: 'Indira Nagar Sector 11',
@@ -60,6 +132,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     latitude: 26.8754,
     longitude: 80.9961,
     aliases: ['Indiranagar'],
+    insights: {
+      averagePricePerSqft: 6400,
+      ranking: 3,
+      safetyRating: 4.3,
+      nearbyAmenities: ['Munshipulia Metro', 'BBD University', 'Kaleva Chauraha markets'],
+      pros: ['Established social infra', 'Great metro & bus access', 'Balanced ticket sizes'],
+      cons: ['Old drainage network in inner lanes', 'Street parking congestion'],
+      priceTrend: [
+        { year: 2022, price: 5900 },
+        { year: 2023, price: 6100 },
+        { year: 2024, price: 6350 },
+        { year: 2025, price: 6550 },
+      ],
+      trendConfidence: 'High',
+    },
   },
   {
     label: 'Aliganj Kapoorthala',
@@ -69,6 +156,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     latitude: 26.8805,
     longitude: 80.9463,
     aliases: ['Kapoorthala'],
+    insights: {
+      averagePricePerSqft: 6000,
+      ranking: 6,
+      safetyRating: 4.1,
+      nearbyAmenities: ['Trans Gomti offices', 'City Montessori School', 'Kapoorthala market'],
+      pros: ['Central location', 'High rental absorption', 'Leafy internal roads'],
+      cons: ['Older building stock', 'Parking crunch near market'],
+      priceTrend: [
+        { year: 2022, price: 5600 },
+        { year: 2023, price: 5750 },
+        { year: 2024, price: 5950 },
+        { year: 2025, price: 6150 },
+      ],
+      trendConfidence: 'Medium',
+    },
   },
   {
     label: 'Ashiyana Phase 1',
@@ -79,6 +181,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     latitude: 26.7938,
     longitude: 80.9317,
     aliases: ['Ashiana', 'Ashiyana', 'Aashiana'],
+    insights: {
+      averagePricePerSqft: 4800,
+      ranking: 8,
+      safetyRating: 3.9,
+      nearbyAmenities: ['Airport 15 mins', 'NCRTC terminal (planned)', 'Local markets'],
+      pros: ['Budget friendly apartments', 'Close to schools & banks', 'Steady rental yield'],
+      cons: ['Narrow internal roads', 'Older civic infrastructure'],
+      priceTrend: [
+        { year: 2022, price: 4400 },
+        { year: 2023, price: 4550 },
+        { year: 2024, price: 4700 },
+        { year: 2025, price: 4900 },
+      ],
+      trendConfidence: 'Medium',
+    },
   },
   {
     label: 'Ashiyana Colony Sector L',
@@ -89,6 +206,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     latitude: 26.7844,
     longitude: 80.9256,
     aliases: ['Ashiyana L'],
+    insights: {
+      averagePricePerSqft: 4650,
+      ranking: 9,
+      safetyRating: 3.8,
+      nearbyAmenities: ['Local markets', 'Schools', 'Airport road'],
+      pros: ['Calmer residential pockets', 'Parks & playgrounds', 'Value homes'],
+      cons: ['Limited premium retail', 'Traffic bottlenecks atEntry points'],
+      priceTrend: [
+        { year: 2022, price: 4200 },
+        { year: 2023, price: 4400 },
+        { year: 2024, price: 4600 },
+        { year: 2025, price: 4750 },
+      ],
+      trendConfidence: 'Medium',
+    },
   },
   {
     label: 'Alambagh',
@@ -97,6 +229,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     pincode: '226005',
     latitude: 26.7947,
     longitude: 80.9145,
+    insights: {
+      averagePricePerSqft: 5200,
+      ranking: 7,
+      safetyRating: 3.9,
+      nearbyAmenities: ['Charbagh Station', 'Metro interchange', 'Wholesale markets'],
+      pros: ['Transport hub', 'High footfall retail', 'Affordable rentals'],
+      cons: ['Congested roads', 'Noise & air pollution'],
+      priceTrend: [
+        { year: 2022, price: 4800 },
+        { year: 2023, price: 5000 },
+        { year: 2024, price: 5150 },
+        { year: 2025, price: 5300 },
+      ],
+      trendConfidence: 'Medium',
+    },
   },
   {
     label: 'Hazratganj',
@@ -105,6 +252,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     pincode: '226001',
     latitude: 26.852,
     longitude: 80.9462,
+    insights: {
+      averagePricePerSqft: 9300,
+      ranking: 1,
+      safetyRating: 4.7,
+      nearbyAmenities: ['High court', 'Premium retail', 'Metro station'],
+      pros: ['Heritage high street', 'Excellent social infra', 'Prime office catchment'],
+      cons: ['Limited new supply', 'Parking extremely limited'],
+      priceTrend: [
+        { year: 2022, price: 8800 },
+        { year: 2023, price: 9100 },
+        { year: 2024, price: 9350 },
+        { year: 2025, price: 9600 },
+      ],
+      trendConfidence: 'High',
+    },
   },
   {
     label: 'Chinhat',
@@ -113,6 +275,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     pincode: '226028',
     latitude: 26.869,
     longitude: 81.0544,
+    insights: {
+      averagePricePerSqft: 4800,
+      ranking: 10,
+      safetyRating: 3.7,
+      nearbyAmenities: ['Faizabad Road', 'Corporate campuses', 'New malls coming up'],
+      pros: ['Future IT corridor', 'Plot options at entry prices', 'Near outer ring road'],
+      cons: ['Infrastructure catching up', 'Water logging in low-lying lanes'],
+      priceTrend: [
+        { year: 2022, price: 4300 },
+        { year: 2023, price: 4500 },
+        { year: 2024, price: 4700 },
+        { year: 2025, price: 4900 },
+      ],
+      trendConfidence: 'Medium',
+    },
   },
   {
     label: 'Jankipuram Sector G',
@@ -122,6 +299,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     pincode: '226021',
     latitude: 26.926,
     longitude: 80.9486,
+    insights: {
+      averagePricePerSqft: 4500,
+      ranking: 11,
+      safetyRating: 3.8,
+      nearbyAmenities: ['Engineering colleges', 'Sitapur Road connectivity', 'Metro (planned phase 2)'],
+      pros: ['Budget apartments & plots', 'Student housing demand', 'Green pockets'],
+      cons: ['Limited premium retail', 'Long commute to CBD'],
+      priceTrend: [
+        { year: 2022, price: 4100 },
+        { year: 2023, price: 4250 },
+        { year: 2024, price: 4400 },
+        { year: 2025, price: 4600 },
+      ],
+      trendConfidence: 'Medium',
+    },
   },
   {
     label: 'Rajajipuram',
@@ -130,6 +322,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     pincode: '226017',
     latitude: 26.857,
     longitude: 80.8905,
+    insights: {
+      averagePricePerSqft: 4300,
+      ranking: 12,
+      safetyRating: 3.6,
+      nearbyAmenities: ['Lucknow University (second campus)', 'Flyover to Alambagh', 'Local markets'],
+      pros: ['Dense social infra', 'Affordable resale inventory', 'Close to Cantt & Alambagh'],
+      cons: ['Narrow roads', 'Aging civic services'],
+      priceTrend: [
+        { year: 2022, price: 3900 },
+        { year: 2023, price: 4050 },
+        { year: 2024, price: 4200 },
+        { year: 2025, price: 4400 },
+      ],
+      trendConfidence: 'Medium',
+    },
   },
   {
     label: 'Mahanagar',
@@ -138,6 +345,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     pincode: '226006',
     latitude: 26.8669,
     longitude: 80.943,
+    insights: {
+      averagePricePerSqft: 6700,
+      ranking: 4,
+      safetyRating: 4.2,
+      nearbyAmenities: ['Shopping plazas', 'Schools', 'Proximity to Kapoorthala'],
+      pros: ['Central & well connected', 'Strong retail & F&B mix', 'Wide tree-lined roads'],
+      cons: ['Limited new supply', 'Parking issues in Bhootnath area'],
+      priceTrend: [
+        { year: 2022, price: 6200 },
+        { year: 2023, price: 6400 },
+        { year: 2024, price: 6600 },
+        { year: 2025, price: 6850 },
+      ],
+      trendConfidence: 'High',
+    },
   },
   {
     label: 'Sushant Golf City',
@@ -146,6 +368,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     pincode: '226030',
     latitude: 26.75,
     longitude: 80.997,
+    insights: {
+      averagePricePerSqft: 7200,
+      ranking: 3,
+      safetyRating: 4.5,
+      nearbyAmenities: ['International school cluster', 'Medanta hospital', 'Ekana stadium'],
+      pros: ['Premium villa townships', 'Expansive greens & golf course', 'Proximity to IT City'],
+      cons: ['Limited public transport currently', 'Association charges on higher side'],
+      priceTrend: [
+        { year: 2022, price: 6600 },
+        { year: 2023, price: 6900 },
+        { year: 2024, price: 7100 },
+        { year: 2025, price: 7400 },
+      ],
+      trendConfidence: 'High',
+    },
   },
   {
     label: 'Arjunganj Cantonment',
@@ -163,6 +400,21 @@ export const POPULAR_LUCKNOW_LOCALITIES: PopularLucknowLocality[] = [
     pincode: '226002',
     latitude: 26.772,
     longitude: 80.9754,
+    insights: {
+      averagePricePerSqft: 4400,
+      ranking: 13,
+      safetyRating: 3.7,
+      nearbyAmenities: ['Army Cantonment', 'Airport Road', 'PGI Lucknow'],
+      pros: ['Close to defence establishments', 'Upcoming metro connectivity', 'Quiet residential lanes'],
+      cons: ['Limited malls/cafes', 'Water supply intermittent in summers'],
+      priceTrend: [
+        { year: 2022, price: 4000 },
+        { year: 2023, price: 4200 },
+        { year: 2024, price: 4350 },
+        { year: 2025, price: 4500 },
+      ],
+      trendConfidence: 'Medium',
+    },
   },
   {
     label: 'Husainabad',

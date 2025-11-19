@@ -1,11 +1,17 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Share2, MapPin, Youtube } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight, Share2, MapPin, Youtube, X, Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import LikeButton from '@/components/LikeButton';
+import { EmiCalculator } from '@/components/property/EmiCalculator';
+import { MortgageCalculator } from '@/components/property/MortgageCalculator';
+import { RentAffordabilityCalculator } from '@/components/property/RentAffordabilityCalculator';
+import { RentalYieldCalculator } from '@/components/property/RentalYieldCalculator';
+import { LocalityInsights } from '@/components/property/LocalityInsights';
+import { TOOL_DEFINITIONS } from '@/data/tools';
 
 type PropertyMedia = {
   url: string;
@@ -67,6 +73,7 @@ type SimilarProperty = {
   price: number;
   area?: string;
   image?: string;
+  locality?: string;
 };
 
 type PropertyDetailClientProps = {
@@ -84,10 +91,14 @@ const formatCurrency = (value: number, currency = 'INR') =>
 
 export function PropertyDetailClient({ property, similar, initialLiked }: PropertyDetailClientProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [smartSimilar, setSmartSimilar] = useState<SimilarProperty[]>([]);
+  const touchStartRef = useRef<number | null>(null);
 
   const galleryImages = useMemo(
-    () => property.media.photos.length ? property.media.photos : [{ url: '/placeholder.svg' }],
-    [property.media.photos]
+    () => (property.media.photos.length ? property.media.photos : [{ url: '/placeholder.svg' }]),
+    [property.media.photos],
   );
 
   const nextImage = () => {
@@ -98,9 +109,102 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
     setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
   };
 
+  const handleTouchStart = (event: React.TouchEvent) => {
+    touchStartRef.current = event.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (event: React.TouchEvent) => {
+    if (touchStartRef.current === null) return;
+    const delta = event.changedTouches[0].clientX - touchStartRef.current;
+    if (Math.abs(delta) > 40) {
+      delta > 0 ? prevImage() : nextImage();
+    }
+    touchStartRef.current = null;
+  };
+
+  const openLightbox = (index: number) => {
+    setCurrentImageIndex(index);
+    setIsLightboxOpen(true);
+    setIsZoomed(false);
+  };
+
+  const closeLightbox = () => {
+    setIsLightboxOpen(false);
+    setIsZoomed(false);
+  };
+
+  const toggleZoom = () => {
+    setIsZoomed((prev) => !prev);
+  };
+
   const locationLine = [property.location.locality, property.location.area, property.location.city]
     .filter(Boolean)
     .join(', ');
+  const propertyRatePerSqft = property.specs?.carpetArea
+    ? property.price / property.specs.carpetArea
+    : undefined;
+  const isForSale = property.purpose === 'sale';
+  const isForRent = property.purpose === 'rent';
+  const monthlyRentValue = isForRent ? property.price : Math.round(property.price / 12);
+  const estimatedAssetPrice = isForRent ? property.price * 200 : property.price;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSmartMatches = async () => {
+      try {
+        const response = await fetch('/home.json');
+        const payload = await response.json();
+        const dataset = Array.isArray(payload?.properties) ? payload.properties : [];
+        const localityToken = property.location.locality?.toLowerCase?.() ?? '';
+        const basePrice = property.price || 0;
+
+        const canonical = dataset
+          .filter((item: any) => item?.id && item.id !== property.id)
+          .map(
+            (item: any): SimilarProperty => ({
+              id: item.id,
+              title: item.title,
+              location: [item.locality, item.city].filter(Boolean).join(', '),
+              price: item.price,
+              area: item.area,
+              image: item.image,
+              locality: item.locality,
+            }),
+          );
+
+        const byLocalityAndBudget = canonical.filter((item) => {
+          const localityMatch = localityToken
+            ? item.locality?.toLowerCase().includes(localityToken)
+            : true;
+          const budgetMatch =
+            basePrice > 0 ? Math.abs(item.price - basePrice) <= basePrice * 0.25 : true;
+          return localityMatch && budgetMatch;
+        });
+
+        let curated = byLocalityAndBudget;
+        if (!curated.length) {
+          curated = canonical.filter((item) =>
+            basePrice > 0 ? Math.abs(item.price - basePrice) <= basePrice * 0.35 : true,
+          );
+        }
+        if (!curated.length) {
+          curated = canonical.slice(0, 4);
+        }
+
+        if (!cancelled) {
+          setSmartSimilar(curated.slice(0, 4));
+        }
+      } catch (error) {
+        console.error('Failed to load smart similar properties', error);
+      }
+    };
+
+    loadSmartMatches();
+    return () => {
+      cancelled = true;
+    };
+  }, [property.id, property.location.locality, property.price]);
 
   const geoapifyKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
   const mapPreviewUrl =
@@ -148,38 +252,167 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
 
   return (
     <>
-      <section className="relative h-64 md:h-80 w-full bg-muted overflow-hidden">
-        <img
-          src={galleryImages[currentImageIndex]?.url || '/placeholder.svg'}
-          alt={property.title}
-          className="w-full h-full object-cover"
-        />
+      <section className="relative w-full bg-background">
+        <div
+          className="relative h-64 md:h-[460px] w-full bg-muted overflow-hidden"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <img
+            src={galleryImages[currentImageIndex]?.url || '/placeholder.svg'}
+            alt={`${property.title} photo ${currentImageIndex + 1}`}
+            className="w-full h-full object-cover transition-transform duration-500 hover:scale-[1.03] cursor-zoom-in"
+            onClick={() => openLightbox(currentImageIndex)}
+            loading="lazy"
+          />
+
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <button
+              onClick={() => openLightbox(currentImageIndex)}
+              className="bg-background/80 text-foreground rounded-full px-3 py-1 text-xs font-semibold backdrop-blur hover:bg-background"
+            >
+              <span className="flex items-center gap-1">
+                <Maximize2 className="w-3.5 h-3.5" /> Fullscreen
+              </span>
+            </button>
+          </div>
+
+          {galleryImages.length > 1 && (
+            <>
+              <button
+                onClick={prevImage}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/80 rounded-full p-2 shadow-lg hover:shadow-xl backdrop-blur-sm"
+              >
+                <ChevronLeft className="w-6 h-6 text-foreground" />
+              </button>
+              <button
+                onClick={nextImage}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/80 rounded-full p-2 shadow-lg hover:shadow-xl backdrop-blur-sm"
+              >
+                <ChevronRight className="w-6 h-6 text-foreground" />
+              </button>
+            </>
+          )}
+
+          <div className="absolute bottom-4 left-4 bg-background/80 text-foreground rounded-full px-4 py-1 text-xs font-semibold backdrop-blur-sm">
+            {currentImageIndex + 1} / {galleryImages.length} photos
+          </div>
+          <div className="absolute bottom-4 right-4 hidden md:block text-xs text-muted-foreground bg-background/70 px-3 py-1 rounded-full backdrop-blur">
+            Swipe or use arrows to explore
+          </div>
+        </div>
+
         {galleryImages.length > 1 && (
-          <>
-            <button
-              onClick={prevImage}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/80 rounded-full p-2 shadow-lg hover:shadow-xl backdrop-blur-sm"
-            >
-              <ChevronLeft className="w-6 h-6 text-foreground" />
-            </button>
-            <button
-              onClick={nextImage}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/80 rounded-full p-2 shadow-lg hover:shadow-xl backdrop-blur-sm"
-            >
-              <ChevronRight className="w-6 h-6 text-foreground" />
-            </button>
-          </>
+          <div className="hidden md:flex gap-3 overflow-x-auto px-6 py-4 bg-background border-t border-border">
+            {galleryImages.map((image, index) => (
+              <button
+                key={image.url + index}
+                onClick={() => setCurrentImageIndex(index)}
+                className={`relative h-20 w-32 rounded-xl overflow-hidden border transition-all ${
+                  currentImageIndex === index ? 'border-primary ring-2 ring-primary/40' : 'border-border'
+                }`}
+              >
+                <img
+                  src={image.url || '/placeholder.svg'}
+                  alt={`${property.title} thumbnail ${index + 1}`}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </button>
+            ))}
+          </div>
         )}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+
+        <div className="md:hidden flex gap-2 justify-center py-3">
           {galleryImages.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentImageIndex(index)}
-              className={`h-2 rounded-full transition-all ${index === currentImageIndex ? 'bg-primary w-8' : 'bg-white/60 w-2'}`}
+              className={`h-1.5 rounded-full transition-all ${index === currentImageIndex ? 'bg-primary w-8' : 'bg-muted-foreground/40 w-2'}`}
             />
           ))}
         </div>
       </section>
+
+      {isLightboxOpen && (
+        <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 text-white">
+            <div>
+              <p className="text-xs uppercase tracking-widest text-white/70">Gallery Preview</p>
+              <p className="text-sm font-semibold">
+                {currentImageIndex + 1} / {galleryImages.length}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleZoom}
+                className="border border-white/30 rounded-full p-2 hover:bg-white/10"
+                aria-label={isZoomed ? 'Zoom Out' : 'Zoom In'}
+              >
+                {isZoomed ? <ZoomOut className="w-5 h-5" /> : <ZoomIn className="w-5 h-5" />}
+              </button>
+              <button
+                onClick={closeLightbox}
+                className="border border-white/30 rounded-full p-2 hover:bg-white/10"
+                aria-label="Close gallery"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+          <div className="flex-1 flex items-center justify-center px-6 pb-6">
+            <div
+              className="relative w-full max-w-5xl"
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              <img
+                src={galleryImages[currentImageIndex]?.url || '/placeholder.svg'}
+                alt={`${property.title} photo ${currentImageIndex + 1}`}
+                className={`w-full h-auto rounded-3xl shadow-2xl transition-transform duration-300 ${
+                  isZoomed ? 'scale-125 cursor-zoom-out' : 'scale-100 cursor-zoom-in'
+                }`}
+                onClick={toggleZoom}
+              />
+              {galleryImages.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/20 text-white rounded-full p-3 hover:bg-white/30"
+                  >
+                    <ChevronLeft className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/20 text-white rounded-full p-3 hover:bg-white/30"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+          {galleryImages.length > 1 && (
+            <div className="flex gap-3 overflow-x-auto px-6 py-4 bg-black/70">
+              {galleryImages.map((image, index) => (
+                <button
+                  key={image.url + index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`h-16 w-24 rounded-xl overflow-hidden border ${
+                    currentImageIndex === index ? 'border-primary' : 'border-white/20'
+                  }`}
+                >
+                  <img
+                    src={image.url || '/placeholder.svg'}
+                    alt={`${property.title} preview ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <section className="max-w-6xl mx-auto px-4 py-6 md:py-10 grid gap-6 md:gap-8 lg:grid-cols-[2fr_1fr]">
         <div>
@@ -273,6 +506,43 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
               </div>
             </div>
           )}
+
+          <div className="py-8 border-b border-border">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">Tools</p>
+                <h2 className="text-xl md:text-2xl font-bold text-foreground">Plan smarter with quick tools</h2>
+                <p className="text-sm text-muted-foreground">EMIs, mortgages or rental math — pick the calculator you need.</p>
+              </div>
+              <Link
+                href="/tools"
+                className="text-sm font-semibold text-primary hover:opacity-80 transition"
+              >
+                View all tools →
+              </Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {TOOL_DEFINITIONS.map((tool) => {
+                const Icon = tool.icon;
+                return (
+                  <Link
+                    key={tool.slug}
+                    href={tool.href}
+                    className="group border border-border rounded-2xl p-4 flex items-start gap-4 hover:border-primary transition"
+                  >
+                    <span className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/20 transition">
+                      <Icon className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <p className="text-xs uppercase text-muted-foreground">{tool.highlight}</p>
+                      <p className="text-lg font-semibold text-foreground">{tool.name}</p>
+                      <p className="text-sm text-muted-foreground">{tool.description}</p>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <aside className="space-y-4 md:space-y-6 mt-6 lg:mt-0">
@@ -301,6 +571,37 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
               {property.contact.email && <p>Email: {property.contact.email}</p>}
             </div>
           </div>
+
+          {isForSale ? (
+            <>
+              <EmiCalculator
+                defaultAmount={property.price}
+                heading="Plan your EMI"
+                className="shadow-lg"
+                variant="compact"
+              />
+              <MortgageCalculator
+                propertyPrice={property.price}
+                heading="Mortgage Planner"
+                className="shadow-lg"
+                variant="compact"
+              />
+            </>
+          ) : (
+            <>
+              <RentAffordabilityCalculator
+                defaultRent={monthlyRentValue}
+                defaultIncome={monthlyRentValue * 4}
+                className="shadow-lg"
+              />
+              <RentalYieldCalculator
+                propertyPrice={estimatedAssetPrice}
+                monthlyRent={monthlyRentValue}
+                className="shadow-lg"
+                heading="Rental Yield Snapshot"
+              />
+            </>
+          )}
 
           <div className="bg-card border border-border rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg">
             <h3 className="text-base md:text-lg font-bold text-foreground mb-2 md:mb-3">Location</h3>
@@ -332,6 +633,57 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
           </div>
         </aside>
       </section>
+
+      <LocalityInsights
+        locality={property.location.locality}
+        city={property.location.city}
+        propertyRatePerSqft={propertyRatePerSqft}
+      />
+
+      {smartSimilar.length > 0 && (
+        <section className="bg-background py-12 px-4">
+          <div className="max-w-6xl mx-auto">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">Smart matches</p>
+                <h2 className="text-2xl font-bold text-foreground">
+                  More homes near {property.location.locality || property.location.city || 'you'}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Curated using locality & budget resemblance from our featured inventory.
+                </p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {smartSimilar.map((item) => {
+                const isPlaceholder = item.id?.toString().startsWith('placeholder-');
+                const href = isPlaceholder ? `/property/placeholder/${item.id}` : `/property/${item.id}`;
+                return (
+                  <Link key={`smart-${item.id}`} href={href} className="group">
+                    <div className="bg-card rounded-xl overflow-hidden border border-border shadow hover:shadow-lg transition">
+                      <div className="h-40 bg-muted overflow-hidden">
+                        <img
+                          src={item.image || '/placeholder.svg'}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+                      <div className="p-4 space-y-1">
+                        <p className="text-xs uppercase text-muted-foreground tracking-wide">
+                          {item.location}
+                        </p>
+                        <h3 className="text-base font-semibold text-foreground">{item.title}</h3>
+                        {item.area && <p className="text-sm text-muted-foreground">{item.area}</p>}
+                        <p className="text-primary font-bold">{formatCurrency(item.price)}</p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {similar.length > 0 && (
         <section className="bg-accent/20 py-12 px-4">

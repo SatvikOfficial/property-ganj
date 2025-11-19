@@ -7,6 +7,7 @@ import Link from "next/link"
 import Header from "@/components/header"
 import LikeButton from "@/components/LikeButton"
 import LucknowLocationAutocomplete, { ResolvedLucknowLocation } from "@/components/location/LucknowLocationAutocomplete"
+import { EmiCalculator } from "@/components/property/EmiCalculator"
 
 const propertyTypeOptions = ["Apartment", "Independent House/Villa", "Plot/Land", "Office", "Retail"]
 const bhkOptions = ["1 BHK", "2 BHK", "3 BHK", "4 BHK", "5+ BHK"]
@@ -751,6 +752,13 @@ function SearchFiltersContent() {
                 Click Here
               </Link>
             </div>
+
+          <EmiCalculator
+            defaultAmount={filters.budgetMax || filters.budgetMin || (filters.purpose === 'rent' ? 2500000 : 6500000)}
+            heading="Quick EMI Planner"
+            variant="compact"
+            className="shadow-lg"
+          />
 
             <div className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
               <img src="/featured-property.jpg" alt="Featured Project" className="w-full h-48 object-cover" />
