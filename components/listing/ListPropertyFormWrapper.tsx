@@ -34,71 +34,31 @@ export default function ListPropertyFormWrapper({ userData }: ListPropertyFormWr
   }, []);
 
   const handleSubmit = async (formData: any) => {
-    // Check if user is logged in
-    if (!userData) {
-      // Show toast prompting user to login
-      toast({
-        title: "Login Required",
-        description: "You need to login or register to post your property listing. Please complete your property details first, then login to publish.",
-      });
-
-      // Save form data to localStorage
-      try {
-        localStorage.setItem('propertyFormData', JSON.stringify(formData));
-      } catch (error) {
-        console.error('Error saving form data:', error);
-      }
-
-      // Redirect to login after a delay to let the user see the toast
-      setTimeout(() => {
-        router.push('/auth');
-      }, 3000); // 3 seconds delay
-
-      return;
-    }
-
-    // If user is logged in, proceed with form submission
+    // Simulate submission
     try {
-      // Submit the property listing to the server
-      const response = await fetch('/api/properties', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1]}`,
-        },
-        body: JSON.stringify({
-          ...formData,
-          contact: {
-            name: userData.name,
-            phone: userData.phone,
-            email: userData.email || formData.contact?.email,
-          }
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to submit property');
-      }
+      setIsLoading(true);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
 
       // Success
       toast({
-        title: "Property Listed!",
-        description: "Your property has been successfully listed.",
+        title: "Property Listed! (Simulation)",
+        description: "Your property has been successfully listed on the frontend.",
       });
 
       // Remove saved form data
       localStorage.removeItem('propertyFormData');
 
-      // Redirect to property detail or dashboard
-      const result = await response.json();
-      router.push(`/property/${result.property._id}`);
+      // Redirect to home page
+      router.push(`/`);
+
     } catch (error) {
       toast({
         title: "Submission Failed",
-        description: error instanceof Error ? error.message : "Could not submit property listing",
+        description: "Could not submit property listing",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 

@@ -21,24 +21,9 @@ export default function LikedPropertiesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchLikedProperties = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await fetch('/api/profile/liked-properties');
-        const data = await response.json();
-        if (!response.ok) {
-          throw new Error(data.error || 'Unable to fetch liked properties');
-        }
-        setLikedProperties(data.likedProperties || []);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchLikedProperties();
+    setLikedProperties([]);
+    setLoading(false);
+    setError(null);
   }, []);
 
   return (

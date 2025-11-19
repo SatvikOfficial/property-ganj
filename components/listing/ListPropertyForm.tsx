@@ -996,14 +996,7 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
         >
           Reset
         </button>
-        <button
-          type="button"
-          onClick={handleSaveDraft}
-          disabled={isSavingDraft || isSubmitting}
-          className="rounded-full border-2 border-[#eb6239] px-6 py-3 font-semibold text-[#eb6239] hover:bg-[#eb6239] hover:text-white transition-colors disabled:opacity-60"
-        >
-          {isSavingDraft ? 'Saving…' : 'Save Draft'}
-        </button>
+
         <button
           type="submit"
           disabled={isSubmitting || isSavingDraft}

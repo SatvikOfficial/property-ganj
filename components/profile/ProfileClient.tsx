@@ -54,37 +54,11 @@ export function ProfileClient({ user }: ProfileClientProps) {
     setIsSaving(true);
 
     try {
-      const payload: Record<string, string> = {};
-
-      if (formData.name.trim() !== user.name) {
-        payload.name = formData.name.trim();
-      }
-      if ((formData.email || '').trim() !== (user.email || '')) {
-        payload.email = formData.email.trim();
-      }
-      if (formData.phone.trim() !== user.phone) {
-        payload.phone = formData.phone.trim();
-      }
-
-      const response = await fetch('/api/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to update profile');
-      }
-
-      setFormData({
-        name: data.user.name,
-        email: data.user.email || '',
-        phone: data.user.phone,
-      });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       toast({
-        title: 'Profile updated',
+        title: 'Profile updated (Simulation)',
         description: 'Your account details were saved successfully.',
       });
 
@@ -103,12 +77,11 @@ export function ProfileClient({ user }: ProfileClientProps) {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
       toast({
         title: 'Logged out',
         description: 'See you soon!',
       });
-      router.push('/auth');
+      router.push('/');
       router.refresh();
     } catch {
       toast({

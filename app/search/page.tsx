@@ -212,42 +212,14 @@ function SearchFiltersContent() {
   const fetchProperties = async (params: URLSearchParams) => {
     setLoading(true)
     setError(null)
-    try {
-      const response = await fetch(`/api/properties?${params.toString()}`)
-      const data = await response.json()
-      if (!response.ok) {
-        throw new Error(data.error || "Unable to fetch properties")
-      }
-      const fetchedProperties = data.properties || []
-      // Add placeholder properties if we have less than 6 real properties
-      if (fetchedProperties.length < 6) {
-        const placeholders = generatePlaceholderProperties(6 - fetchedProperties.length, filters)
-        setProperties([...fetchedProperties, ...placeholders])
-      } else {
-        setProperties(fetchedProperties)
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
-      // Show placeholder properties even on error to keep the site feeling live
-      setProperties(generatePlaceholderProperties(6, filters))
-    } finally {
-      setLoading(false)
-    }
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setProperties(generatePlaceholderProperties(6, filters))
+    setLoading(false)
   }
 
   useEffect(() => {
-    const fetchLikedProperties = async () => {
-      try {
-        const response = await fetch('/api/profile/liked-properties')
-        if (response.ok) {
-          const data = await response.json()
-          setLikedProperties(data.likedProperties.map((p: any) => p._id))
-        }
-      } catch (error) {
-        console.error('Failed to load liked properties', error)
-      }
-    }
-    fetchLikedProperties()
+    setLikedProperties([])
   }, [])
 
   useEffect(() => {

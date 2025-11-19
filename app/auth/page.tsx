@@ -47,27 +47,11 @@ export default function AuthPage() {
   };
 
   const autoLogin = async (identifierOverride?: string, passwordOverride?: string) => {
-    const loginIdentifier =
-      identifierOverride || formData.email || formData.phone;
-    const loginPassword = passwordOverride || formData.password;
-
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        identifier: loginIdentifier,
-        password: loginPassword,
-      }),
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to login');
-    }
+    // Simulate successful login
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     toast({
-      title: `Welcome back, ${data.user.name}`,
+      title: `Welcome back (Simulation)`,
       description: 'Redirecting you to the home page...',
     });
     router.push('/');
@@ -79,31 +63,12 @@ export default function AuthPage() {
     setIsSubmitting(true);
 
     try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       if (isLogin) {
-        const loginIdentifier =
-          formData.identifier || formData.email || formData.phone;
-
-        if (!loginIdentifier) {
-          throw new Error('Enter your email or phone number');
-        }
-
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            identifier: loginIdentifier,
-            password: formData.password,
-          }),
-        });
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to login');
-        }
-
         toast({
-          title: `Welcome back, ${data.user.name}`,
+          title: `Welcome back (Simulation)`,
           description: 'Redirecting you to the home page...',
         });
         router.push('/');
@@ -115,32 +80,13 @@ export default function AuthPage() {
         throw new Error('Passwords do not match');
       }
 
-      if (!formData.phone) {
-        throw new Error('Phone number is required');
-      }
-
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email || undefined,
-          phone: formData.phone,
-          password: formData.password,
-        }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to register');
-      }
-
       toast({
-        title: 'Account created',
-        description: 'Logging you in...',
+        title: 'Account created (Simulation)',
+        description: 'Redirecting you to the home page...',
       });
 
-      await autoLogin(formData.phone, formData.password);
+      router.push('/');
+      router.refresh();
     } catch (error) {
       toast({
         title: 'Something went wrong',

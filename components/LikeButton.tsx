@@ -25,37 +25,20 @@ export default function LikeButton({ propertyId, initialLiked }: LikeButtonProps
     setIsSubmitting(true);
 
     try {
-      const response = await fetch('/api/profile/like', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propertyId }),
-      });
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      const data = await response.json();
+      const newLikedState = !isLiked;
+      setIsLiked(newLikedState);
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          toast({
-            title: 'Login Required',
-            description: 'Please login to like a property.',
-            variant: 'destructive',
-          });
-          return;
-        }
-        throw new Error(data.error || 'Failed to update like status');
-      }
-
-      setIsLiked(data.liked);
       toast({
-        title: data.liked ? 'Property Liked' : 'Property Unliked',
-        description: data.liked
-          ? 'This property has been added to your liked list.'
-          : 'This property has been removed from your liked list.',
+        title: newLikedState ? 'Property Liked (Simulation)' : 'Property Unliked (Simulation)',
+        description: "This is a frontend-only action.",
       });
     } catch (error) {
       toast({
         title: 'Something went wrong',
-        description: error instanceof Error ? error.message : 'Please try again.',
+        description: 'Please try again.',
         variant: 'destructive',
       });
     } finally {

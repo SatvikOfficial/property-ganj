@@ -38,78 +38,24 @@ export default function MyAdsPage() {
   }, []);
 
   const fetchProperties = async () => {
-    try {
-      const response = await fetch('/api/properties/my-ads');
-      if (!response.ok) {
-        throw new Error('Failed to fetch properties');
-      }
-      const data = await response.json();
-      setProperties(data.properties || []);
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to load your properties',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
+    setProperties([]);
+    setLoading(false);
   };
 
   const handlePublish = async (id: string) => {
-    try {
-      const response = await fetch(`/api/properties/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'published' }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to publish property');
-      }
-
-      toast({
-        title: 'Success',
-        description: 'Property published successfully',
-      });
-
-      fetchProperties();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to publish property',
-        variant: 'destructive',
-      });
-    }
+    toast({
+      title: 'Feature Not Available',
+      description: 'This feature requires a backend. Please try again later.',
+      variant: 'destructive',
+    });
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this property?')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/properties/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete property');
-      }
-
-      toast({
-        title: 'Success',
-        description: 'Property deleted successfully',
-      });
-
-      fetchProperties();
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete property',
-        variant: 'destructive',
-      });
-    }
+    toast({
+      title: 'Feature Not Available',
+      description: 'This feature requires a backend. Please try again later.',
+      variant: 'destructive',
+    });
   };
 
   const formatCurrency = (value: number) => {

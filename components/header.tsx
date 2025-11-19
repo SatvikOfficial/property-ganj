@@ -16,26 +16,9 @@ type User = {
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
   const [user, setUser] = useState<User | null>(null)
-  const router = useRouter()
-
-  useEffect(() => {
-    const fetchUser = async () => {
-      try {
-        const response = await fetch("/api/auth/me")
-        if (response.ok) {
-          const data = await response.json()
-          setUser(data.user)
-        }
-      } catch (error) {
-        console.error("Failed to fetch user", error)
-      }
-    }
-    fetchUser()
-  }, [])
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" })
       setUser(null)
       router.push("/")
     } catch (error) {

@@ -85,44 +85,8 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    const fetchLiveProperties = async () => {
-      try {
-        const response = await fetch('/api/properties?limit=12')
-        const data = await response.json()
-        if (response.ok) {
-          const fetchedProperties = data.properties || []
-          // Add placeholders if we have less than 12 properties
-          if (fetchedProperties.length < 12) {
-            const placeholders = generatePlaceholderProperties(12 - fetchedProperties.length)
-            setLiveProperties([...fetchedProperties, ...placeholders])
-          } else {
-            setLiveProperties(fetchedProperties)
-          }
-        } else {
-          // Show placeholders even on error
-          setLiveProperties(generatePlaceholderProperties(12))
-        }
-      } catch (error) {
-        console.error('Failed to load live properties', error)
-        // Show placeholders on error
-        setLiveProperties(generatePlaceholderProperties(12))
-      }
-    }
-
-    const fetchLikedProperties = async () => {
-      try {
-        const response = await fetch('/api/profile/liked-properties')
-        if (response.ok) {
-          const data = await response.json()
-          setLikedProperties(data.likedProperties.map((p: any) => p._id))
-        }
-      } catch (error) {
-        console.error('Failed to load liked properties', error)
-      }
-    }
-
-    fetchLiveProperties()
-    fetchLikedProperties()
+    setLiveProperties(generatePlaceholderProperties(12))
+    setLikedProperties([])
   }, [])
 
   const formatPrice = (value?: number) => {
