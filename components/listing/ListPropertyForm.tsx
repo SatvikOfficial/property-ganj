@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Building,
@@ -21,6 +21,10 @@ type UserProfile = {
   name: string;
   phone: string;
   email?: string | null;
+};
+
+type FormValues = {
+  // ... (all the form fields would be defined here)
 };
 
 type UploadedPhoto = {
@@ -212,7 +216,7 @@ const initialFormState: FormState = {
 };
 
 interface ListPropertyFormProps {
-  user: UserProfile;
+  user: UserProfile | null;
 }
 
 export default function ListPropertyForm({ user }: ListPropertyFormProps) {
@@ -224,9 +228,9 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
   const [form, setForm] = useState<FormState>(initialFormState);
   const [locationQuery, setLocationQuery] = useState(defaultLocationQuery);
   const [contact, setContact] = useState({
-    name: user.name,
-    phone: user.phone,
-    email: user.email || '',
+    name: user?.name || '',
+    phone: user?.phone || '',
+    email: user?.email || '',
   });
   const [amenities, setAmenities] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
@@ -504,6 +508,41 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
         description: 'Buyers engage better with visuals.',
         variant: 'destructive',
       });
+      return;
+    }
+
+    // Check if user is logged in
+    if (!user) {
+      // Show toast prompting user to login
+      toast({
+        title: "Login Required",
+        description: "You need to login or register to post your property listing. Saving your form data...",
+      });
+
+      // Save form data to localStorage
+      try {
+        const formDataToSave = {
+          form,
+          contact,
+          amenities,
+          tags,
+          highlights,
+          photos
+        };
+        localStorage.setItem('propertyFormData', JSON.stringify(formDataToSave));
+      } catch (error) {
+        console.error('Error saving form data:', error);
+        toast({
+          title: "Save Failed",
+          description: "Could not save your form data. Please complete it again after login.",
+          variant: "destructive",
+        });
+      }
+
+      // Redirect to login after a delay to let the user see the toast
+      setTimeout(() => {
+        router.push('/auth');
+      }, 3000); // 3 seconds delay
       return;
     }
 

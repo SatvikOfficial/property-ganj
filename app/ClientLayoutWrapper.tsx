@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation';
 import { ReactNode } from 'react';
 import StickyContact from '@/components/ui/stickysocials';
+import Footer from '@/components/Footer';
 
 export default function ClientLayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -12,8 +13,11 @@ export default function ClientLayoutWrapper({ children }: { children: ReactNode 
 
   return (
     <>
-      <div className="pb-32 md:pb-0">
-        {children}
+      <div className="flex flex-col min-h-screen">
+        <div className="flex-grow">
+          {children}
+        </div>
+        {!isNotFoundPage && <Footer />}
       </div>
       {!isNotFoundPage && <StickyContact />}
     </>
