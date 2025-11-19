@@ -1,5 +1,4 @@
 import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
 import Header from '@/components/header';
 import ListPropertyForm from '@/components/listing/ListPropertyForm';
@@ -14,18 +13,28 @@ export default async function ListPropertyPage() {
   const token = cookieStore.get('token')?.value;
   const payload = verifyAuthToken(token);
 
-  if (!payload) {
-    redirect('/auth');
-  }
-
-  const user = await User.findById(payload.userId).select('name phone email');
-
-  if (!user) {
-    redirect('/auth');
+  // Get user data if authenticated
+  let userData = null;
+  if (payload) {
+    const user = await User.findById(payload.userId).select('name phone email');
+    if (user) {
+      userData = {
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+      };
+    }
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#fdf8f5] to-[#fefefe]">
+    <main className="min-h-screen">
+      {/* Dynamic premium background */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10"></div>
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl animate-moveSlow"></div>
+        <div className="absolute bottom-1/3 right-1/3 w-80 h-80 bg-accent/5 rounded-full blur-3xl animate-moveSlowDelayed"></div>
+      </div>
+
       <Header />
       <div className="mx-auto max-w-5xl space-y-8 px-4 py-12">
         <div className="text-center">
@@ -37,11 +46,7 @@ export default async function ListPropertyPage() {
         </div>
 
         <ListPropertyForm
-          user={{
-            name: user.name,
-            phone: user.phone,
-            email: user.email,
-          }}
+          user={userData}
         />
       </div>
     </main>

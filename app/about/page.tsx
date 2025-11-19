@@ -322,12 +322,6 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
-
-      <footer className="bg-muted py-8 px-4 mt-10">
-        <div className="max-w-7xl mx-auto text-center text-sm text-muted-foreground">
-          <p>&copy; 2025 PropertyGanj. All rights reserved.</p>
-        </div>
-      </footer>
     </main>
   );
 }

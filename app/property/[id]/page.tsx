@@ -84,11 +84,6 @@ export default async function PropertyDetailPage({ params }: { params: Promise<{
     <main className="min-h-screen bg-background">
       <Header />
       <PropertyDetailClient property={property} similar={similar} initialLiked={isLiked} />
-      <footer className="bg-primary text-primary-foreground py-8 px-4 mt-10">
-        <div className="max-w-7xl mx-auto text-center text-sm">
-          <p>&copy; 2025 MagicBricks. All rights reserved.</p>
-        </div>
-      </footer>
     </main>
   );
 }

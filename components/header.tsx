@@ -45,6 +45,102 @@ export default function Header() {
 
   return (
     <header className="bg-gray-100/90 text-foreground sticky top-0 z-[9999] backdrop-blur-sm">
+      <style jsx global>{`
+        .burger {
+          position: relative;
+          width: 30px;
+          height: 20px;
+          background: transparent;
+          cursor: pointer;
+          display: block;
+        }
+
+        .burger input {
+          display: none;
+        }
+
+        .burger span {
+          display: block;
+          position: absolute;
+          height: 3px;
+          width: 100%;
+          background: currentColor;
+          border-radius: 3px;
+          opacity: 1;
+          left: 0;
+          transform: rotate(0deg);
+          transition: .25s ease-in-out;
+        }
+
+        .burger span:nth-of-type(1) {
+          top: 0px;
+          transform-origin: left center;
+        }
+
+        .burger span:nth-of-type(2) {
+          top: 50%;
+          transform: translateY(-50%);
+          transform-origin: left center;
+        }
+
+        .burger span:nth-of-type(3) {
+          top: 100%;
+          transform-origin: left center;
+          transform: translateY(-100%);
+        }
+
+        .burger.active span:nth-of-type(1) {
+          transform: rotate(45deg);
+          top: 0px;
+          left: 5px;
+        }
+
+        .burger.active span:nth-of-type(2) {
+          width: 0%;
+          opacity: 0;
+        }
+
+        .burger.active span:nth-of-type(3) {
+          transform: rotate(-45deg);
+          top: 28px;
+          left: 5px;
+        }
+
+        /* Compact mobile menu styling */
+        .mobile-menu {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100vh;
+          background: white;
+          z-index: 9998;
+          padding: 0;
+          overflow-y: auto;
+          transform: translateX(-100%);
+          transition: transform 0.3s ease;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .mobile-menu.open {
+          transform: translateX(0);
+        }
+
+        .mobile-menu-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 1rem 1rem 1rem 1.5rem;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .mobile-menu-content {
+          padding: 1rem;
+          flex: 1;
+          overflow-y: auto;
+        }
+      `}</style>
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
@@ -104,9 +200,16 @@ export default function Header() {
               </Button>
             </Link>
           </div>
-          <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          <div className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
+            <div className={`burger ${isOpen ? 'active' : ''}`} onClick={(e) => {
+              e.stopPropagation(); // Prevent event bubbling to parent onClick
+              setIsOpen(!isOpen);
+            }}>
+              <span />
+              <span />
+              <span />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -259,145 +362,160 @@ export default function Header() {
       </div>
 
       {/* Mobile Menu */}
-      {isOpen && (
-        <div className="md:hidden bg-background border-b border-border p-4 space-y-4">
-          <StyledDropdown
-            title="Buy"
-            sections={[
-              {
-                title: "Popular Choices",
-                items: [
-                  { href: "#", label: "Ready to Move" },
-                  { href: "#", label: "Owner Properties" },
-                  { href: "#", label: "Budget Homes" },
-                  { href: "#", label: "New Projects" }
-                ]
-              },
-              {
-                title: "Property Types",
-                items: [
-                  { href: "#", label: "Flats in Lucknow" },
-                  { href: "#", label: "House for sale in Lucknow" },
-                  { href: "#", label: "Villa in Lucknow" },
-                  { href: "#", label: "Plot in Lucknow" }
-                ]
-              },
-            ]}
-          />
-          <StyledDropdown
-            title="Rent"
-            sections={[
-              {
-                title: "Popular Choices",
-                items: [
-                  { href: "#", label: "Owner Properties" },
-                  { href: "#", label: "Verified Properties" },
-                  { href: "#", label: "Furnished Homes" },
-                ]
-              },
-              {
-                title: "Property Types",
-                items: [
-                  { href: "#", label: "Flat for rent in Lucknow" },
-                  { href: "#", label: "House for rent in Lucknow" },
-                  { href: "#", label: "PG in Lucknow" },
-                ]
-              },
-            ]}
-          />
-          <StyledDropdown
-            title="Sell"
-            sections={[
-              {
-                title: "For Owner",
-                items: [
-                  { 
-                    href: "/list-property", 
-                    label: "Post Property FREE" 
+      <div className={`mobile-menu ${isOpen ? 'open' : ''}`}>
+        <div className="mobile-menu-header">
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/logo.jpg" alt="PropertyGanj Logo" width={30} height={30} className="rounded" />
+            <Image src="/logotext.png" alt="PropertyGanj" width={150} height={30} className="h-6 w-auto" />
+          </Link>
+          <button
+            className="p-2 rounded-full hover:bg-gray-100"
+            onClick={() => setIsOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="mobile-menu-content">
+          <div className="space-y-6">
+            {/* Navigation Items */}
+            <div className="space-y-3">
+              <StyledDropdown
+                title="Buy"
+                sections={[
+                  {
+                    title: "Popular Choices",
+                    items: [
+                      { href: "#", label: "Ready to Move" },
+                      { href: "#", label: "Owner Properties" },
+                      { href: "#", label: "Budget Homes" },
+                      { href: "#", label: "New Projects" }
+                    ]
                   },
-                  { href: "#", label: "My Dashboard" },
-                ]
-              }
-            ]}
-          />
-          <StyledDropdown
-            title="Blogs"
-            sections={[
-              {
-                title: "Property Ganj Insights",
-                items: [
-                  { href: "/blog/1", label: "Understanding Circle Rates" },
-                  { href: "/blog/2", label: "Vastu Shastra Guidelines" },
-                  { href: "/blog/3", label: "Stamp Duty & Registration" },
-                  { href: "/blog/4", label: "Metro Network Impact" },
-                  { href: "/blog/5", label: "LDA vs RERA" },
-                  { href: "/blog/6", label: "Top Investment Areas" }
-                ]
-              },
-              {
-                title: "Loan & Finance",
-                items: [
-                  { href: "/blog/1", label: "Home Loan Eligibility" },
-                  { href: "/blog/2", label: "Interest Rates & EMI" },
-                  { href: "/blog/3", label: "Top Banks for Home Loans" },
-                  { href: "/blog/4", label: "Home Loan Documents" },
-                  { href: "/blog/5", label: "Pre-EMI vs Full EMI" },
-                  { href: "/blog/6", label: "Tax Benefits on Home Loans" }
-                ]
-              }
-            ]}
-          />
-          <button className="block text-foreground hover:text-primary transition-colors">Home Loans</button>
-          <Link href="/about" className="block text-foreground hover:text-primary transition-colors">About</Link>
-          <button className="block text-foreground hover:text-primary transition-colors">Help</button>
-          <div className="space-y-2 pt-4 border-t border-border">
-            {user ? (
-              <>
-                <Link href="/profile">
-                  <Button
-                    variant="outline"
-                    className="w-full bg-transparent"
-                    onClick={() => setIsOpen(false)}
-                  >
+                  {
+                    title: "Property Types",
+                    items: [
+                      { href: "#", label: "Flats in Lucknow" },
+                      { href: "#", label: "House for sale in Lucknow" },
+                      { href: "#", label: "Villa in Lucknow" },
+                      { href: "#", label: "Plot in Lucknow" }
+                    ]
+                  },
+                ]}
+              />
+              <StyledDropdown
+                title="Rent"
+                sections={[
+                  {
+                    title: "Popular Choices",
+                    items: [
+                      { href: "#", label: "Owner Properties" },
+                      { href: "#", label: "Verified Properties" },
+                      { href: "#", label: "Furnished Homes" },
+                    ]
+                  },
+                  {
+                    title: "Property Types",
+                    items: [
+                      { href: "#", label: "Flat for rent in Lucknow" },
+                      { href: "#", label: "House for rent in Lucknow" },
+                      { href: "#", label: "PG in Lucknow" },
+                    ]
+                  },
+                ]}
+              />
+              <StyledDropdown
+                title="Sell"
+                sections={[
+                  {
+                    title: "For Owner",
+                    items: [
+                      {
+                        href: "/list-property",
+                        label: "Post Property FREE"
+                      },
+                      { href: "#", label: "My Dashboard" },
+                    ]
+                  }
+                ]}
+              />
+              <div className="pt-2">
+                <StyledDropdown
+                  title="Blogs"
+                  sections={[
+                    {
+                      title: "Property Ganj Insights",
+                      items: [
+                        { href: "/blog/1", label: "Understanding Circle Rates" },
+                        { href: "/blog/2", label: "Vastu Shastra Guidelines" },
+                        { href: "/blog/3", label: "Stamp Duty & Registration" },
+                        { href: "/blog/4", label: "Metro Network Impact" },
+                        { href: "/blog/5", label: "LDA vs RERA" },
+                        { href: "/blog/6", label: "Top Investment Areas" }
+                      ]
+                    },
+                    {
+                      title: "Loan & Finance",
+                      items: [
+                        { href: "/blog/1", label: "Home Loan Eligibility" },
+                        { href: "/blog/2", label: "Interest Rates & EMI" },
+                        { href: "/blog/3", label: "Top Banks for Home Loans" },
+                        { href: "/blog/4", label: "Home Loan Documents" },
+                        { href: "/blog/5", label: "Pre-EMI vs Full EMI" },
+                        { href: "/blog/6", label: "Tax Benefits on Home Loans" }
+                      ]
+                    }
+                  ]}
+                />
+              </div>
+              <button className="block w-full text-left text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
+                Home Loans
+              </button>
+              <Link href="/about" className="block text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
+                About
+              </Link>
+              <button className="block w-full text-left text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
+                Help
+              </button>
+            </div>
+
+            {/* Auth Section */}
+            <div className="pt-4 border-t border-gray-200">
+              {user ? (
+                <div className="space-y-3">
+                  <Link href="/profile" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
                     My Profile
-                  </Button>
-                </Link>
-                <Link href="/profile/my-ads">
-                  <Button
-                    variant="outline"
-                    className="w-full bg-transparent"
-                    onClick={() => setIsOpen(false)}
-                  >
+                  </Link>
+                  <Link href="/profile/my-ads" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
                     My Ads
-                  </Button>
-                </Link>
-                <Button
-                  onClick={() => {
-                    handleLogout()
-                    setIsOpen(false)
-                  }}
-                  className="w-full bg-red-500 hover:bg-red-600"
-                >
-                  Logout
-                </Button>
-              </>
-            ) : (
-              <Link href="/auth">
-                <Button 
-                  variant="outline" 
-                  className="w-full bg-transparent"
-                  onClick={() => setIsOpen(false)}
-                >
-                  Login / Sign Up
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout();
+                      setIsOpen(false);
+                    }}
+                    className="w-full text-center py-3 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Link href="/auth" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
+                    Login / Sign Up
+                  </Link>
+                </div>
+              )}
+              <Link href="/list-property" onClick={() => setIsOpen(false)} className="w-full block">
+                <Button className="w-full bg-primary hover:bg-primary/90 py-3">
+                  List Property
+                  <span className="bg-accent text-accent-foreground px-2 py-0.5 rounded-full text-xs ml-2 font-bold">FREE</span>
                 </Button>
               </Link>
-            )}
-            <Link href="/list-property" className="w-full">
-              <Button className="w-full bg-primary hover:bg-primary/90" onClick={() => setIsOpen(false)}>List Property <span className="bg-accent text-accent-foreground px-2 py-0.5 rounded-full text-xs ml-1 font-bold">FREE</span></Button>
-            </Link>
+            </div>
           </div>
         </div>
-      )}
+      </div>
     </header>
   )
 }
