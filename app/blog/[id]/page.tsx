@@ -483,103 +483,96 @@ export default function BlogPost() {
   
   if (!post) {
     return (
-      <div className="min-h-screen bg-background">
-        <Header />
-        <main className="py-12 px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="text-center py-12">
-              <h1 className="text-2xl font-bold text-foreground mb-4">Blog Post Not Found</h1>
-              <Link href="/blog" className="text-primary hover:underline">← Back to Blog</Link>
-            </div>
+      <main className="py-12 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center py-12">
+            <h1 className="text-2xl font-bold text-white drop-shadow-lg mb-4">Blog Post Not Found</h1>
+            <Link href="/blog" className="text-white/80 hover:underline">← Back to Blog</Link>
           </div>
-        </main>
-      </div>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <main className="py-8 px-4">
+      <div className="max-w-4xl mx-auto">
+        <Link href="/blog" className="inline-flex items-center text-white/80 hover:underline mb-6">
+          ← Back to Blog
+        </Link>
 
-      <main className="py-8 px-4">
-        <div className="max-w-4xl mx-auto">
-          <Link href="/blog" className="inline-flex items-center text-primary hover:underline mb-6">
-            ← Back to Blog
-          </Link>
+        <article className="bg-card rounded-lg p-6 md:p-8 border border-border">
+          <div className="mb-4">
+            <span className="inline-block bg-primary/20 text-foreground px-3 py-1 rounded-full text-sm font-medium">
+              {post.category}
+            </span>
+          </div>
 
-          <article className="bg-card rounded-lg p-6 md:p-8 border border-border">
-            <div className="mb-4">
-              <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium">
-                {post.category}
-              </span>
-            </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-4">{post.title}</h1>
 
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-4">{post.title}</h1>
+          <div className="flex flex-wrap items-center text-sm text-foreground/70 mb-6">
+            <span>{post.date}</span>
+            <span className="mx-2">•</span>
+            <span>{post.readTime}</span>
+          </div>
 
-            <div className="flex flex-wrap items-center text-sm text-muted-foreground mb-6">
-              <span>{post.date}</span>
-              <span className="mx-2">•</span>
-              <span>{post.readTime}</span>
-            </div>
-
-            {/* Add an image at the beginning of the article */}
-            <div className="mb-6">
-              <img
-                src="/apartment-complex.jpg"
-                alt={post.title}
-                className="w-full h-64 object-cover rounded-lg"
-              />
-            </div>
-
-            <div
-              className="prose prose-lg max-w-none text-foreground leading-relaxed"
-              dangerouslySetInnerHTML={{ __html: post.content }}
+          {/* Add an image at the beginning of the article */}
+          <div className="mb-6">
+            <img
+              src="/apartment-complex.jpg"
+              alt={post.title}
+              className="w-full h-64 object-cover rounded-lg"
             />
+          </div>
 
-            {/* Next blog suggestion */}
-            <div className="mt-12 pt-8 border-t border-border">
-              <h3 className="text-lg font-bold text-foreground mb-4">Read Next</h3>
-              <div className="bg-accent/10 p-4 rounded-lg">
-                {id === '1' && (
-                  <Link href="/blog/2" className="text-primary hover:underline">
-                    Vastu Shastra Guidelines for a Happy Home in Lucknow
-                  </Link>
-                )}
-                {id === '2' && (
-                  <Link href="/blog/3" className="text-primary hover:underline">
-                    Stamp Duty and Registration Charges in Lucknow: What You Need to Know
-                  </Link>
-                )}
-                {id === '3' && (
-                  <Link href="/blog/4" className="text-primary hover:underline">
-                    Lucknow's Metro Network: A Game Changer for Real Estate
-                  </Link>
-                )}
-                {id === '4' && (
-                  <Link href="/blog/5" className="text-primary hover:underline">
-                    LDA vs. RERA: What Property Buyers Need to Know in Lucknow
-                  </Link>
-                )}
-                {id === '5' && (
-                  <Link href="/blog/6" className="text-primary hover:underline">
-                    Top Localities for Property Investment in Lucknow 2025
-                  </Link>
-                )}
-                {id === '6' && (
-                  <Link href="/blog/1" className="text-primary hover:underline">
-                    Understanding Circle Rates in Lucknow: A Complete Guide
-                  </Link>
-                )}
-                {(id !== '1' && id !== '2' && id !== '3' && id !== '4' && id !== '5' && id !== '6') && (
-                  <Link href="/blog" className="text-primary hover:underline">
-                    Browse all articles
-                  </Link>
-                )}
-              </div>
+          <div
+            className="prose prose-lg max-w-none text-foreground leading-relaxed prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-a:text-primary"
+            dangerouslySetInnerHTML={{ __html: post.content }}
+          />
+
+          {/* Next blog suggestion */}
+          <div className="mt-12 pt-8 border-t border-border">
+            <h3 className="text-lg font-bold text-foreground mb-4">Read Next</h3>
+            <div className="bg-accent/10 p-4 rounded-lg border border-border">
+              {id === '1' && (
+                <Link href="/blog/2" className="text-foreground hover:underline">
+                  Vastu Shastra Guidelines for a Happy Home in Lucknow
+                </Link>
+              )}
+              {id === '2' && (
+                <Link href="/blog/3" className="text-foreground hover:underline">
+                  Stamp Duty and Registration Charges in Lucknow: What You Need to Know
+                </Link>
+              )}
+              {id === '3' && (
+                <Link href="/blog/4" className="text-foreground hover:underline">
+                  Lucknow's Metro Network: A Game Changer for Real Estate
+                </Link>
+              )}
+              {id === '4' && (
+                <Link href="/blog/5" className="text-foreground hover:underline">
+                  LDA vs. RERA: What Property Buyers Need to Know in Lucknow
+                </Link>
+              )}
+              {id === '5' && (
+                <Link href="/blog/6" className="text-foreground hover:underline">
+                  Top Localities for Property Investment in Lucknow 2025
+                </Link>
+              )}
+              {id === '6' && (
+                <Link href="/blog/1" className="text-foreground hover:underline">
+                  Understanding Circle Rates in Lucknow: A Complete Guide
+                </Link>
+              )}
+              {(id !== '1' && id !== '2' && id !== '3' && id !== '4' && id !== '5' && id !== '6') && (
+                <Link href="/blog" className="text-foreground hover:underline">
+                  Browse all articles
+                </Link>
+              )}
             </div>
-          </article>
-        </div>
-      </main>
-    </div>
+          </div>
+        </article>
+      </div>
+    </main>
   );
 }

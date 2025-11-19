@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Header from "@/components/header";
 
 export default function LoanFinancePage() {
   const loanArticles = [
@@ -56,39 +55,35 @@ export default function LoanFinancePage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-
-      <main className="py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Loan & Finance</h1>
-            <p className="text-muted-foreground text-lg">Expert guidance on home loans, financing options, and financial planning for property buyers in Lucknow</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {loanArticles.map((post) => (
-              <Link
-                key={post.id}
-                href={`/blog/${post.id}`}
-                className="bg-card rounded-lg p-6 border border-border hover:shadow-md transition-shadow block group"
-              >
-                <div className="mb-3">
-                  <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
-                    {post.category}
-                  </span>
-                </div>
-                <h2 className="text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{post.title}</h2>
-                <p className="text-muted-foreground mb-4 group-hover:text-foreground transition-colors">{post.excerpt}</p>
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                  <span>{post.date}</span>
-                  <span>{post.readTime}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+    <main className="py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-4">Loan & Finance</h1>
+          <p className="text-white/90 drop-shadow-md text-lg">Expert guidance on home loans, financing options, and financial planning for property buyers in Lucknow</p>
         </div>
-      </main>
-    </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {loanArticles.map((post) => (
+            <Link
+              key={post.id}
+              href={`/blog/${post.id}`}
+              className="bg-card/80 backdrop-blur-sm rounded-lg p-6 border border-border/50 hover:shadow-xl transition-shadow block group"
+            >
+              <div className="mb-3">
+                <span className="inline-block bg-primary/20 text-white px-3 py-1 rounded-full text-xs font-medium">
+                  {post.category}
+                </span>
+              </div>
+              <h2 className="text-xl font-bold text-white drop-shadow-md mb-2 group-hover:text-primary transition-colors">{post.title}</h2>
+              <p className="text-white/80 drop-shadow mb-4 group-hover:text-white/90 transition-colors">{post.excerpt}</p>
+              <div className="flex justify-between items-center text-sm text-white/70">
+                <span>{post.date}</span>
+                <span>{post.readTime}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </main>
   );
 }

@@ -136,3 +136,20 @@
     touch-action: manipulation;
   }
 }
+
+/* Enhanced text styles for tools pages to improve visibility on video backgrounds */
+.tools-page-title {
+  @apply text-white drop-shadow-lg font-bold;
+}
+
+.tools-page-description {
+  @apply text-white/90 drop-shadow-md;
+}
+
+.tools-section-header {
+  @apply text-white drop-shadow-lg;
+}
+
+.tools-section-description {
+  @apply text-white/90 drop-shadow-md;
+}

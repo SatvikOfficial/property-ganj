@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Header from "@/components/header";
 
 export default function BlogPage() {
   const blogPosts = [
@@ -56,39 +55,35 @@ export default function BlogPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      
-      <main className="py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Property Ganj Insights</h1>
-            <p className="text-muted-foreground text-lg">Expert advice, market trends, and valuable tips for property buyers and sellers in Lucknow</p>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {blogPosts.map((post) => (
-              <Link 
-                key={post.id} 
-                href={`/blog/${post.id}`}
-                className="bg-card rounded-lg p-6 border border-border hover:shadow-md transition-shadow cursor-pointer"
-              >
-                <div className="mb-3">
-                  <span className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-medium">
-                    {post.category}
-                  </span>
-                </div>
-                <h2 className="text-xl font-bold text-foreground mb-2">{post.title}</h2>
-                <p className="text-muted-foreground mb-4">{post.excerpt}</p>
-                <div className="flex justify-between items-center text-sm text-muted-foreground">
-                  <span>{post.date}</span>
-                  <span>{post.readTime}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+    <main className="py-12 px-4">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg mb-4">Property Ganj Insights</h1>
+          <p className="text-white/90 drop-shadow-md text-lg">Expert advice, market trends, and valuable tips for property buyers and sellers in Lucknow</p>
         </div>
-      </main>
-    </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {blogPosts.map((post) => (
+            <Link
+              key={post.id}
+              href={`/blog/${post.id}`}
+              className="bg-card rounded-lg p-6 border border-border hover:shadow-xl transition-shadow cursor-pointer"
+            >
+              <div className="mb-3">
+                <span className="inline-block bg-primary/20 text-foreground px-3 py-1 rounded-full text-xs font-medium">
+                  {post.category}
+                </span>
+              </div>
+              <h2 className="text-xl font-bold text-foreground mb-2">{post.title}</h2>
+              <p className="text-foreground/80 mb-4">{post.excerpt}</p>
+              <div className="flex justify-between items-center text-sm text-foreground/70">
+                <span>{post.date}</span>
+                <span>{post.readTime}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </main>
   );
 }
