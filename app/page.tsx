@@ -34,7 +34,7 @@ export default function HomePage() {
         setUnderlineStyle({ left: offsetLeft, width: offsetWidth })
       }
     }
-    
+
     if (hoveredTab) {
       updateUnderline()
     } else {
@@ -63,7 +63,7 @@ export default function HomePage() {
     const locations = ["Gomti Nagar", "Hazratganj", "Aliganj", "Indira Nagar", "Aminabad", "Chowk", "Mahanagar"]
     const propertyTypes = ["Apartment", "Independent House/Villa", "Plot/Land"]
     const bhkOptions = [1, 2, 3, 4]
-    
+
     return Array.from({ length: count }, (_, i) => ({
       _id: `placeholder-${i}`,
       specs: {
@@ -377,10 +377,10 @@ export default function HomePage() {
       <section id="hero-section" className="bg-background pt-8 pb-6 px-4 sm:px-6 md:px-8 relative z-0">
         {/* Video Background */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
-          <video 
-            autoPlay 
-            loop 
-            muted 
+          <video
+            autoPlay
+            loop
+            muted
             playsInline
             className="w-full h-full object-cover"
           >
@@ -390,7 +390,7 @@ export default function HomePage() {
           {/* Dark overlay to enhance text contrast */}
           <div className="absolute inset-0 bg-black/40"></div>
         </div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row gap-8">
             {/* Left side: Content */}
@@ -406,14 +406,13 @@ export default function HomePage() {
                     onClick={() => setSelectedTab(tab)}
                     onMouseEnter={() => setHoveredTab(tab)}
                     onMouseLeave={() => setHoveredTab(null)}
-                    className={`relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 transition-all duration-300 ${
-                      selectedTab === tab ? "text-primary" : "text-white/80 hover:text-primary hover:scale-105"
-                    }`}
+                    className={`relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 transition-all duration-300 ${selectedTab === tab ? "text-primary" : "text-white/80 hover:text-primary hover:scale-105"
+                      }`}
                   >
                     {tab}
                   </button>
                 ))}
-                <Link 
+                <Link
                   href="/list-property"
                   ref={(el) => { tabRefs.current["Post Free Property Ad"] = el }}
                   onMouseEnter={() => setHoveredTab("Post Free Property Ad")}
@@ -422,7 +421,7 @@ export default function HomePage() {
                 >
                   Post Free Property Ad
                 </Link>
-                
+
                 {/* Animated Underline */}
                 <span
                   className="absolute bottom-0 h-1 bg-primary rounded-full transition-all duration-500 ease-in-out"
@@ -501,26 +500,38 @@ export default function HomePage() {
               const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
               return (
                 <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0">
-                <div className="cursor-pointer active:scale-95 transition-transform touch-manipulation">
-                  <div className="relative mb-3 bg-muted rounded-lg overflow-hidden h-48">
-                    {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
-                    <img
-                      src={property.image || "/placeholder.svg"}
-                      alt={property.bhk}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-2 left-2 bg-foreground text-background px-2 py-1 rounded text-xs font-semibold">
-                      {property.imageCount || "0"}
+                  <div className="card-premium cursor-pointer group overflow-hidden">
+                    <div className="relative mb-3 bg-muted rounded-t-2xl overflow-hidden h-52 image-overlay">
+                      {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
+                      <img
+                        src={property.image || "/placeholder.svg"}
+                        alt={property.bhk}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+                        </svg>
+                        {property.imageCount || "0"}
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-muted-foreground font-semibold mb-2 text-sm">{property.bhk}</p>
+                      <p className="text-foreground font-bold text-lg mb-1">
+                        {property.price}
+                      </p>
+                      <p className="text-muted-foreground text-sm mb-2">{property.sqft} sqft</p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1 mb-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {property.location}
+                      </p>
+                      <p className="text-xs text-primary font-medium">{property.status}</p>
                     </div>
                   </div>
-                  <p className="text-muted-foreground font-semibold mb-1">{property.bhk}</p>
-                  <p className="text-foreground font-bold">
-                    {property.price} <span className="text-muted-foreground font-normal text-sm">| {property.sqft}</span>
-                  </p>
-                  <p className="text-sm text-muted-foreground">{property.location}</p>
-                  <p className="text-sm text-muted-foreground">{property.status}</p>
-                </div>
-              </Link>
+                </Link>
               )
             })}
           </div>
@@ -528,39 +539,47 @@ export default function HomePage() {
       </section>
 
       {/* Tools Section */}
-      <section className="bg-background py-8 md:py-12 px-4">
-        <div className="max-w-7xl mx-auto space-y-6">
+      <section className="bg-gradient-to-br from-background via-accent/10 to-background py-12 md:py-16 px-4">
+        <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-            <div>
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">Tools</p>
-              <h2 className="text-2xl font-bold text-foreground">Plan your finances in minutes</h2>
-              <p className="text-sm text-muted-foreground max-w-2xl">
+            <div className="space-y-3">
+              <p className="text-xs uppercase tracking-widest text-primary font-bold">TOOLS</p>
+              <h2 className="text-3xl md:text-4xl font-bold text-foreground">Plan your finances in minutes</h2>
+              <p className="text-base text-muted-foreground max-w-2xl">
                 EMIs, mortgages, rental budgets or investment yields — pick the calculator that suits your journey.
               </p>
             </div>
             <Link
               href="/tools"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:opacity-80"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:gap-3 transition-all duration-300"
             >
               Explore all tools →
             </Link>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {TOOL_DEFINITIONS.map((tool) => {
               const Icon = tool.icon
               return (
                 <Link
                   key={tool.slug}
                   href={tool.href}
-                  className="group border border-border rounded-2xl p-4 flex items-start gap-4 hover:border-primary hover:-translate-y-1 transition"
+                  className="card-premium group p-6 flex flex-col gap-4 hover:shadow-primary/20"
                 >
-                  <span className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary/20 transition">
-                    <Icon className="w-5 h-5" />
-                  </span>
-                  <div>
-                    <p className="text-xs uppercase text-muted-foreground">{tool.highlight}</p>
-                    <h3 className="text-lg font-semibold text-foreground">{tool.name}</h3>
-                    <p className="text-sm text-muted-foreground">{tool.description}</p>
+                  <div className="flex items-start gap-4">
+                    <span className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 text-primary flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                      <Icon className="w-6 h-6" />
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs uppercase text-primary font-semibold mb-1">{tool.highlight}</p>
+                    <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{tool.name}</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{tool.description}</p>
+                  </div>
+                  <div className="flex items-center text-primary text-sm font-semibold group-hover:gap-2 transition-all">
+                    Calculate now
+                    <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
                   </div>
                 </Link>
               )
@@ -570,29 +589,35 @@ export default function HomePage() {
       </section>
 
       {/* Popular Localities section */}
-      <section className="bg-background py-6 md:py-12 px-4">
+      <section className="bg-background py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4 md:mb-8">Popular Localities in Lucknow</h2>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 md:mb-10">Popular Localities in Lucknow</h2>
           <div className="relative">
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-locality-scroll>
+            <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-locality-scroll>
               {/* Locality cards */}
               {localities.map((locality) => (
                 <div
                   key={locality.id}
-                  className="bg-card border border-border rounded-lg p-4 min-w-[280px] snap-start active:scale-95 transition-transform touch-manipulation"
+                  className="card-premium p-6 min-w-[300px] snap-start group cursor-pointer"
                 >
-                  <h3 className="font-bold text-foreground text-lg mb-2 flex items-center gap-2">
-                    {locality.name}
-                    <span className="text-muted-foreground text-sm">↗</span>
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-3">{locality.priceRange}</p>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-accent">★</span>
-                    <span className="font-semibold">{locality.rating}</span>
-                    <span className="text-muted-foreground text-sm">{locality.reviews} Reviews</span>
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-bold text-foreground text-xl flex items-center gap-2 group-hover:text-primary transition-colors">
+                      {locality.name}
+                      <span className="text-primary text-sm">↗</span>
+                    </h3>
                   </div>
-                  <div className="bg-secondary/20 rounded-lg p-3 text-center">
-                    <p className="text-primary font-bold">{locality.properties} Properties for Sale →</p>
+                  <p className="text-sm text-muted-foreground mb-4 font-medium">{locality.priceRange}</p>
+                  <div className="flex items-center gap-2 mb-6">
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <span key={i} className={`text-lg ${i < Math.floor(locality.rating) ? 'text-accent' : 'text-gray-300'}`}>★</span>
+                      ))}
+                    </div>
+                    <span className="font-semibold text-foreground">{locality.rating}</span>
+                    <span className="text-muted-foreground text-sm">({locality.reviews} Reviews)</span>
+                  </div>
+                  <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl p-4 text-center group-hover:from-primary/10 group-hover:to-secondary/10 transition-all">
+                    <p className="text-primary font-bold text-base">{locality.properties} Properties for Sale →</p>
                   </div>
                 </div>
               ))}
@@ -604,7 +629,7 @@ export default function HomePage() {
                   container.scrollBy({ left: 300, behavior: 'smooth' });
                 }
               }}
-              className="hidden md:block absolute right-0 md:-right-4 top-1/2 transform -translate-y-1/2 bg-background rounded-full p-2 shadow-lg hover:shadow-xl active:shadow-md active:scale-95 z-10 touch-manipulation"
+              className="hidden md:flex absolute right-0 md:-right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-xl hover:shadow-2xl hover:scale-110 active:scale-95 z-10 transition-all items-center justify-center border border-gray-200"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-6 h-6 text-foreground" />
@@ -614,53 +639,59 @@ export default function HomePage() {
       </section>
 
       {/* Top Agents in Lucknow section */}
-      <section className="bg-accent/20 py-6 md:py-12 px-4">
+      <section className="bg-gradient-to-br from-accent/20 via-accent/10 to-accent/20 py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-4 md:mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">Ganj Trusted Agents in Lucknow</h2>
-            <Link href="/search?ownerType=agent" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base">
+          <div className="flex items-center justify-between mb-6 md:mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">Ganj Trusted Agents in Lucknow</h2>
+            <Link href="/search?ownerType=agent" className="text-primary font-semibold hover:gap-2 flex items-center gap-1 transition-all text-sm md:text-base">
               See all →
             </Link>
           </div>
           <div className="relative">
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-agent-scroll>
+            <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-agent-scroll>
               {agents.map((agent) => (
                 <Link
                   key={agent.id}
                   href={`/agent/${agent.id}`}
-                  className="bg-card rounded-lg p-6 min-w-[280px] snap-start active:scale-95 transition-transform touch-manipulation flex-shrink-0"
+                  className="card-premium p-6 min-w-[320px] snap-start group flex-shrink-0"
                 >
-                  <div className="flex items-start gap-3 mb-4">
-                    <img
-                      src={agent.image || "/placeholder.svg"}
-                      alt={agent.name}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    <div>
-                      <h3 className="font-bold text-foreground">{agent.name}</h3>
+                  <div className="flex items-start gap-4 mb-5">
+                    <div className="relative">
+                      <img
+                        src={agent.image || "/placeholder.svg"}
+                        alt={agent.name}
+                        className="w-20 h-20 rounded-2xl object-cover ring-2 ring-primary/20 group-hover:ring-primary/40 transition-all"
+                      />
+                      <span className="absolute -bottom-1 -right-1 bg-primary text-white px-2 py-0.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                      </span>
                     </div>
-                    <span className="text-xs bg-foreground text-background px-2 py-1 rounded">✓</span>
-                  </div>
-                  <p className="font-semibold text-foreground text-sm mb-3">{agent.company}</p>
-                  <div className="flex gap-4 text-xs mb-4 pb-4 border-b border-border">
-                    <div>
-                      <p className="text-muted-foreground">Operating Since</p>
-                      <p className="font-bold text-foreground">{agent.since}</p>
-                    </div>
-                    <div>
-                      <p className="text-muted-foreground">Buyers Served</p>
-                      <p className="font-bold text-foreground">{agent.buyers}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-4 text-center text-sm">
                     <div className="flex-1">
-                      <p className="font-bold text-foreground text-lg">{agent.propertiesSale}</p>
-                      <p className="text-xs text-muted-foreground">Properties for Sale</p>
+                      <h3 className="font-bold text-foreground text-lg group-hover:text-primary transition-colors">{agent.name}</h3>
+                      <p className="text-sm text-muted-foreground font-medium">{agent.company}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-5 pb-5 border-b border-border">
+                    <div className="text-center p-3 bg-gradient-to-br from-primary/5 to-transparent rounded-xl">
+                      <p className="text-xs text-muted-foreground mb-1">Operating Since</p>
+                      <p className="font-bold text-foreground text-lg">{agent.since}</p>
+                    </div>
+                    <div className="text-center p-3 bg-gradient-to-br from-secondary/5 to-transparent rounded-xl">
+                      <p className="text-xs text-muted-foreground mb-1">Buyers Served</p>
+                      <p className="font-bold text-foreground text-lg">{agent.buyers}</p>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="text-center">
+                      <p className="font-bold text-primary text-2xl mb-1">{agent.propertiesSale}</p>
+                      <p className="text-xs text-muted-foreground">For Sale</p>
                     </div>
                     {agent.propertiesRent > 0 && (
-                      <div className="flex-1">
-                        <p className="font-bold text-foreground text-lg">{agent.propertiesRent}</p>
-                        <p className="text-xs text-muted-foreground">Properties for Rent</p>
+                      <div className="text-center">
+                        <p className="font-bold text-secondary text-2xl mb-1">{agent.propertiesRent}</p>
+                        <p className="text-xs text-muted-foreground">For Rent</p>
                       </div>
                     )}
                   </div>
@@ -674,7 +705,7 @@ export default function HomePage() {
                   container.scrollBy({ left: 300, behavior: 'smooth' });
                 }
               }}
-              className="hidden md:block absolute right-0 md:-right-4 top-1/2 transform -translate-y-1/2 bg-background rounded-full p-2 shadow-lg active:shadow-md active:scale-95 z-10 touch-manipulation"
+              className="hidden md:flex absolute right-0 md:-right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-xl hover:shadow-2xl hover:scale-110 active:scale-95 z-10 transition-all items-center justify-center border border-gray-200"
               aria-label="Scroll right"
             >
               <ChevronRight className="w-6 h-6 text-foreground" />
@@ -699,24 +730,30 @@ export default function HomePage() {
               const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
               return (
                 <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0">
-                <div className="cursor-pointer active:scale-95 transition-transform touch-manipulation">
-                  <div className="relative mb-3 bg-muted rounded-lg overflow-hidden h-48">
-                    {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
-                    <img
-                      src={property.image || "/placeholder.svg"}
-                      alt={property.bhk}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-2 left-2 bg-foreground text-background px-2 py-1 rounded text-xs font-semibold">
-                      {property.imageCount || "0"}
+                  <div className="card-premium cursor-pointer group overflow-hidden">
+                    <div className="relative mb-3 bg-muted rounded-t-2xl overflow-hidden h-52 image-overlay">
+                      {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
+                      <img
+                        src={property.image || "/placeholder.svg"}
+                        alt={property.bhk}
+                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                      />
+                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
+                        </svg>
+                        {property.imageCount || "0"}
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-muted-foreground font-semibold mb-2 text-sm">{property.bhk}</p>
+                      <p className="text-foreground font-bold text-lg mb-1">
+                        {property.price}
+                      </p>
+                      <p className="text-muted-foreground text-sm">{property.sqft} sqft</p>
                     </div>
                   </div>
-                  <p className="text-muted-foreground font-semibold mb-1">{property.bhk}</p>
-                  <p className="text-foreground font-bold">
-                    {property.price} <span className="text-muted-foreground font-normal text-sm">| {property.sqft}</span>
-                  </p>
-                </div>
-              </Link>
+                </Link>
               )
             })}
           </div>
@@ -724,67 +761,107 @@ export default function HomePage() {
       </section>
 
       {/* Your Real Estate Guide section */}
-      <section className="bg-accent/20 py-12 px-4">
+      <section className="bg-gradient-to-br from-background via-accent/5 to-background py-12 md:py-16 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-bold text-foreground mb-8">Your Real Estate Guide</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-10 text-center">Your Real Estate Guide</h2>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Industry Insights */}
-            <div className="border-2 border-primary rounded-lg p-6">
-              <h3 className="text-xl font-bold text-foreground mb-4">Property Ganj Insights</h3>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/1" className="text-muted-foreground text-sm">Understanding Circle Rates in Lucknow</Link>
+            <div className="card-premium p-8 border-l-4 border-primary">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground">Property Ganj Insights</h3>
+              </div>
+              <ul className="space-y-4">
+                <li className="group">
+                  <Link href="/blog/1" className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/5 transition-all">
+                    <span className="text-primary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-primary transition-colors font-medium">Understanding Circle Rates in Lucknow</span>
+                  </Link>
                 </li>
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/2" className="text-muted-foreground text-sm">Vastu Shastra for a Happy Home</Link>
+                <li className="group">
+                  <Link href="/blog/2" className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/5 transition-all">
+                    <span className="text-primary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-primary transition-colors font-medium">Vastu Shastra for a Happy Home</span>
+                  </Link>
                 </li>
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/3" className="text-muted-foreground text-sm">What is Stamp Duty and How is it Calculated?</Link>
+                <li className="group">
+                  <Link href="/blog/3" className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/5 transition-all">
+                    <span className="text-primary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-primary transition-colors font-medium">What is Stamp Duty and How is it Calculated?</span>
+                  </Link>
                 </li>
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/4" className="text-muted-foreground text-sm">Lucknow's Metro Network: A Homebuyer's Guide</Link>
+                <li className="group">
+                  <Link href="/blog/4" className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/5 transition-all">
+                    <span className="text-primary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-primary transition-colors font-medium">Lucknow's Metro Network: A Homebuyer's Guide</span>
+                  </Link>
                 </li>
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/5" className="text-muted-foreground text-sm">LDA vs. RERA: What You Need to Know</Link>
+                <li className="group">
+                  <Link href="/blog/5" className="flex items-start gap-3 p-3 rounded-lg hover:bg-primary/5 transition-all">
+                    <span className="text-primary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-primary transition-colors font-medium">LDA vs. RERA: What You Need to Know</span>
+                  </Link>
                 </li>
               </ul>
-              <Link href="/blog" className="text-primary font-semibold text-sm mt-6 inline-block hover:underline active:opacity-70 touch-manipulation">
-                See all →
+              <Link href="/blog" className="inline-flex items-center gap-2 text-primary font-bold text-base mt-6 hover:gap-3 transition-all">
+                See all articles
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </Link>
             </div>
 
             {/* Loan & Finance */}
-            <div className="border-2 border-primary rounded-lg p-6">
-              <h3 className="text-xl font-bold text-foreground mb-4">Loan & Finance</h3>
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/1" className="text-muted-foreground text-sm">Home Loan Eligibility: How to Check Your Qualification</Link>
+            <div className="card-premium p-8 border-l-4 border-secondary">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-secondary/20 to-secondary/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-foreground">Loan & Finance</h3>
+              </div>
+              <ul className="space-y-4">
+                <li className="group">
+                  <Link href="/blog/1" className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/5 transition-all">
+                    <span className="text-secondary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-secondary transition-colors font-medium">Home Loan Eligibility: How to Check Your Qualification</span>
+                  </Link>
                 </li>
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/2" className="text-muted-foreground text-sm">Interest Rates and EMI Calculations: A Complete Guide</Link>
+                <li className="group">
+                  <Link href="/blog/2" className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/5 transition-all">
+                    <span className="text-secondary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-secondary transition-colors font-medium">Interest Rates and EMI Calculations: A Complete Guide</span>
+                  </Link>
                 </li>
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/3" className="text-muted-foreground text-sm">Top Banks for Home Loans in Lucknow: Compare Interest Rates</Link>
+                <li className="group">
+                  <Link href="/blog/3" className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/5 transition-all">
+                    <span className="text-secondary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-secondary transition-colors font-medium">Top Banks for Home Loans in Lucknow: Compare Interest Rates</span>
+                  </Link>
                 </li>
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/4" className="text-muted-foreground text-sm">Home Loan Documents: Complete Checklist for Property Buyers</Link>
+                <li className="group">
+                  <Link href="/blog/4" className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/5 transition-all">
+                    <span className="text-secondary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-secondary transition-colors font-medium">Home Loan Documents: Complete Checklist for Property Buyers</span>
+                  </Link>
                 </li>
-                <li className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                  <span className="text-primary text-xl">●</span>
-                  <Link href="/blog/5" className="text-muted-foreground text-sm">Pre-EMI vs Full EMI: Which Option is Right for You?</Link>
+                <li className="group">
+                  <Link href="/blog/5" className="flex items-start gap-3 p-3 rounded-lg hover:bg-secondary/5 transition-all">
+                    <span className="text-secondary text-lg mt-1 group-hover:scale-125 transition-transform">→</span>
+                    <span className="text-foreground text-base group-hover:text-secondary transition-colors font-medium">Pre-EMI vs Full EMI: Which Option is Right for You?</span>
+                  </Link>
                 </li>
               </ul>
-              <Link href="/loan-finance" className="text-primary font-semibold text-sm mt-6 inline-block hover:underline">
-                See all →
+              <Link href="/loan-finance" className="inline-flex items-center gap-2 text-secondary font-bold text-base mt-6 hover:gap-3 transition-all">
+                Explore loan options
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
               </Link>
             </div>
           </div>
@@ -803,29 +880,29 @@ export default function HomePage() {
           <div className="relative">
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-popular-scroll>
               {popularFeed.length === 0 && <div className="min-w-full">{renderEmptyState("popular listings")}</div>}
-            {popularFeed.map((property, index) => {
-              const isPlaceholder = property.id?.toString().startsWith('placeholder-')
-              const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
-              return (
-                <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0">
-                  <div className="cursor-pointer active:scale-95 transition-transform touch-manipulation">
-                    <div className="relative mb-3 bg-muted rounded-lg overflow-hidden h-48">
-                      {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
-                      <img
-                        src={property.image || "/placeholder.svg"}
-                        alt={property.bhk}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute top-2 left-2 bg-foreground text-background px-2 py-1 rounded text-xs font-semibold">
-                        {property.imageCount || "0"}
+              {popularFeed.map((property, index) => {
+                const isPlaceholder = property.id?.toString().startsWith('placeholder-')
+                const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
+                return (
+                  <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0">
+                    <div className="cursor-pointer active:scale-95 transition-transform touch-manipulation">
+                      <div className="relative mb-3 bg-muted rounded-lg overflow-hidden h-48">
+                        {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
+                        <img
+                          src={property.image || "/placeholder.svg"}
+                          alt={property.bhk}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-2 left-2 bg-foreground text-background px-2 py-1 rounded text-xs font-semibold">
+                          {property.imageCount || "0"}
+                        </div>
                       </div>
+                      <p className="text-muted-foreground font-semibold mb-1">{property.bhk}</p>
+                      <p className="text-foreground font-bold">
+                        {property.price} <span className="text-muted-foreground font-normal text-sm">| {property.sqft}</span>
+                      </p>
                     </div>
-                    <p className="text-muted-foreground font-semibold mb-1">{property.bhk}</p>
-                    <p className="text-foreground font-bold">
-                      {property.price} <span className="text-muted-foreground font-normal text-sm">| {property.sqft}</span>
-                    </p>
-                  </div>
-                </Link>
+                  </Link>
                 )
               })}
             </div>
