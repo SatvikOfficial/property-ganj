@@ -25,6 +25,8 @@ export interface IProperty extends Document {
   propertyType: string;
   ownerType: 'owner' | 'agent' | 'builder';
   listedBy: mongoose.Types.ObjectId;
+  projectId?: mongoose.Types.ObjectId;
+  builderId?: mongoose.Types.ObjectId;
   price: number;
   currency: string;
   maintenance?: number;
@@ -132,6 +134,14 @@ const PropertySchema = new Schema<IProperty>(
       type: Schema.Types.ObjectId,
       ref: 'User',
       required: true,
+    },
+    projectId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Project',
+    },
+    builderId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Builder',
     },
     price: { type: Number, required: true },
     currency: { type: String, default: 'INR' },

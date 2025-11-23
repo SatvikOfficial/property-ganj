@@ -15,73 +15,81 @@ export async function GET() {
             agents = [
                 {
                     _id: 'dummy1',
-                    name: 'Rajesh Kumar',
+                    name: 'Vivid Infra',
                     agentProfile: {
-                        specialization: 'Residential',
-                        experience: 12,
-                        photoUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+                        specialization: 'Vivid Infra Land Pvt Ltd',
+                        experience: 12, // Years in business since 2012
+                        photoUrl: '/agent-profile-photo.jpg', // Use local image
                         bio: 'Expert in premium residential properties in Gomti Nagar.',
                         location: 'Gomti Nagar'
                     },
-                    email: 'rajesh@example.com',
+                    email: 'vividinfra@example.com',
                     phone: '+91 98765 43210'
                 },
                 {
                     _id: 'dummy2',
-                    name: 'Priya Singh',
+                    name: 'Saurabh Gupta',
                     agentProfile: {
-                        specialization: 'Commercial',
-                        experience: 8,
-                        photoUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+                        specialization: 'Safe Invest Realty',
+                        experience: 12, // Years in business since 2012
+                        photoUrl: '/agent-profile.png', // Use local image
                         bio: 'Helping businesses find the perfect office space in Hazratganj.',
                         location: 'Hazratganj'
                     },
-                    email: 'priya@example.com',
+                    email: 'saurabh@example.com',
                     phone: '+91 98765 43211'
                 },
                 {
                     _id: 'dummy3',
-                    name: 'Amit Verma',
+                    name: 'Rahul Juyal',
                     agentProfile: {
-                        specialization: 'Land/Plots',
-                        experience: 15,
-                        photoUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+                        specialization: 'Pratham Realty Solutions',
+                        experience: 13, // Years in business since 2011
+                        photoUrl: '/agent-photo.jpg', // Use local image
                         bio: 'Specialist in investment plots and land deals across Lucknow.',
                         location: 'Amar Shaheed Path'
                     },
-                    email: 'amit@example.com',
+                    email: 'rahul@example.com',
                     phone: '+91 98765 43212'
                 },
                 {
                     _id: 'dummy4',
-                    name: 'Sneha Gupta',
+                    name: 'Shiyaram Singh',
                     agentProfile: {
-                        specialization: 'Luxury Homes',
-                        experience: 5,
-                        photoUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+                        specialization: 'S.R. Broker LLP',
+                        experience: 7, // Years in business since 2017
+                        photoUrl: '/agent-profile-photo.jpg', // Use local image (repeated)
                         bio: 'Curating luxury living experiences for discerning clients.',
                         location: 'Indira Nagar'
                     },
-                    email: 'sneha@example.com',
+                    email: 'shiyaram@example.com',
                     phone: '+91 98765 43213'
                 },
                 {
                     _id: 'dummy5',
-                    name: 'Vikram Malhotra',
+                    name: 'Ankit Sharma',
                     agentProfile: {
-                        specialization: 'Industrial',
-                        experience: 20,
-                        photoUrl: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=256&q=80',
+                        specialization: 'Property Solutions',
+                        experience: 8, // Years of experience
+                        photoUrl: '/agent-photo.jpg', // Use local image (repeated)
                         bio: 'Industrial and warehousing solutions expert.',
                         location: 'Kanpur Road'
                     },
-                    email: 'vikram@example.com',
+                    email: 'ankit@example.com',
                     phone: '+91 98765 43214'
                 }
             ] as any;
         }
 
-        return NextResponse.json({ agents });
+        // Normalize agent profile image keys so frontend has a consistent `photoUrl`
+        const normalized = (agents as any[]).map((a) => {
+            if (a.agentProfile) {
+                a.agentProfile.photoUrl = a.agentProfile.photoUrl || a.agentProfile.profileImage || a.agentProfile.profileImageUrl;
+            }
+            return a;
+        });
+
+        return NextResponse.json({ agents: normalized });
     } catch (error) {
         console.error('Error fetching agents:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

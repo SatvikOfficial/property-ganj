@@ -12,6 +12,7 @@ import { RentAffordabilityCalculator } from '@/components/property/RentAffordabi
 import { RentalYieldCalculator } from '@/components/property/RentalYieldCalculator';
 import { LocalityInsights } from '@/components/property/LocalityInsights';
 import { TOOL_DEFINITIONS } from '@/data/tools';
+import RecommendedProperties from '@/components/RecommendedProperties';
 
 import LeadFormModal from '@/components/LeadFormModal';
 
@@ -681,38 +682,13 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
         </section>
       )}
 
-      {similar.length > 0 && (
-        <section className="bg-accent/20 py-12 px-4">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold text-foreground mb-6">Similar Listings</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {similar.map((item) => {
-                const isPlaceholder = item.id?.toString().startsWith('placeholder-')
-                const href = isPlaceholder ? `/property/placeholder/${item.id}` : `/property/${item.id}`
-                return (
-                  <Link key={item.id} href={href} className="group">
-                    <div className="bg-card rounded-xl overflow-hidden border border-border shadow hover:shadow-lg transition">
-                      <div className="h-40 bg-muted overflow-hidden">
-                        <img
-                          src={item.image || '/placeholder.svg'}
-                          alt={item.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                      </div>
-                      <div className="p-4">
-                        <p className="text-sm text-muted-foreground">{item.location}</p>
-                        <h3 className="text-base font-semibold text-foreground mb-1">{item.title}</h3>
-                        <p className="text-sm text-muted-foreground">{item.area}</p>
-                        <p className="text-primary font-bold">{formatCurrency(item.price)}</p>
-                      </div>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
-        </section>
-      )}
+      <div className="bg-accent/20">
+        <RecommendedProperties
+          title="Similar Listings"
+          excludeIds={[property.id]}
+          limit={4}
+        />
+      </div>
     </>
   );
 }

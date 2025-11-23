@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import BuildersTab from '@/components/admin/BuildersTab';
+import ProjectsTab from '@/components/admin/ProjectsTab';
 
 interface Property {
     _id: string;
@@ -42,7 +44,7 @@ export default function AdminDashboardClient({
 }: DashboardProps) {
     const [listings, setListings] = useState<Property[]>(initialListings);
     const [agents, setAgents] = useState<User[]>(initialAgents);
-    const [activeTab, setActiveTab] = useState<'listings' | 'agents'>('listings');
+    const [activeTab, setActiveTab] = useState<'listings' | 'agents' | 'builders' | 'projects'>('listings');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
@@ -137,6 +139,24 @@ export default function AdminDashboardClient({
                             >
                                 Agents
                             </button>
+                            <button
+                                onClick={() => setActiveTab('builders')}
+                                className={`py-4 px-6 text-sm font-medium ${activeTab === 'builders'
+                                    ? 'border-b-2 border-blue-500 text-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Builders
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('projects')}
+                                className={`py-4 px-6 text-sm font-medium ${activeTab === 'projects'
+                                    ? 'border-b-2 border-blue-500 text-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Projects
+                            </button>
                         </nav>
                     </div>
 
@@ -200,7 +220,7 @@ export default function AdminDashboardClient({
                                     </tbody>
                                 </table>
                             </div>
-                        ) : (
+                        ) : activeTab === 'agents' ? (
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
@@ -255,7 +275,11 @@ export default function AdminDashboardClient({
                                     </tbody>
                                 </table>
                             </div>
-                        )}
+                        ) : activeTab === 'builders' ? (
+                            <BuildersTab />
+                        ) : activeTab === 'projects' ? (
+                            <ProjectsTab />
+                        ) : null}
                     </div>
                 </div>
             </div>

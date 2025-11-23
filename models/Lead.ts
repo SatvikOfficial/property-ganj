@@ -4,7 +4,7 @@ export interface ILead extends Document {
     name: string;
     phone: string;
     email?: string;
-    type: 'agent_contact' | 'property_inquiry';
+    type: 'agent_contact' | 'property_inquiry' | 'builder_inquiry' | 'project_inquiry';
     targetId: string; // Agent ID or Property ID
     targetName?: string; // Agent Name or Property Title
     status: 'new' | 'contacted' | 'closed';
@@ -30,7 +30,7 @@ const LeadSchema: Schema = new Schema(
         },
         type: {
             type: String,
-            enum: ['agent_contact', 'property_inquiry'],
+            enum: ['agent_contact', 'property_inquiry', 'builder_inquiry', 'project_inquiry'],
             required: true,
         },
         targetId: {

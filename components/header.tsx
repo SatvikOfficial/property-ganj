@@ -440,6 +440,12 @@ export default function Header() {
           <Link href="/home-loan" className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors border-b border-transparent hover:border-primary py-1 px-2 rounded">
             Home Loans
           </Link>
+          <Link href="/builders" className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors border-b border-transparent hover:border-primary py-1 px-2 rounded">
+            Builders
+          </Link>
+          <Link href="/projects" className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors border-b border-transparent hover:border-primary py-1 px-2 rounded">
+            Projects
+          </Link>
           <Link href="/about" className="whitespace-nowrap hover:text-primary font-medium transition-colors border-b border-transparent hover:border-primary py-1 px-2 rounded">
             About
           </Link>
@@ -523,6 +529,22 @@ export default function Header() {
               onClick={() => setIsOpen(false)}
             >
               Home Loans
+            </Link>
+
+            <Link
+              href="/builders"
+              className="mobile-nav-link"
+              onClick={() => setIsOpen(false)}
+            >
+              Builders
+            </Link>
+
+            <Link
+              href="/projects"
+              className="mobile-nav-link"
+              onClick={() => setIsOpen(false)}
+            >
+              Projects
             </Link>
 
             <Link

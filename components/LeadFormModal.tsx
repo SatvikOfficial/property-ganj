@@ -6,7 +6,7 @@ import { X, Loader2, CheckCircle } from 'lucide-react';
 interface LeadFormModalProps {
     isOpen: boolean;
     onClose: () => void;
-    type: 'agent_contact' | 'property_inquiry';
+    type: 'agent_contact' | 'property_inquiry' | 'builder_inquiry' | 'project_inquiry';
     targetId: string;
     targetName?: string;
     title?: string;

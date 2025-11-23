@@ -9,8 +9,12 @@ import DynamicGreeting from "@/components/dynamic-greeting"
 import PropertyCarousel from "@/components/property-carousel"
 import FeaturedStackCard from "@/components/FeaturedStackCard"
 import LikeButton from "@/components/LikeButton"
+import FeaturedBuildersClient from "@/components/FeaturedBuildersClient"
+import PremiumProjectsClient from "@/components/PremiumProjectsClient"
+import RecommendedProperties from "@/components/RecommendedProperties"
 import { TOOL_DEFINITIONS } from "@/data/tools"
 import { POPULAR_LUCKNOW_LOCALITIES } from "@/data/lucknowLocalities"
+import { SAMPLE_BUILDERS } from "@/data/sampleBuilders"
 
 export default function HomePage() {
   const [selectedTab, setSelectedTab] = useState("Buy")
@@ -58,6 +62,22 @@ export default function HomePage() {
     "/4bhk-flat.jpg",
     "/premium-apartment.jpg",
     "/modern-2bhk-apartment.jpg",
+  ]
+
+  // Hardcoded, deterministic fallback images (one per card position)
+  const hardcodedFallbackImages = [
+    '/apartment-complex.jpg',
+    '/residential-plots.jpg',
+    '/featured-property.jpg',
+    '/modern-apartment.jpg',
+    '/2bhk-apartment.jpg',
+    '/3bhk-apartment.jpg',
+    '/4bhk-apartment.jpg',
+    '/luxury-apartment.jpg',
+    '/residential-property.jpg',
+    '/2bhk-flat.jpg',
+    '/3bhk-flat.jpg',
+    '/premium-apartment.jpg',
   ]
 
   const generatePlaceholderProperties = (count: number) => {
@@ -136,25 +156,51 @@ export default function HomePage() {
     }).format(value)
   }
 
-  const derivedProperties = liveProperties.map((property) => ({
-    id: property._id?.toString?.() ?? property.id ?? '',
-    bhk: property.specs?.bedrooms
-      ? `${property.specs.bedrooms} BHK ${property.propertyType}`
-      : property.propertyType,
-    price: formatPrice(property.price),
-    sqft: property.specs?.carpetArea || property.specs?.builtUpArea || '—',
-    location: [property.location?.locality, property.location?.city]
-      .filter(Boolean)
-      .join(', '),
-    status: property.purpose === 'rent' ? 'Available for Rent' : 'Available',
-    imageCount: property.media?.photos?.length || 0,
-    image: property.media?.photos?.[0]?.url || '/placeholder.svg',
-    isLiked: likedProperties.includes(property._id?.toString?.() ?? property.id ?? ''),
-  }))
+  const derivedProperties = liveProperties.map((property, idx) => {
+    const id = property._id?.toString?.() ?? property.id ?? ''
+
+    const normalizeUrl = (u: any) => {
+      if (!u) return null
+      if (typeof u !== 'string') return null
+      if (u.startsWith('http://') || u.startsWith('https://')) return u
+      return u.startsWith('/') ? u : `/${u}`
+    }
+
+    // Prefer media photos, then coverImage, otherwise use a shuffled fallback image
+    let firstMediaUrl = normalizeUrl(property.media?.photos?.[0]?.url)
+
+    // Sanitize broken seed images
+    if (firstMediaUrl && firstMediaUrl.includes('/properties/sample-')) {
+      firstMediaUrl = null
+    }
+
+    const cover = normalizeUrl(property.coverImage)
+    const fallback = hardcodedFallbackImages[idx % hardcodedFallbackImages.length]
+
+    const image = firstMediaUrl || cover || fallback || '/placeholder.svg'
+
+    return {
+      id,
+      bhk: property.specs?.bedrooms
+        ? `${property.specs.bedrooms} BHK ${property.propertyType}`
+        : property.propertyType,
+      price: formatPrice(property.price),
+      sqft: property.specs?.carpetArea || property.specs?.builtUpArea || '—',
+      location: [property.location?.locality, property.location?.city]
+        .filter(Boolean)
+        .join(', '),
+      status: property.purpose === 'rent' ? 'Available for Rent' : 'Available',
+      imageCount: property.media?.photos?.length || 0,
+      image,
+      isLiked: likedProperties.includes(id),
+    }
+  })
 
   const trendingFeed = derivedProperties.slice(0, 4)
   const exclusiveFeed = derivedProperties.slice(4, 8)
   const popularFeed = derivedProperties.slice(8, 12)
+  // Recommended feed - using a mix or specific slice
+  const recommendedFeed = derivedProperties.slice(2, 6)
 
   const renderEmptyState = (label: string) => (
     <div className="col-span-full bg-card border border-dashed border-border rounded-xl p-8 text-center">
@@ -192,7 +238,7 @@ export default function HomePage() {
     },
     {
       id: 4,
-      title: "Top Exclusive Owner Properties",
+      title: "Commercial Spaces & Offices",
       subtitle: "See all",
       bgColor: "bg-accent/20",
     },
@@ -264,7 +310,12 @@ export default function HomePage() {
             buyers: '50+',
             propertiesSale: 10,
             propertiesRent: 5,
-            image: agent.agentProfile?.photoUrl || "/agent-profile-photo.jpg"
+            // Support multiple possible field names for agent photo coming from seed/data or API
+            image:
+              agent.agentProfile?.photoUrl ||
+              agent.agentProfile?.profileImage ||
+              agent.agentProfile?.profileImageUrl ||
+              "/agent-profile-photo.jpg",
           }))
           setAgents(formattedAgents)
         } else {
@@ -475,18 +526,18 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Featured Projects Section with Stacked Cards */}
+      {/* Featured Projects Section */}
       <section className="bg-background py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-8">
             <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">Featured Projects</h2>
-            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg">
+            <Link href="/projects" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg">
               See all →
             </Link>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
+          <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
             {featuredProjects.map((project) => (
-              <div key={project.id} className="min-w-[240px] snap-start flex-shrink-0 md:min-w-[280px] lg:min-w-[300px]">
+              <div key={project.id} className="snap-center flex-shrink-0">
                 <FeaturedStackCard project={project} />
               </div>
             ))}
@@ -494,59 +545,42 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Trending in Lucknow section */}
-      <section className="bg-accent/20 py-6 md:py-12 px-4">
+      {/* Featured Builders & Projects Section */}
+      <section className="bg-background py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-8">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">Trending in Lucknow</h2>
-            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg">
-              See all →
-            </Link>
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-8 md:mb-12 text-center">Featured Builders & Projects</h2>
+
+          {/* Featured Builders Sub-section */}
+          <div className="mb-12 md:mb-16">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-8">
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">Featured Builders</h3>
+              <Link href="/builders" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg">
+                See all →
+              </Link>
+            </div>
+            <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
+              <FeaturedBuildersClient />
+            </div>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
-            {trendingFeed.length === 0 && <div className="min-w-full">{renderEmptyState("trending properties")}</div>}
-            {trendingFeed.map((property, index) => {
-              const isPlaceholder = property.id?.toString().startsWith('placeholder-')
-              const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
-              return (
-                <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0 lg:min-w-[320px]">
-                  <div className="card-premium cursor-pointer group overflow-hidden">
-                    <div className="relative mb-3 bg-muted rounded-t-2xl overflow-hidden h-52 md:h-60 lg:h-64 image-overlay">
-                      {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
-                      <img
-                        src={property.image || "/placeholder.svg"}
-                        alt={property.bhk}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      />
-                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-sm text-foreground px-3 py-1.5 rounded-full text-xs font-bold shadow-md flex items-center gap-1">
-                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" />
-                        </svg>
-                        {property.imageCount || "0"}
-                      </div>
-                    </div>
-                    <div className="p-4">
-                      <p className="text-muted-foreground font-semibold mb-2 text-sm md:text-base">{property.bhk}</p>
-                      <p className="text-foreground font-bold text-lg md:text-xl mb-1">
-                        {property.price}
-                      </p>
-                      <p className="text-muted-foreground text-sm md:text-base mb-2">{property.sqft} sqft</p>
-                      <p className="text-sm text-muted-foreground flex items-center gap-1 mb-1">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        {property.location}
-                      </p>
-                      <p className="text-xs md:text-sm text-primary font-medium">{property.status}</p>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
+
+          {/* Premium Projects Sub-section (Light Blue Aesthetic) */}
+          <div className="bg-blue-50/50 rounded-3xl p-6 md:p-8 lg:p-10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+              <div>
+                <h3 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-900 mb-2">Premium Projects</h3>
+                <p className="text-slate-600">Handpicked exclusive developments for you</p>
+              </div>
+              <Link href="/projects" className="text-blue-600 font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg flex items-center gap-1">
+                View All Projects <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <PremiumProjectsClient />
           </div>
         </div>
       </section>
+
+      {/* Recommended for You Section */}
+      <RecommendedProperties />
 
       {/* Tools Section */}
       <section className="bg-gradient-to-br from-background via-accent/10 to-background py-12 md:py-16 px-4">
@@ -725,12 +759,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Exclusive Owner Properties section */}
+      {/* Commercial Spaces & Offices section */}
       <section className="bg-background py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-8">
-            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">Exclusive Owner Properties in Lucknow</h2>
-            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">Commercial Spaces & Offices</h2>
+            <Link href="/search?propertyType=Commercial" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg">
               See all →
             </Link>
           </div>
