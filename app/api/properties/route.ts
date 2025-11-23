@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import connectDB from '@/lib/db';
 import Property from '@/models/Property';
+import User from '@/models/User';
 import { verifyAuthToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -22,8 +23,13 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'newest';
     const limit = Number(searchParams.get('limit')) || 20;
     const page = Number(searchParams.get('page')) || 1;
+    const userId = searchParams.get('userId');
 
     const filters: Record<string, unknown> = { status: 'published' };
+
+    if (userId) {
+      filters.listedBy = userId;
+    }
 
     if (purpose && ['sale', 'rent'].includes(purpose)) {
       filters.purpose = purpose;
@@ -152,8 +158,23 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const user = await User.findById(payload.userId);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    if (user.role !== 'agent') {
+      const propertyCount = await Property.countDocuments({ listedBy: payload.userId });
+      if (propertyCount >= 1) {
+        return NextResponse.json(
+          { error: 'Free users can only list 1 property. Please upgrade to Agent to list more.' },
+          { status: 403 }
+        );
+      }
+    }
+
     const status = body.status || 'published';
-    
+
     const property = await Property.create({
       ...body,
       listedBy: payload.userId,

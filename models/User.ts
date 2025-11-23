@@ -9,6 +9,16 @@ export interface IUser extends Document {
   likedProperties: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
+  role: 'user' | 'agent' | 'admin';
+  agentProfile?: {
+    experience?: number;
+    specialization?: string[];
+    languages?: string[];
+    bio?: string;
+    location?: string;
+    isVerified?: boolean;
+    photoUrl?: string;
+  };
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
@@ -47,6 +57,20 @@ const UserSchema: Schema = new Schema(
         ref: 'Property',
       },
     ],
+    role: {
+      type: String,
+      enum: ['user', 'agent', 'admin'],
+      default: 'user',
+    },
+    agentProfile: {
+      experience: { type: Number },
+      specialization: [{ type: String }], // Changed to array
+      languages: [{ type: String }], // Added languages
+      bio: { type: String },
+      location: { type: String },
+      isVerified: { type: Boolean, default: false },
+      photoUrl: { type: String },
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt

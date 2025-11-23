@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation"
 type User = {
   name: string;
   email: string;
+  role?: 'user' | 'agent' | 'admin';
 };
 
 export default function Header() {
@@ -33,11 +34,12 @@ export default function Header() {
     fetchUser()
   }, [])
 
-  const handleLogout = async () => {
+  const handleLogout = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
     try {
       await fetch("/api/auth/logout", { method: "POST" })
       setUser(null)
-      router.push("/")
+      window.location.href = "/"
     } catch (error) {
       console.error("Failed to logout", error)
     }
@@ -190,6 +192,13 @@ export default function Header() {
                   "
                 >
                   Login / Sign Up
+                </Button>
+              </Link>
+            )}
+            {(!user || user.role !== 'agent') && (
+              <Link href="/agent-registration">
+                <Button className="bg-white text-foreground hover:bg-gray-100 border border-gray-200 text-sm font-semibold px-4 py-1 h-auto transition-all">
+                  Register as Agent
                 </Button>
               </Link>
             )}
@@ -349,11 +358,9 @@ export default function Header() {
               }
             ]}
           />
-          <div className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors border-b border-transparent hover:border-primary py-1 px-2 rounded">
-            <button className="flex items-center gap-1">
-              Home Loans <ChevronDown className="w-4 h-4" />
-            </button>
-          </div>
+          <Link href="/home-loan" className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors border-b border-transparent hover:border-primary py-1 px-2 rounded">
+            Home Loans
+          </Link>
           <Link href="/about" className="whitespace-nowrap hover:text-primary font-medium transition-colors border-b border-transparent hover:border-primary py-1 px-2 rounded">
             About
           </Link>

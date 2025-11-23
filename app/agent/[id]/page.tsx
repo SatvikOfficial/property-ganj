@@ -1,271 +1,228 @@
-import { notFound } from 'next/navigation';
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import Header from '@/components/header';
-import { MapPin, Phone, Mail, Calendar, Users, Home, Star } from 'lucide-react';
+import { MapPin, Phone, Mail, Calendar, Award, Building2, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
+import LeadFormModal from '@/components/LeadFormModal';
 
-// Mock agent data - in production, fetch from database
-const agents = [
-  {
-    id: 1,
-    name: "Vivid Infra",
-    company: "Vivid Infra Land Pvt Ltd",
-    since: 2012,
-    buyers: "1000+",
-    propertiesSale: 65,
-    propertiesRent: 0,
-    image: "/agent-profile-photo.jpg",
-    phone: "+91 98765 43210",
-    email: "vividinfra@example.com",
-    location: "Gomti Nagar, Lucknow",
-    rating: 4.8,
-    reviews: 127,
-    description: "With over 12 years of experience in real estate, Vivid Infra has helped thousands of clients find their dream properties. We specialize in residential and commercial properties across Lucknow.",
-    specialties: ["Residential Properties", "Commercial Spaces", "Land Development"],
-    languages: ["Hindi", "English"],
-  },
-  {
-    id: 2,
-    name: "Saurabh Gupta",
-    company: "Safe Invest Realty",
-    since: 2012,
-    buyers: "100+",
-    propertiesSale: 56,
-    propertiesRent: 0,
-    image: "/agent-profile.png",
-    phone: "+91 98765 43211",
-    email: "saurabh@safeinvest.com",
-    location: "Hazratganj, Lucknow",
-    rating: 4.6,
-    reviews: 89,
-    description: "Dedicated real estate professional committed to providing exceptional service. Specializing in investment properties and first-time homebuyers.",
-    specialties: ["Investment Properties", "First-time Buyers", "Property Consultation"],
-    languages: ["Hindi", "English"],
-  },
-  {
-    id: 3,
-    name: "Rahul Juyal",
-    company: "Pratham Realty Solutions",
-    since: 2011,
-    buyers: "4000+",
-    propertiesSale: 71,
-    propertiesRent: 0,
-    image: "/agent-photo.jpg",
-    phone: "+91 98765 43212",
-    email: "rahul@prathamrealty.com",
-    location: "Indira Nagar, Lucknow",
-    rating: 4.9,
-    reviews: 234,
-    description: "Leading real estate expert with a proven track record. Known for transparent dealings and customer satisfaction.",
-    specialties: ["Luxury Properties", "Commercial Real Estate", "Property Management"],
-    languages: ["Hindi", "English", "Urdu"],
-  },
-  {
-    id: 4,
-    name: "Shiyaram Singh",
-    company: "S.R. Broker LLP",
-    since: 2017,
-    buyers: "4000+",
-    propertiesSale: 144,
-    propertiesRent: 10,
-    image: "/agent-profile-photo.jpg",
-    phone: "+91 98765 43213",
-    email: "shiyaram@srbroker.com",
-    location: "Aliganj, Lucknow",
-    rating: 4.7,
-    reviews: 156,
-    description: "Experienced broker with expertise in both residential and rental properties. Committed to finding the perfect match for every client.",
-    specialties: ["Residential Sales", "Rental Properties", "Property Valuation"],
-    languages: ["Hindi", "English"],
-  },
-];
+export default function AgentProfile() {
+  const params = useParams();
+  const [agent, setAgent] = useState<any>(null);
+  const [properties, setProperties] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showContact, setShowContact] = useState(false);
 
-export default async function AgentDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const agent = agents.find((a) => a.id === Number(id));
+  useEffect(() => {
+    const fetchAgentData = async () => {
+      try {
+        // Fetch Agent Details
+        const agentRes = await fetch(`/api/agents/${params?.id}`);
+        const agentData = await agentRes.json();
+
+        if (agentRes.ok) {
+          setAgent(agentData.agent);
+
+          // Fetch Agent Properties
+          // If dummy agent, we might not have real properties, so we skip or show placeholders
+          if (params?.id && !params.id.toString().startsWith('dummy')) {
+            const propsRes = await fetch(`/api/properties?userId=${params.id}&limit=100`);
+            const propsData = await propsRes.json();
+            if (propsRes.ok) {
+              setProperties(propsData.properties || []);
+            }
+          } else {
+            // Generate dummy properties for dummy agents
+            setProperties(generateDummyProperties(agentData.agent.name));
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching agent data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (params?.id) {
+      fetchAgentData();
+    }
+  }, [params?.id]);
+
+  const generateDummyProperties = (agentName: string) => {
+    return Array.from({ length: 4 }).map((_, i) => ({
+      _id: `dummy-prop-${i}`,
+      title: `Premium Property ${i + 1} by ${agentName}`,
+      price: 5000000 + (i * 1000000),
+      location: { locality: 'Gomti Nagar', city: 'Lucknow' },
+      specs: { bedrooms: 3, bathrooms: 2, carpetArea: 1500 },
+      propertyType: 'Apartment',
+      purpose: 'sale',
+      media: { photos: [{ url: '/modern-apartment.jpg' }] },
+      isDummy: true
+    }));
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0,
+    }).format(price);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+      </div>
+    );
+  }
 
   if (!agent) {
-    notFound();
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Agent not found</h1>
+          <Link href="/" className="text-red-600 hover:underline mt-4 inline-block">Go Home</Link>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <main className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50 font-sans">
       <Header />
-      
-      <section className="py-8 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="bg-card rounded-2xl shadow-lg border border-border overflow-hidden">
-            {/* Header Section */}
-            <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 md:p-8">
-              <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
-                <div className="relative">
+
+      {/* Agent Header */}
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex flex-col md:flex-row gap-8 items-start">
+            <div className="w-32 h-32 md:w-48 md:h-48 rounded-2xl overflow-hidden shadow-lg border-4 border-white bg-gray-100 flex-shrink-0 relative">
+              <img
+                src={agent.agentProfile?.photoUrl || "/placeholder-user.jpg"}
+                alt={agent.name}
+                className="w-full h-full object-cover object-top"
+              />
+            </div>
+
+            <div className="flex-1">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                    {agent.name}
+                    <CheckCircle className="w-6 h-6 text-blue-500 fill-blue-50" />
+                  </h1>
+                  <p className="text-lg text-red-600 font-medium mt-1">
+                    {Array.isArray(agent.agentProfile?.specialization)
+                      ? agent.agentProfile.specialization.join(', ')
+                      : (agent.agentProfile?.specialization || 'Real Estate Agent')}
+                  </p>
+                  {agent.agentProfile?.languages && agent.agentProfile.languages.length > 0 && (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Speaks: {agent.agentProfile.languages.join(', ')}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowContact(true)}
+                    className="bg-red-600 text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-red-700 transition-colors flex items-center gap-2"
+                  >
+                    <Phone className="w-4 h-4" />
+                    Contact Agent
+                  </button>
+                </div>
+              </div>
+
+              <LeadFormModal
+                isOpen={showContact}
+                onClose={() => setShowContact(false)}
+                type="agent_contact"
+                targetId={agent._id}
+                targetName={agent.name}
+                title={`Contact ${agent.name}`}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div className="flex items-center gap-2 text-gray-600">
+                  <MapPin className="w-4 h-4 text-gray-400" />
+                  <span>{agent.agentProfile?.location || 'Lucknow'}</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Calendar className="w-4 h-4 text-gray-400" />
+                  <span>Experience: {agent.agentProfile?.experience || 0} Years</span>
+                </div>
+                <div className="flex items-center gap-2 text-gray-600">
+                  <Building2 className="w-4 h-4 text-gray-400" />
+                  <span>Properties: {properties.length} Listed</span>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-6 border border-gray-100">
+                <h3 className="font-semibold text-gray-900 mb-2">About {agent.name}</h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {agent.agentProfile?.bio || `${agent.name} is a dedicated real estate professional specializing in ${agent.agentProfile?.specialization || 'residential properties'}. With over ${agent.agentProfile?.experience || 0} years of experience in the Lucknow market, they help clients find their dream properties with transparency and trust.`}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Properties Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h2 className="text-2xl font-bold text-gray-900 mb-8">Properties Listed by {agent.name}</h2>
+
+        {properties.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {properties.map((property) => (
+              <Link
+                href={property.isDummy ? '#' : `/property/${property._id}`}
+                key={property._id}
+                className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-gray-100 group"
+              >
+                <div className="relative h-48 overflow-hidden">
                   <img
-                    src={agent.image || "/placeholder.svg"}
-                    alt={agent.name}
-                    className="w-24 h-24 md:w-32 md:h-32 rounded-full object-cover border-4 border-background shadow-lg"
+                    src={property.media?.photos?.[0]?.url || "/placeholder.svg"}
+                    alt={property.title}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  <div className="absolute -bottom-2 -right-2 bg-primary text-primary-foreground rounded-full p-2 shadow-lg">
-                    <Star className="w-4 h-4 fill-current" />
+                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-gray-900">
+                    {property.propertyType}
+                  </div>
+                  <div className="absolute bottom-3 left-3 bg-black/50 backdrop-blur-sm px-2 py-1 rounded text-xs font-bold text-white flex items-center gap-1">
+                    <MapPin className="w-3 h-3" />
+                    {property.location?.locality}, {property.location?.city}
                   </div>
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="bg-secondary text-secondary-foreground text-xs font-bold px-2 py-1 rounded">
-                      MB Preferred
-                    </span>
-                    <span className="bg-foreground text-background text-xs px-2 py-1 rounded">✓</span>
-                  </div>
-                  <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">{agent.name}</h1>
-                  <p className="text-lg text-muted-foreground mb-3">{agent.company}</p>
-                  <div className="flex items-center gap-4 flex-wrap">
+                <div className="p-5">
+                  <h3 className="font-bold text-gray-900 text-lg mb-1 line-clamp-1">{property.title}</h3>
+                  <p className="text-red-600 font-bold text-xl mb-3">{formatPrice(property.price)}</p>
+
+                  <div className="flex items-center justify-between text-sm text-gray-500 pt-3 border-t border-gray-100">
                     <div className="flex items-center gap-1">
-                      <Star className="w-5 h-5 text-accent fill-current" />
-                      <span className="font-bold text-foreground">{agent.rating}</span>
-                      <span className="text-sm text-muted-foreground">({agent.reviews} reviews)</span>
+                      <span className="font-semibold text-gray-700">{property.specs?.bedrooms}</span> BHK
                     </div>
-                    <div className="flex items-center gap-1 text-muted-foreground">
-                      <MapPin className="w-4 h-4" />
-                      <span className="text-sm">{agent.location}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-gray-700">{property.specs?.bathrooms}</span> Baths
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="font-semibold text-gray-700">{property.specs?.carpetArea}</span> Sq.Ft
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Contact Section */}
-            <div className="p-6 md:p-8 border-b border-border">
-              <h2 className="text-xl font-bold text-foreground mb-4">Contact Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <a
-                  href={`tel:${agent.phone}`}
-                  className="flex items-center gap-3 p-4 bg-muted rounded-lg hover:bg-muted/80 active:bg-muted/60 transition-colors touch-manipulation"
-                >
-                  <div className="bg-primary/10 rounded-full p-2">
-                    <Phone className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Phone</p>
-                    <p className="font-semibold text-foreground">{agent.phone}</p>
-                  </div>
-                </a>
-                <a
-                  href={`mailto:${agent.email}`}
-                  className="flex items-center gap-3 p-4 bg-muted rounded-lg hover:bg-muted/80 active:bg-muted/60 transition-colors touch-manipulation"
-                >
-                  <div className="bg-secondary/10 rounded-full p-2">
-                    <Mail className="w-5 h-5 text-secondary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Email</p>
-                    <p className="font-semibold text-foreground">{agent.email}</p>
-                  </div>
-                </a>
-              </div>
-            </div>
-
-            {/* About Section */}
-            <div className="p-6 md:p-8 border-b border-border">
-              <h2 className="text-xl font-bold text-foreground mb-4">About</h2>
-              <p className="text-muted-foreground leading-relaxed mb-6">{agent.description}</p>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="flex items-center gap-3">
-                  <div className="bg-primary/10 rounded-full p-3">
-                    <Calendar className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Operating Since</p>
-                    <p className="font-bold text-foreground">{agent.since}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-secondary/10 rounded-full p-3">
-                    <Users className="w-6 h-6 text-secondary" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Buyers Served</p>
-                    <p className="font-bold text-foreground">{agent.buyers}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="bg-accent/20 rounded-full p-3">
-                    <Home className="w-6 h-6 text-accent-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Total Properties</p>
-                    <p className="font-bold text-foreground">{agent.propertiesSale + agent.propertiesRent}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Specialties & Languages */}
-            <div className="p-6 md:p-8 border-b border-border">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="font-bold text-foreground mb-3">Specialties</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {agent.specialties.map((specialty, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-semibold"
-                      >
-                        {specialty}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground mb-3">Languages</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {agent.languages.map((lang, idx) => (
-                      <span
-                        key={idx}
-                        className="bg-muted text-foreground px-3 py-1 rounded-full text-sm font-semibold"
-                      >
-                        {lang}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Properties Stats */}
-            <div className="p-6 md:p-8">
-              <h2 className="text-xl font-bold text-foreground mb-4">Property Portfolio</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-muted rounded-lg p-4 text-center">
-                  <p className="text-3xl font-bold text-foreground mb-1">{agent.propertiesSale}</p>
-                  <p className="text-sm text-muted-foreground">Properties for Sale</p>
-                </div>
-                {agent.propertiesRent > 0 && (
-                  <div className="bg-muted rounded-lg p-4 text-center">
-                    <p className="text-3xl font-bold text-foreground mb-1">{agent.propertiesRent}</p>
-                    <p className="text-sm text-muted-foreground">Properties for Rent</p>
-                  </div>
-                )}
-              </div>
-            </div>
+              </Link>
+            ))}
           </div>
-
-          {/* Back Button */}
-          <div className="mt-6">
-            <Link
-              href="/"
-              className="inline-flex items-center gap-2 text-primary font-semibold hover:underline active:opacity-70 touch-manipulation"
-            >
-              ← Back to Home
-            </Link>
+        ) : (
+          <div className="text-center py-12 bg-white rounded-xl border border-dashed border-gray-300">
+            <Building2 className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No properties listed yet.</p>
           </div>
-        </div>
-      </section>
-
-      <footer className="bg-primary text-primary-foreground py-8 px-4 mt-10">
-        <div className="max-w-7xl mx-auto text-center text-sm">
-          <p>&copy; 2025 PropertyGanj. All rights reserved.</p>
-        </div>
-      </footer>
-    </main>
+        )}
+      </div>
+    </div>
   );
 }
-

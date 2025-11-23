@@ -23,7 +23,7 @@ export default function HomePage() {
   const [likedProperties, setLikedProperties] = useState<string[]>([])
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | HTMLAnchorElement | null }>({})
 
-  const propertyTabs = ["Buy", "Rent", "New Projects", "PG", "Plot", "Commercial"]
+  const propertyTabs = ["Buy", "Rent", "New Projects", "Plot", "Commercial"]
   const allTabs = [...propertyTabs, "Post Free Property Ad"]
 
   useEffect(() => {
@@ -248,48 +248,75 @@ export default function HomePage() {
     image: `/kanpur-road-locality.jpg`, // default image
   }));
 
-  const agents = [
-    {
-      id: 1,
-      name: "Vivid Infra",
-      company: "Vivid Infra Land Pvt Ltd",
-      since: 2012,
-      buyers: "1000+",
-      propertiesSale: 65,
-      propertiesRent: 0,
-      image: "/agent-profile-photo.jpg",
-    },
-    {
-      id: 2,
-      name: "Saurabh Gupta",
-      company: "Safe Invest Realty",
-      since: 2012,
-      buyers: "100+",
-      propertiesSale: 56,
-      propertiesRent: 0,
-      image: "/agent-profile.png",
-    },
-    {
-      id: 3,
-      name: "Rahul Juyal",
-      company: "Pratham Realty Solutions",
-      since: 2011,
-      buyers: "4000+",
-      propertiesSale: 71,
-      propertiesRent: 0,
-      image: "/agent-photo.jpg",
-    },
-    {
-      id: 4,
-      name: "Shiyaram Singh",
-      company: "S.R. Broker LLP",
-      since: 2017,
-      buyers: "4000+",
-      propertiesSale: 144,
-      propertiesRent: 10,
-      image: "/agent-profile-photo.jpg",
-    },
-  ]
+  const [agents, setAgents] = useState<any[]>([])
+
+  useEffect(() => {
+    const fetchAgents = async () => {
+      try {
+        const res = await fetch('/api/agents')
+        const data = await res.json()
+        if (data.agents && data.agents.length > 0) {
+          const formattedAgents = data.agents.map((agent: any) => ({
+            id: agent._id,
+            name: agent.name,
+            company: agent.agentProfile?.specialization || 'Real Estate Agent',
+            since: new Date().getFullYear() - (agent.agentProfile?.experience || 0),
+            buyers: '50+',
+            propertiesSale: 10,
+            propertiesRent: 5,
+            image: agent.agentProfile?.photoUrl || "/agent-profile-photo.jpg"
+          }))
+          setAgents(formattedAgents)
+        } else {
+          setAgents([
+            {
+              id: 1,
+              name: "Vivid Infra",
+              company: "Vivid Infra Land Pvt Ltd",
+              since: 2012,
+              buyers: "1000+",
+              propertiesSale: 65,
+              propertiesRent: 0,
+              image: "/agent-profile-photo.jpg",
+            },
+            {
+              id: 2,
+              name: "Saurabh Gupta",
+              company: "Safe Invest Realty",
+              since: 2012,
+              buyers: "100+",
+              propertiesSale: 56,
+              propertiesRent: 0,
+              image: "/agent-profile.png",
+            },
+            {
+              id: 3,
+              name: "Rahul Juyal",
+              company: "Pratham Realty Solutions",
+              since: 2011,
+              buyers: "4000+",
+              propertiesSale: 71,
+              propertiesRent: 0,
+              image: "/agent-photo.jpg",
+            },
+            {
+              id: 4,
+              name: "Shiyaram Singh",
+              company: "S.R. Broker LLP",
+              since: 2017,
+              buyers: "4000+",
+              propertiesSale: 144,
+              propertiesRent: 10,
+              image: "/agent-profile-photo.jpg",
+            },
+          ])
+        }
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchAgents()
+  }, [])
 
   const industryInsights = [
     {
@@ -394,6 +421,15 @@ export default function HomePage() {
                   className="relative whitespace-nowrap text-xs sm:text-sm md:text-base lg:text-lg font-semibold pb-1.5 text-white/80 hover:text-primary hover:scale-105 transition-all duration-300"
                 >
                   Post Free Property Ad
+                </Link>
+                <Link
+                  href="/agent-registration"
+                  ref={(el) => { tabRefs.current["Register as Agent"] = el }}
+                  onMouseEnter={() => setHoveredTab("Register as Agent")}
+                  onMouseLeave={() => setHoveredTab(null)}
+                  className="relative whitespace-nowrap text-xs sm:text-sm md:text-base lg:text-lg font-semibold pb-1.5 text-white/80 hover:text-primary hover:scale-105 transition-all duration-300"
+                >
+                  Register as Agent
                 </Link>
 
                 {/* Animated Underline */}

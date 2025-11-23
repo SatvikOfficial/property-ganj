@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     await connectDB();
 
     const body = await request.json();
-    const { name, phone, email, password } = body;
+    const { name, phone, email, password, role, agentProfile } = body;
 
     // Validate required fields
     if (!name || !phone || !password) {
@@ -43,6 +43,8 @@ export async function POST(request: NextRequest) {
       phone,
       email: normalizedEmail,
       password,
+      role: role || 'user',
+      agentProfile: role === 'agent' ? agentProfile : undefined,
     });
 
     // Return user info without password

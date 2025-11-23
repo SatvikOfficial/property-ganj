@@ -13,6 +13,8 @@ import { RentalYieldCalculator } from '@/components/property/RentalYieldCalculat
 import { LocalityInsights } from '@/components/property/LocalityInsights';
 import { TOOL_DEFINITIONS } from '@/data/tools';
 
+import LeadFormModal from '@/components/LeadFormModal';
+
 type PropertyMedia = {
   url: string;
   category?: string;
@@ -94,6 +96,7 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [smartSimilar, setSmartSimilar] = useState<SimilarProperty[]>([]);
+  const [isLeadFormOpen, setIsLeadFormOpen] = useState(false);
   const touchStartRef = useRef<number | null>(null);
 
   const galleryImages = useMemo(
@@ -173,7 +176,7 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
             }),
           );
 
-        const byLocalityAndBudget = canonical.filter((item) => {
+        const byLocalityAndBudget = canonical.filter((item: SimilarProperty) => {
           const localityMatch = localityToken
             ? item.locality?.toLowerCase().includes(localityToken)
             : true;
@@ -184,7 +187,7 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
 
         let curated = byLocalityAndBudget;
         if (!curated.length) {
-          curated = canonical.filter((item) =>
+          curated = canonical.filter((item: SimilarProperty) =>
             basePrice > 0 ? Math.abs(item.price - basePrice) <= basePrice * 0.35 : true,
           );
         }
@@ -209,8 +212,8 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
   const geoapifyKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
   const mapPreviewUrl =
     property.location.latitude !== undefined &&
-    property.location.longitude !== undefined &&
-    geoapifyKey
+      property.location.longitude !== undefined &&
+      geoapifyKey
       ? `https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=600&height=320&center=lonlat:${property.location.longitude},${property.location.latitude}&zoom=15&marker=lonlat:${property.location.longitude},${property.location.latitude};color:%23eb6239;size:large&apiKey=${geoapifyKey}`
       : null;
 
@@ -222,18 +225,18 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
     property.location.area ? { label: 'Area / Zone', value: property.location.area } : null,
     property.location.sector || property.location.block
       ? {
-          label: 'Sector / Block',
-          value: [property.location.sector, property.location.block].filter(Boolean).join(', '),
-        }
+        label: 'Sector / Block',
+        value: [property.location.sector, property.location.block].filter(Boolean).join(', '),
+      }
       : null,
     property.location.road ? { label: 'Primary Road', value: property.location.road } : null,
     property.location.landmark ? { label: 'Landmark', value: property.location.landmark } : null,
     property.location.pincode ? { label: 'Pincode', value: property.location.pincode } : null,
     property.location.latitude !== undefined && property.location.longitude !== undefined
       ? {
-          label: 'Coordinates',
-          value: `${property.location.latitude.toFixed(5)}, ${property.location.longitude.toFixed(5)}`,
-        }
+        label: 'Coordinates',
+        value: `${property.location.latitude.toFixed(5)}, ${property.location.longitude.toFixed(5)}`,
+      }
       : null,
   ] as (LocationFact | null)[]).filter((item): item is LocationFact => Boolean(item && item.value));
 
@@ -308,9 +311,8 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
               <button
                 key={image.url + index}
                 onClick={() => setCurrentImageIndex(index)}
-                className={`relative h-20 w-32 rounded-xl overflow-hidden border transition-all ${
-                  currentImageIndex === index ? 'border-primary ring-2 ring-primary/40' : 'border-border'
-                }`}
+                className={`relative h-20 w-32 rounded-xl overflow-hidden border transition-all ${currentImageIndex === index ? 'border-primary ring-2 ring-primary/40' : 'border-border'
+                  }`}
               >
                 <img
                   src={image.url || '/placeholder.svg'}
@@ -369,9 +371,8 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
               <img
                 src={galleryImages[currentImageIndex]?.url || '/placeholder.svg'}
                 alt={`${property.title} photo ${currentImageIndex + 1}`}
-                className={`w-full h-auto rounded-3xl shadow-2xl transition-transform duration-300 ${
-                  isZoomed ? 'scale-125 cursor-zoom-out' : 'scale-100 cursor-zoom-in'
-                }`}
+                className={`w-full h-auto rounded-3xl shadow-2xl transition-transform duration-300 ${isZoomed ? 'scale-125 cursor-zoom-out' : 'scale-100 cursor-zoom-in'
+                  }`}
                 onClick={toggleZoom}
               />
               {galleryImages.length > 1 && (
@@ -398,9 +399,8 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
                 <button
                   key={image.url + index}
                   onClick={() => setCurrentImageIndex(index)}
-                  className={`h-16 w-24 rounded-xl overflow-hidden border ${
-                    currentImageIndex === index ? 'border-primary' : 'border-white/20'
-                  }`}
+                  className={`h-16 w-24 rounded-xl overflow-hidden border ${currentImageIndex === index ? 'border-primary' : 'border-white/20'
+                    }`}
                 >
                   <img
                     src={image.url || '/placeholder.svg'}
@@ -549,27 +549,23 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
           <div className="bg-card border border-border rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg">
             <p className="text-xs md:text-sm text-muted-foreground mb-2">Contact</p>
             <h3 className="text-lg md:text-xl font-bold text-foreground mb-3 md:mb-4">{property.contact.name}</h3>
-            <a 
-              href={`tel:${property.contact.phone}`}
+            <button
+              onClick={() => setIsLeadFormOpen(true)}
               className="block w-full bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 mb-2 md:mb-3 text-sm md:text-base text-center py-2 rounded-md font-semibold touch-manipulation"
             >
-              Call {property.contact.name.split(' ')[0]}
-            </a>
-            <button 
-              onClick={() => {
-                if (property.contact.phone) {
-                  navigator.clipboard.writeText(property.contact.phone);
-                  alert(`Phone number copied: ${property.contact.phone}. We'll call you back soon!`);
-                }
-              }}
-              className="w-full border border-border bg-background hover:bg-accent hover:text-accent-foreground active:bg-accent/80 mb-2 md:mb-3 text-sm md:text-base py-2 rounded-md font-semibold touch-manipulation"
-            >
-              Request Callback
+              Contact Owner
             </button>
             <div className="text-xs md:text-sm text-muted-foreground space-y-1 md:space-y-2">
-              <p>Phone: {property.contact.phone}</p>
-              {property.contact.email && <p>Email: {property.contact.email}</p>}
+              <p>Contact for details</p>
             </div>
+            <LeadFormModal
+              isOpen={isLeadFormOpen}
+              onClose={() => setIsLeadFormOpen(false)}
+              type="property_inquiry"
+              targetId={property.id}
+              targetName={property.title}
+              title="Contact Owner"
+            />
           </div>
 
           {isForSale ? (
@@ -694,23 +690,23 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
                 const isPlaceholder = item.id?.toString().startsWith('placeholder-')
                 const href = isPlaceholder ? `/property/placeholder/${item.id}` : `/property/${item.id}`
                 return (
-                <Link key={item.id} href={href} className="group">
-                  <div className="bg-card rounded-xl overflow-hidden border border-border shadow hover:shadow-lg transition">
-                    <div className="h-40 bg-muted overflow-hidden">
-                      <img
-                        src={item.image || '/placeholder.svg'}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
+                  <Link key={item.id} href={href} className="group">
+                    <div className="bg-card rounded-xl overflow-hidden border border-border shadow hover:shadow-lg transition">
+                      <div className="h-40 bg-muted overflow-hidden">
+                        <img
+                          src={item.image || '/placeholder.svg'}
+                          alt={item.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <p className="text-sm text-muted-foreground">{item.location}</p>
+                        <h3 className="text-base font-semibold text-foreground mb-1">{item.title}</h3>
+                        <p className="text-sm text-muted-foreground">{item.area}</p>
+                        <p className="text-primary font-bold">{formatCurrency(item.price)}</p>
+                      </div>
                     </div>
-                    <div className="p-4">
-                      <p className="text-sm text-muted-foreground">{item.location}</p>
-                      <h3 className="text-base font-semibold text-foreground mb-1">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground">{item.area}</p>
-                      <p className="text-primary font-bold">{formatCurrency(item.price)}</p>
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
                 )
               })}
             </div>
