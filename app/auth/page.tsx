@@ -104,9 +104,15 @@ export default function AuthPage() {
 
         toast({
           title: `Welcome back, ${data.user.name}`,
-          description: 'Redirecting you to the home page...',
+          description: data.user.role === 'admin' ? 'Redirecting to admin dashboard...' : 'Redirecting you to the home page...',
         });
-        router.push('/');
+
+        // Redirect admin to dashboard, others to home
+        if (data.user.role === 'admin') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/');
+        }
         router.refresh();
         return;
       }
