@@ -79,7 +79,7 @@ const StyledWrapper = styled.div`
     visibility: hidden;
     transform: translateY(-12px);
     transition: all 0.48s cubic-bezier(0.23, 1, 0.32, 1);
-    z-index: 1;
+    z-index: 99999 !important;
     pointer-events: none;
     list-style: none;
     padding: 16px;
@@ -108,7 +108,7 @@ const StyledWrapper = styled.div`
   .menu .item:hover .link {
     color: #ffffff;
     border-radius: 16px 16px 0 0;
-    z-index: 2; /* Ensure it appears above the submenu */
+    z-index: 51; /* Ensure it appears above the submenu */
   }
 
   .menu .item:hover .link::after {

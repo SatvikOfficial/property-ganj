@@ -201,65 +201,135 @@ export default function AboutPage() {
       </section>
 
       {/* Blog Insights Section */}
-      <section className="bg-accent/20 py-16 px-4">
+      <section className="bg-accent/20 py-8 md:py-16 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Property Ganj Insights</h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
+          <div className="text-center mb-6 md:mb-12">
+            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-2 md:mb-4">Property Ganj Insights</h2>
+            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
               Stay updated with our latest articles on property trends, investment tips, and market analysis in Lucknow
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Link href="/blog/1" className="block group">
-              <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-40 bg-gradient-to-r from-primary to-accent"></div>
-                <div className="p-6">
-                  <h3 className="font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">Understanding Circle Rates in Lucknow: A Complete Guide</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 group-hover:text-foreground transition-colors">Learn how circle rates affect property prices in Lucknow and how they impact your property investment decisions.</p>
-                  <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Nov 15, 2025</span>
-                    <span>5 min read</span>
-                  </div>
+              <div className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col md:flex-row">
+                <div className="w-full sm:w-16 h-16 bg-gradient-to-r from-primary to-accent md:w-20 md:h-full flex-shrink-0"></div>
+                <div className="p-2 md:p-4 flex-1">
+                  <h3 className="font-bold text-foreground text-xs sm:text-sm md:text-base line-clamp-2 group-hover:text-primary transition-colors">Understanding Circle Rates in Lucknow: A Complete Guide</h3>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 group-hover:text-foreground transition-colors">Learn how circle rates affect property prices in Lucknow and how they impact your property investment decisions.</p>
                 </div>
               </div>
             </Link>
 
             <Link href="/blog/3" className="block group">
-              <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-40 bg-gradient-to-r from-secondary to-accent"></div>
-                <div className="p-6">
-                  <h3 className="font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">Stamp Duty and Registration Charges in Lucknow: What You Need to Know</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 group-hover:text-foreground transition-colors">Complete guide to stamp duty and registration charges for property transactions in Lucknow.</p>
-                  <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Nov 10, 2025</span>
-                    <span>6 min read</span>
-                  </div>
+              <div className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col md:flex-row">
+                <div className="w-full sm:w-16 h-16 bg-gradient-to-r from-secondary to-accent md:w-20 md:h-full flex-shrink-0"></div>
+                <div className="p-2 md:p-4 flex-1">
+                  <h3 className="font-bold text-foreground text-xs sm:text-sm md:text-base line-clamp-2 group-hover:text-primary transition-colors">Stamp Duty and Registration Charges in Lucknow: What You Need to Know</h3>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 group-hover:text-foreground transition-colors">Complete guide to stamp duty and registration charges for property transactions in Lucknow.</p>
                 </div>
               </div>
             </Link>
 
             <Link href="/blog/6" className="block group">
-              <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-40 bg-gradient-to-r from-accent to-primary"></div>
-                <div className="p-6">
-                  <h3 className="font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">Top Localities for Property Investment in Lucknow 2025</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 group-hover:text-foreground transition-colors">Explore the best localities in Lucknow for real estate investment this year.</p>
-                  <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Nov 2, 2025</span>
-                    <span>8 min read</span>
-                  </div>
+              <div className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col md:flex-row">
+                <div className="w-full sm:w-16 h-16 bg-gradient-to-r from-accent to-primary md:w-20 md:h-full flex-shrink-0"></div>
+                <div className="p-2 md:p-4 flex-1">
+                  <h3 className="font-bold text-foreground text-xs sm:text-sm md:text-base line-clamp-2 group-hover:text-primary transition-colors">Top Localities for Property Investment in Lucknow 2025</h3>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2 group-hover:text-foreground transition-colors">Explore the best localities in Lucknow for real estate investment this year.</p>
                 </div>
               </div>
             </Link>
           </div>
 
-          <div className="text-center mt-8">
+          <div className="text-center mt-3 md:mt-8">
             <Link
               href="/blog"
-              className="inline-flex items-center gap-2 text-primary font-semibold hover:underline"
+              className="inline-flex items-center gap-2 text-primary font-semibold hover:underline text-sm md:text-base"
             >
               View All Articles
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Loan & Finance Section */}
+      <section className="py-8 md:py-16 px-4">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-6 md:mb-12">
+            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-2 md:mb-4">Loan & Finance</h2>
+            <p className="text-base md:text-lg text-muted-foreground max-w-3xl mx-auto">
+              Comprehensive guides and resources for home loans, financing, and property investment
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Link href="/blog/1" className="block group">
+              <div className="bg-card rounded-lg border border-border hover:shadow-lg transition-shadow h-full flex flex-col md:flex-row">
+                <div className="w-16 h-16 bg-primary/10 rounded-l-lg md:rounded-l-lg md:rounded-r-none md:w-20 md:h-full flex-shrink-0 flex items-center justify-center md:rounded-r-lg md:rounded-l-none">
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="p-2 md:p-4 flex-1">
+                  <h3 className="font-bold text-foreground text-xs sm:text-sm md:text-base mb-1 group-hover:text-secondary transition-colors">Home Loan Eligibility: How to Check Your Qualification</h3>
+                  <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2">Complete guide to determining your home loan eligibility based on income, credit score, and other factors.</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/blog/2" className="block group">
+              <div className="bg-card rounded-lg border border-border hover:shadow-lg transition-shadow h-full flex flex-col md:flex-row">
+                <div className="w-16 h-16 bg-primary/10 rounded-l-lg md:rounded-l-lg md:rounded-r-none md:w-20 md:h-full flex-shrink-0 flex items-center justify-center md:rounded-r-lg md:rounded-l-none">
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="p-2 md:p-4 flex-1">
+                  <h3 className="font-bold text-foreground text-xs sm:text-sm md:text-base mb-1 group-hover:text-secondary transition-colors">Interest Rates and EMI Calculations: A Complete Guide</h3>
+                  <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2">Learn how interest rates affect your EMI and how to calculate your monthly payments.</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/blog/3" className="block group">
+              <div className="bg-card rounded-lg border border-border hover:shadow-lg transition-shadow h-full flex flex-col md:flex-row">
+                <div className="w-16 h-16 bg-primary/10 rounded-l-lg md:rounded-l-lg md:rounded-r-none md:w-20 md:h-full flex-shrink-0 flex items-center justify-center md:rounded-r-lg md:rounded-l-none">
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="p-2 md:p-4 flex-1">
+                  <h3 className="font-bold text-foreground text-xs sm:text-sm md:text-base mb-1 group-hover:text-secondary transition-colors">Top Banks for Home Loans in Lucknow: Compare Interest Rates</h3>
+                  <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2">Compare home loan rates and features from the best banks operating in Lucknow.</p>
+                </div>
+              </div>
+            </Link>
+
+            <Link href="/blog/4" className="block group">
+              <div className="bg-card rounded-lg border border-border hover:shadow-lg transition-shadow h-full flex flex-col md:flex-row">
+                <div className="w-16 h-16 bg-primary/10 rounded-l-lg md:rounded-l-lg md:rounded-r-none md:w-20 md:h-full flex-shrink-0 flex items-center justify-center md:rounded-r-lg md:rounded-l-none">
+                  <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="p-2 md:p-4 flex-1">
+                  <h3 className="font-bold text-foreground text-xs sm:text-sm md:text-base mb-1 group-hover:text-secondary transition-colors">Home Loan Documents: Complete Checklist for Property Buyers</h3>
+                  <p className="text-xs text-muted-foreground group-hover:text-foreground transition-colors line-clamp-2">Essential documents required for home loan approval and property purchase.</p>
+                </div>
+              </div>
+            </Link>
+          </div>
+
+          <div className="text-center mt-3 md:mt-8">
+            <Link
+              href="/loan-finance"
+              className="inline-flex items-center gap-2 text-secondary font-semibold hover:underline text-sm md:text-base"
+            >
+              Explore Loan Options
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

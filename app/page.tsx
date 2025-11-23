@@ -10,6 +10,7 @@ import PropertyCarousel from "@/components/property-carousel"
 import FeaturedStackCard from "@/components/FeaturedStackCard"
 import LikeButton from "@/components/LikeButton"
 import { TOOL_DEFINITIONS } from "@/data/tools"
+import { POPULAR_LUCKNOW_LOCALITIES } from "@/data/lucknowLocalities"
 
 export default function HomePage() {
   const [selectedTab, setSelectedTab] = useState("Buy")
@@ -236,44 +237,16 @@ export default function HomePage() {
     },
   ]
 
-  const localities = [
-    {
-      id: 1,
-      name: "Kanpur Road",
-      priceRange: "₹2,509 - ₹12,500 per sqft",
-      rating: 3.9,
-      reviews: 127,
-      properties: 193,
-      image: "/kanpur-road-locality.jpg",
-    },
-    {
-      id: 2,
-      name: "Sushant Golf City",
-      priceRange: "₹4,904 - ₹12,500 per sqft",
-      rating: 4.4,
-      reviews: 139,
-      properties: 727,
-      image: "/sushant-golf-city.jpg",
-    },
-    {
-      id: 3,
-      name: "Kishan Path",
-      priceRange: "₹2,737 - ₹12,500 per sqft",
-      rating: 4.1,
-      reviews: 28,
-      properties: 89,
-      image: "/kishan-path.jpg",
-    },
-    {
-      id: 4,
-      name: "IIM Road",
-      priceRange: "₹3,200 - ₹15,000 per sqft",
-      rating: 4.3,
-      reviews: 156,
-      properties: 412,
-      image: "/iim-road.jpg",
-    },
-  ]
+  const localities = POPULAR_LUCKNOW_LOCALITIES.slice(0, 4).map((locality, index) => ({
+    id: index + 1,
+    name: locality.label,
+    slug: locality.label.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
+    priceRange: `₹${(locality.insights?.averagePricePerSqft ?? 4000) * 0.5} - ₹${(locality.insights?.averagePricePerSqft ?? 8000) * 1.5} per sqft`,
+    rating: locality.insights?.safetyRating ?? 4.0,
+    reviews: locality.insights?.ranking ? (20 - locality.insights?.ranking) * 20 + 10 : 100,
+    properties: locality.insights?.ranking ? (20 - locality.insights?.ranking) * 50 + 20 : 200,
+    image: `/kanpur-road-locality.jpg`, // default image
+  }));
 
   const agents = [
     {
@@ -370,11 +343,11 @@ export default function HomePage() {
   }
 
   return (
-    <main className="min-h-fit bg-background">
+    <main className="min-h-fit bg-background overflow-x-hidden">
       <Header />
 
       {/* Hero & Search Section */}
-      <section id="hero-section" className="bg-background pt-8 pb-6 px-4 sm:px-6 md:px-8 relative z-0">
+      <section id="hero-section" className="bg-background pt-8 pb-6 px-4 sm:px-6 md:px-8 relative">
         {/* Video Background */}
         <div className="absolute inset-0 -z-10 overflow-hidden">
           <video
@@ -382,6 +355,7 @@ export default function HomePage() {
             loop
             muted
             playsInline
+            preload="auto"
             className="w-full h-full object-cover"
           >
             <source src="/hero_brightener.mp4" type="video/mp4" />
@@ -392,13 +366,13 @@ export default function HomePage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row gap-8">
+          <div className="flex flex-col lg:flex-row gap-4 md:gap-6 lg:gap-8">
             {/* Left side: Content */}
-            <div className="flex-1">
+            <div className="flex-1 min-w-0"> {/* min-w-0 prevents flex item from overflowing */}
               <DynamicGreeting />
 
               {/* Property Type Tabs */}
-              <div className="relative flex gap-2 md:gap-6 mb-6 mt-4 overflow-x-auto pb-1">
+              <div className="relative flex gap-2 md:gap-4 lg:gap-6 mb-4 md:mb-6 mt-4 overflow-x-auto pb-1">
                 {propertyTabs.map((tab) => (
                   <button
                     key={tab}
@@ -406,7 +380,7 @@ export default function HomePage() {
                     onClick={() => setSelectedTab(tab)}
                     onMouseEnter={() => setHoveredTab(tab)}
                     onMouseLeave={() => setHoveredTab(null)}
-                    className={`relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 transition-all duration-300 ${selectedTab === tab ? "text-primary" : "text-white/80 hover:text-primary hover:scale-105"
+                    className={`relative whitespace-nowrap text-xs sm:text-sm md:text-base lg:text-lg font-semibold pb-1.5 transition-all duration-300 ${selectedTab === tab ? "text-primary" : "text-white/80 hover:text-primary hover:scale-105"
                       }`}
                   >
                     {tab}
@@ -417,7 +391,7 @@ export default function HomePage() {
                   ref={(el) => { tabRefs.current["Post Free Property Ad"] = el }}
                   onMouseEnter={() => setHoveredTab("Post Free Property Ad")}
                   onMouseLeave={() => setHoveredTab(null)}
-                  className="relative whitespace-nowrap text-sm md:text-base font-semibold pb-1.5 text-white/80 hover:text-primary hover:scale-105 transition-all duration-300"
+                  className="relative whitespace-nowrap text-xs sm:text-sm md:text-base lg:text-lg font-semibold pb-1.5 text-white/80 hover:text-primary hover:scale-105 transition-all duration-300"
                 >
                   Post Free Property Ad
                 </Link>
@@ -433,13 +407,13 @@ export default function HomePage() {
               </div>
 
               {/* Search Bar */}
-              <div className="w-full max-w-4xl">
+              <div className="w-full max-w-full md:max-w-2xl lg:max-w-4xl">
                 <SearchBar activeFilter={selectedTab} />
               </div>
             </div>
 
             {/* Right side: Carousel */}
-            <div className="hidden md:block md:order-last">
+            <div className="hidden md:hidden lg:block lg:order-last self-start"> {/* self-start to align to top */}
               <PropertyCarousel />
             </div>
           </div>
@@ -449,16 +423,16 @@ export default function HomePage() {
       {/* Quick Cards Section */}
       <section className="bg-accent/20 py-4 md:py-8 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-foreground font-bold text-base md:text-lg mb-3 md:mb-6">Discover Properties in Lucknow</h2>
+          <h2 className="text-foreground font-bold text-base md:text-lg lg:text-xl mb-3 md:mb-6">Discover Properties in Lucknow</h2>
           <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
             {quickCards.map((card) => (
               <Link
                 key={card.id}
                 href={card.id === 1 ? "/search?q=Lucknow" : card.id === 2 ? "/about" : card.id === 3 ? "/search?purpose=sale" : "/search?ownerType=owner"}
-                className={`${card.bgColor} rounded-lg p-3 md:p-6 cursor-pointer hover:shadow-md transition-shadow active:scale-95 touch-manipulation block`}
+                className={`${card.bgColor} rounded-lg p-3 md:p-4 lg:p-6 cursor-pointer hover:shadow-md transition-shadow active:scale-95 touch-manipulation block`}
               >
-                <p className="text-primary font-bold text-sm md:text-lg mb-1 md:mb-2 leading-tight">{card.title}</p>
-                <p className="text-primary text-xs md:text-sm hover:underline line-clamp-1">{card.subtitle}</p>
+                <p className="text-primary font-bold text-sm md:text-base lg:text-lg mb-1 md:mb-2 leading-tight">{card.title}</p>
+                <p className="text-primary text-xs md:text-sm lg:text-base hover:underline line-clamp-1">{card.subtitle}</p>
               </Link>
             ))}
           </div>
@@ -468,15 +442,15 @@ export default function HomePage() {
       {/* Featured Projects Section with Stacked Cards */}
       <section className="bg-background py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-4 md:mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">Featured Projects</h2>
-            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-8">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">Featured Projects</h2>
+            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg">
               See all →
             </Link>
           </div>
           <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory">
             {featuredProjects.map((project) => (
-              <div key={project.id} className="min-w-[240px] snap-start flex-shrink-0 md:min-w-[280px]">
+              <div key={project.id} className="min-w-[240px] snap-start flex-shrink-0 md:min-w-[280px] lg:min-w-[300px]">
                 <FeaturedStackCard project={project} />
               </div>
             ))}
@@ -487,9 +461,9 @@ export default function HomePage() {
       {/* Trending in Lucknow section */}
       <section className="bg-accent/20 py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-4 md:mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">Trending in Lucknow</h2>
-            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-8">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">Trending in Lucknow</h2>
+            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg">
               See all →
             </Link>
           </div>
@@ -499,9 +473,9 @@ export default function HomePage() {
               const isPlaceholder = property.id?.toString().startsWith('placeholder-')
               const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
               return (
-                <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0">
+                <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0 lg:min-w-[320px]">
                   <div className="card-premium cursor-pointer group overflow-hidden">
-                    <div className="relative mb-3 bg-muted rounded-t-2xl overflow-hidden h-52 image-overlay">
+                    <div className="relative mb-3 bg-muted rounded-t-2xl overflow-hidden h-52 md:h-60 lg:h-64 image-overlay">
                       {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
                       <img
                         src={property.image || "/placeholder.svg"}
@@ -516,11 +490,11 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="p-4">
-                      <p className="text-muted-foreground font-semibold mb-2 text-sm">{property.bhk}</p>
-                      <p className="text-foreground font-bold text-lg mb-1">
+                      <p className="text-muted-foreground font-semibold mb-2 text-sm md:text-base">{property.bhk}</p>
+                      <p className="text-foreground font-bold text-lg md:text-xl mb-1">
                         {property.price}
                       </p>
-                      <p className="text-muted-foreground text-sm mb-2">{property.sqft} sqft</p>
+                      <p className="text-muted-foreground text-sm md:text-base mb-2">{property.sqft} sqft</p>
                       <p className="text-sm text-muted-foreground flex items-center gap-1 mb-1">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -528,7 +502,7 @@ export default function HomePage() {
                         </svg>
                         {property.location}
                       </p>
-                      <p className="text-xs text-primary font-medium">{property.status}</p>
+                      <p className="text-xs md:text-sm text-primary font-medium">{property.status}</p>
                     </div>
                   </div>
                 </Link>
@@ -543,15 +517,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto space-y-8">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div className="space-y-3">
-              <p className="text-xs uppercase tracking-widest text-primary font-bold">TOOLS</p>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground">Plan your finances in minutes</h2>
-              <p className="text-base text-muted-foreground max-w-2xl">
+              <p className="text-xs md:text-sm uppercase tracking-widest text-primary font-bold">TOOLS</p>
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground">Plan your finances in minutes</h2>
+              <p className="text-base md:text-lg text-muted-foreground max-w-2xl">
                 EMIs, mortgages, rental budgets or investment yields — pick the calculator that suits your journey.
               </p>
             </div>
             <Link
               href="/tools"
-              className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:gap-3 transition-all duration-300"
+              className="inline-flex items-center gap-2 text-sm md:text-base font-semibold text-primary hover:gap-3 transition-all duration-300"
             >
               Explore all tools →
             </Link>
@@ -567,15 +541,15 @@ export default function HomePage() {
                 >
                   <div className="flex items-start gap-4">
                     <span className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 text-primary flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
-                      <Icon className="w-6 h-6" />
+                      <Icon className="w-6 h-6 md:w-7 md:h-7" />
                     </span>
                   </div>
                   <div className="flex-1">
                     <p className="text-xs uppercase text-primary font-semibold mb-1">{tool.highlight}</p>
-                    <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{tool.name}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{tool.description}</p>
+                    <h3 className="text-lg md:text-xl font-bold text-foreground mb-2 group-hover:text-primary transition-colors">{tool.name}</h3>
+                    <p className="text-sm md:text-base text-muted-foreground leading-relaxed">{tool.description}</p>
                   </div>
-                  <div className="flex items-center text-primary text-sm font-semibold group-hover:gap-2 transition-all">
+                  <div className="flex items-center text-primary text-sm md:text-base font-semibold group-hover:gap-2 transition-all">
                     Calculate now
                     <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -591,35 +565,36 @@ export default function HomePage() {
       {/* Popular Localities section */}
       <section className="bg-background py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-6 md:mb-10">Popular Localities in Lucknow</h2>
+          <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-6 md:mb-10">Popular Localities in Lucknow</h2>
           <div className="relative">
             <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-locality-scroll>
               {/* Locality cards */}
               {localities.map((locality) => (
-                <div
-                  key={locality.id}
-                  className="card-premium p-6 min-w-[300px] snap-start group cursor-pointer"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <h3 className="font-bold text-foreground text-xl flex items-center gap-2 group-hover:text-primary transition-colors">
-                      {locality.name}
-                      <span className="text-primary text-sm">↗</span>
-                    </h3>
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4 font-medium">{locality.priceRange}</p>
-                  <div className="flex items-center gap-2 mb-6">
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i} className={`text-lg ${i < Math.floor(locality.rating) ? 'text-accent' : 'text-gray-300'}`}>★</span>
-                      ))}
+                <Link href={`/locality/${locality.slug}`} key={locality.id}>
+                  <div
+                    className="card-premium p-6 min-w-[300px] lg:min-w-[350px] snap-start group cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <h3 className="font-bold text-foreground text-xl lg:text-2xl flex items-center gap-2 group-hover:text-primary transition-colors">
+                        {locality.name}
+                        <span className="text-primary text-sm lg:text-base">↗</span>
+                      </h3>
                     </div>
-                    <span className="font-semibold text-foreground">{locality.rating}</span>
-                    <span className="text-muted-foreground text-sm">({locality.reviews} Reviews)</span>
+                    <p className="text-sm md:text-base text-muted-foreground mb-4 font-medium">{locality.priceRange}</p>
+                    <div className="flex items-center gap-2 mb-6">
+                      <div className="flex items-center gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <span key={i} className={`text-lg ${i < Math.floor(locality.rating) ? 'text-accent' : 'text-gray-300'}`}>★</span>
+                        ))}
+                      </div>
+                      <span className="font-semibold text-foreground">{locality.rating}</span>
+                      <span className="text-muted-foreground text-sm md:text-base">({locality.reviews} Reviews)</span>
+                    </div>
+                    <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl p-4 text-center group-hover:from-primary/10 group-hover:to-secondary/10 transition-all">
+                      <p className="text-primary font-bold text-base md:text-lg">{locality.properties} Properties for Sale →</p>
+                    </div>
                   </div>
-                  <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl p-4 text-center group-hover:from-primary/10 group-hover:to-secondary/10 transition-all">
-                    <p className="text-primary font-bold text-base">{locality.properties} Properties for Sale →</p>
-                  </div>
-                </div>
+                </Link>
               ))}
             </div>
             <button
@@ -717,9 +692,9 @@ export default function HomePage() {
       {/* Exclusive Owner Properties section */}
       <section className="bg-background py-6 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-4 md:mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">Exclusive Owner Properties in Lucknow</h2>
-            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 md:mb-8">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-foreground">Exclusive Owner Properties in Lucknow</h2>
+            <Link href="/search?purpose=sale" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base lg:text-lg">
               See all →
             </Link>
           </div>
@@ -729,9 +704,9 @@ export default function HomePage() {
               const isPlaceholder = property.id?.toString().startsWith('placeholder-')
               const href = isPlaceholder ? `/property/placeholder/${property.id}` : (property.id ? `/property/${property.id}` : "/list-property")
               return (
-                <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0">
+                <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0 lg:min-w-[320px]">
                   <div className="card-premium cursor-pointer group overflow-hidden">
-                    <div className="relative mb-3 bg-muted rounded-t-2xl overflow-hidden h-52 image-overlay">
+                    <div className="relative mb-3 bg-muted rounded-t-2xl overflow-hidden h-52 md:h-60 lg:h-64 image-overlay">
                       {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
                       <img
                         src={property.image || "/placeholder.svg"}
@@ -746,11 +721,11 @@ export default function HomePage() {
                       </div>
                     </div>
                     <div className="p-4">
-                      <p className="text-muted-foreground font-semibold mb-2 text-sm">{property.bhk}</p>
-                      <p className="text-foreground font-bold text-lg mb-1">
+                      <p className="text-muted-foreground font-semibold mb-2 text-sm md:text-base">{property.bhk}</p>
+                      <p className="text-foreground font-bold text-lg md:text-xl mb-1">
                         {property.price}
                       </p>
-                      <p className="text-muted-foreground text-sm">{property.sqft} sqft</p>
+                      <p className="text-muted-foreground text-sm md:text-base">{property.sqft} sqft</p>
                     </div>
                   </div>
                 </Link>

@@ -44,7 +44,7 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-gray-100/90 text-foreground sticky top-0 z-[9999] backdrop-blur-sm">
+    <header className="bg-gray-100/90 text-foreground sticky top-0 z-[9999] backdrop-blur-sm overflow-visible">
       <style jsx global>{`
         .burger {
           position: relative;
@@ -145,7 +145,7 @@ export default function Header() {
       <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
         <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
           <Image src="/logo.jpg" alt="PropertyGanj Logo" width={40} height={40} className="rounded" />
-          <Image src="/logotext.png" alt="PropertyGanj" width={200} height={40} className="hidden md:block h-8 w-auto" />
+          <Image src="/logotext.png" alt="PropertyGanj" width={100} height={20} className="h-5 w-auto md:h-8 md:w-auto" />
         </Link>
 
         <div className="flex items-center gap-2 md:gap-6">
@@ -215,7 +215,7 @@ export default function Header() {
 
       {/* Navigation Menu */}
       <div className="hidden md:flex border-t border-border relative bg-white">
-        <div className="max-w-7xl w-full px-4 py-3 flex items-center justify-start gap-4 md:gap-8 text-sm md:text-base text-foreground">
+        <div className="max-w-7xl w-full px-4 py-3 flex items-center justify-start gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm md:text-sm lg:text-base text-foreground">
           <StyledDropdown
             title="Buy"
             sections={[
@@ -312,9 +312,9 @@ export default function Header() {
               {
                 title: "For Owner",
                 items: [
-                  { 
-                    href: "/list-property", 
-                    label: "Post Property FREE" 
+                  {
+                    href: "/list-property",
+                    label: "Post Property FREE"
                   },
                   { href: "#", label: "My Dashboard" },
                   { href: "#", label: "Liked Properties" }
@@ -349,15 +349,14 @@ export default function Header() {
               }
             ]}
           />
-          <button className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors">
-            Home Loans <ChevronDown className="w-4 h-4" />
-          </button>
-          <Link href="/about" className="whitespace-nowrap hover:text-primary font-medium transition-colors">
+          <div className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors border-b border-transparent hover:border-primary py-1 px-2 rounded">
+            <button className="flex items-center gap-1">
+              Home Loans <ChevronDown className="w-4 h-4" />
+            </button>
+          </div>
+          <Link href="/about" className="whitespace-nowrap hover:text-primary font-medium transition-colors border-b border-transparent hover:border-primary py-1 px-2 rounded">
             About
           </Link>
-          <button className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors">
-            Help <ChevronDown className="w-4 h-4" />
-          </button>
         </div>
       </div>
 
@@ -474,9 +473,6 @@ export default function Header() {
               <Link href="/about" className="block text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
                 About
               </Link>
-              <button className="block w-full text-left text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
-                Help
-              </button>
             </div>
 
             {/* Auth Section */}

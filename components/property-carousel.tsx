@@ -26,8 +26,8 @@ export default function PropertyCarousel() {
   }, []);
 
   return (
-    <div className="w-full max-w-xs mx-auto md:ml-auto md:mr-0">
-      <div className="relative w-48 h-64 md:w-52 md:h-80 rounded-lg overflow-hidden shadow-lg">
+    <div className="w-full max-w-[192px] mx-auto md:ml-auto md:mr-0">
+      <div className="relative w-40 h-60 sm:w-44 sm:h-64 md:w-48 md:h-72 lg:w-52 lg:h-80 rounded-lg overflow-hidden shadow-lg">
         {carouselImages.map((src, index) => (
           <div
             key={index}

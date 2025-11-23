@@ -108,8 +108,8 @@ function TypingText({
 
   return (
     <div className="w-full overflow-hidden">
-      <div className="text-primary text-base md:text-xl lg:text-2xl whitespace-nowrap overflow-hidden text-ellipsis">
-        <span className="inline-block max-w-full truncate">{currentText}</span>
+      <div className="text-primary text-base md:text-xl lg:text-2xl whitespace-nowrap overflow-hidden text-ellipsis min-h-[1.5em]">
+        <span className="inline-block max-w-full truncate">{currentText || '\u00A0'}</span> {/* &nbsp; to maintain space when text is empty */}
         <span className={`ml-1 inline-block w-2 h-4 md:h-6 bg-current ${showCursor ? 'opacity-100' : 'opacity-0'}`}></span>
       </div>
     </div>
