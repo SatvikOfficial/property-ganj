@@ -45,6 +45,29 @@ export default function Header() {
     }
   }
 
+  // Handle ESC key to close mobile menu
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        setIsOpen(false)
+      }
+    }
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape)
+      // Prevent body scroll when menu is open
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      document.body.style.overflow = 'unset'
+    }
+  }, [isOpen])
+
+
   return (
     <header className="bg-gray-100/90 text-foreground sticky top-0 z-[9999] backdrop-blur-sm overflow-visible">
       <style jsx global>{`
@@ -108,7 +131,25 @@ export default function Header() {
           left: 5px;
         }
 
-        /* Compact mobile menu styling */
+        /* Full-screen mobile menu overlay */
+        .mobile-menu-backdrop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100vh;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 9997;
+          opacity: 0;
+          visibility: hidden;
+          transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .mobile-menu-backdrop.open {
+          opacity: 1;
+          visibility: visible;
+        }
+
         .mobile-menu {
           position: fixed;
           top: 0;
@@ -119,29 +160,56 @@ export default function Header() {
           z-index: 9998;
           padding: 0;
           overflow-y: auto;
-          transform: translateX(-100%);
-          transition: transform 0.3s ease;
-          display: flex;
-          flex-direction: column;
+          opacity: 0;
+          visibility: hidden;
+          transform: translateY(-20px);
+          transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s ease;
         }
 
         .mobile-menu.open {
-          transform: translateX(0);
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
         }
 
         .mobile-menu-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 1rem 1rem 1rem 1.5rem;
+          padding: 1.25rem 1.5rem;
           border-bottom: 1px solid #e5e7eb;
+          background: white;
+          position: sticky;
+          top: 0;
+          z-index: 10;
         }
 
         .mobile-menu-content {
-          padding: 1rem;
+          padding: 2rem 1.5rem;
           flex: 1;
           overflow-y: auto;
         }
+
+        .mobile-nav-link {
+          display: block;
+          padding: 1.25rem 1rem;
+          font-size: 1.125rem;
+          font-weight: 600;
+          color: #1f2937;
+          border-bottom: 1px solid #f3f4f6;
+          transition: all 0.2s ease;
+        }
+
+        .mobile-nav-link:hover {
+          background: #f9fafb;
+          color: #eb6239;
+          padding-left: 1.5rem;
+        }
+
+        .mobile-nav-link:active {
+          background: #f3f4f6;
+        }
+
       `}</style>
       {/* Top Bar */}
       <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
@@ -209,15 +277,26 @@ export default function Header() {
               </Button>
             </Link>
           </div>
-          <div className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-            <div className={`burger ${isOpen ? 'active' : ''}`} onClick={(e) => {
-              e.stopPropagation(); // Prevent event bubbling to parent onClick
-              setIsOpen(!isOpen);
-            }}>
+
+          {/* Mobile: List Property Button + Hamburger */}
+          <div className="md:hidden flex items-center gap-2">
+            <Link href="/list-property">
+              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-3 py-2 h-auto transition-all">
+                Post Property
+                <span className="bg-accent text-accent-foreground px-1.5 py-0.5 rounded-full text-[10px] ml-1 font-bold">FREE</span>
+              </Button>
+            </Link>
+            <button
+              className={`burger ${isOpen ? 'active' : ''}`}
+              onClick={() => setIsOpen(!isOpen)}
+              aria-controls="mobile-menu"
+              aria-expanded={isOpen}
+              aria-label="Toggle mobile menu"
+            >
               <span />
               <span />
               <span />
-            </div>
+            </button>
           </div>
         </div>
       </div>
@@ -367,155 +446,149 @@ export default function Header() {
         </div>
       </div>
 
+      {/* Mobile Menu Backdrop */}
+      <div
+        className={`mobile-menu-backdrop ${isOpen ? 'open' : ''}`}
+        onClick={() => setIsOpen(false)}
+        aria-hidden="true"
+      />
+
       {/* Mobile Menu */}
-      <div className={`mobile-menu ${isOpen ? 'open' : ''}`}>
+      <div
+        id="mobile-menu"
+        className={`mobile-menu ${isOpen ? 'open' : ''}`}
+        role="dialog"
+        aria-modal="true"
+      >
         <div className="mobile-menu-header">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.jpg" alt="PropertyGanj Logo" width={30} height={30} className="rounded" />
-            <Image src="/logotext.png" alt="PropertyGanj" width={150} height={30} className="h-6 w-auto" />
+          <Link href="/" className="flex items-center gap-2" onClick={() => setIsOpen(false)}>
+            <Image src="/logo.jpg" alt="PropertyGanj Logo" width={32} height={32} className="rounded" />
+            <Image src="/logotext.png" alt="PropertyGanj" width={120} height={24} className="h-6 w-auto" />
           </Link>
           <button
-            className="p-2 rounded-full hover:bg-gray-100"
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors"
             onClick={() => setIsOpen(false)}
+            aria-label="Close menu"
           >
-            <X className="w-5 h-5" />
+            <X className="w-6 h-6" />
           </button>
         </div>
 
         <div className="mobile-menu-content">
-          <div className="space-y-6">
-            {/* Navigation Items */}
-            <div className="space-y-3">
-              <StyledDropdown
-                title="Buy"
-                sections={[
-                  {
-                    title: "Popular Choices",
-                    items: [
-                      { href: "#", label: "Ready to Move" },
-                      { href: "#", label: "Owner Properties" },
-                      { href: "#", label: "Budget Homes" },
-                      { href: "#", label: "New Projects" }
-                    ]
-                  },
-                  {
-                    title: "Property Types",
-                    items: [
-                      { href: "#", label: "Flats in Lucknow" },
-                      { href: "#", label: "House for sale in Lucknow" },
-                      { href: "#", label: "Villa in Lucknow" },
-                      { href: "#", label: "Plot in Lucknow" }
-                    ]
-                  },
-                ]}
-              />
-              <StyledDropdown
-                title="Rent"
-                sections={[
-                  {
-                    title: "Popular Choices",
-                    items: [
-                      { href: "#", label: "Owner Properties" },
-                      { href: "#", label: "Verified Properties" },
-                      { href: "#", label: "Furnished Homes" },
-                    ]
-                  },
-                  {
-                    title: "Property Types",
-                    items: [
-                      { href: "#", label: "Flat for rent in Lucknow" },
-                      { href: "#", label: "House for rent in Lucknow" },
-                      { href: "#", label: "PG in Lucknow" },
-                    ]
-                  },
-                ]}
-              />
-              <StyledDropdown
-                title="Sell"
-                sections={[
-                  {
-                    title: "For Owner",
-                    items: [
-                      {
-                        href: "/list-property",
-                        label: "Post Property FREE"
-                      },
-                      { href: "#", label: "My Dashboard" },
-                    ]
-                  }
-                ]}
-              />
-              <div className="pt-2">
-                <StyledDropdown
-                  title="Blogs"
-                  sections={[
-                    {
-                      title: "Property Ganj Insights",
-                      items: [
-                        { href: "/blog/1", label: "Understanding Circle Rates" },
-                        { href: "/blog/2", label: "Vastu Shastra Guidelines" },
-                        { href: "/blog/3", label: "Stamp Duty & Registration" },
-                        { href: "/blog/4", label: "Metro Network Impact" },
-                        { href: "/blog/5", label: "LDA vs RERA" },
-                        { href: "/blog/6", label: "Top Investment Areas" }
-                      ]
-                    },
-                    {
-                      title: "Loan & Finance",
-                      items: [
-                        { href: "/blog/1", label: "Home Loan Eligibility" },
-                        { href: "/blog/2", label: "Interest Rates & EMI" },
-                        { href: "/blog/3", label: "Top Banks for Home Loans" },
-                        { href: "/blog/4", label: "Home Loan Documents" },
-                        { href: "/blog/5", label: "Pre-EMI vs Full EMI" },
-                        { href: "/blog/6", label: "Tax Benefits on Home Loans" }
-                      ]
-                    }
-                  ]}
-                />
-              </div>
-              <button className="block w-full text-left text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
-                Home Loans
-              </button>
-              <Link href="/about" className="block text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
-                About
-              </Link>
-            </div>
+          <nav className="space-y-1">
+            {/* Primary Navigation Links */}
+            <Link
+              href="/"
+              className="mobile-nav-link"
+              onClick={() => setIsOpen(false)}
+            >
+              Home
+            </Link>
 
-            {/* Auth Section */}
-            <div className="pt-4 border-t border-gray-200">
-              {user ? (
-                <div className="space-y-3">
-                  <Link href="/profile" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-                    My Profile
-                  </Link>
-                  <Link href="/profile/my-ads" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-                    My Ads
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsOpen(false);
-                    }}
-                    className="w-full text-center py-3 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-                  >
-                    Logout
-                  </button>
+            <Link
+              href="/buy"
+              className="mobile-nav-link"
+              onClick={() => setIsOpen(false)}
+            >
+              Buy
+            </Link>
+
+            <Link
+              href="/rent"
+              className="mobile-nav-link"
+              onClick={() => setIsOpen(false)}
+            >
+              Rent
+            </Link>
+
+            <Link
+              href="/sell"
+              className="mobile-nav-link"
+              onClick={() => setIsOpen(false)}
+            >
+              Sell
+            </Link>
+
+            <Link
+              href="/blog"
+              className="mobile-nav-link"
+              onClick={() => setIsOpen(false)}
+            >
+              Blogs
+            </Link>
+
+            <Link
+              href="/home-loan"
+              className="mobile-nav-link"
+              onClick={() => setIsOpen(false)}
+            >
+              Home Loans
+            </Link>
+
+            <Link
+              href="/about"
+              className="mobile-nav-link"
+              onClick={() => setIsOpen(false)}
+            >
+              About
+            </Link>
+          </nav>
+
+          {/* Auth Section */}
+          <div className="mt-8 pt-6 border-t border-gray-200">
+            {user ? (
+              <div className="space-y-3">
+                <div className="px-4 py-3 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">Signed in as</p>
+                  <p className="font-semibold text-gray-900">{user.name}</p>
+                  <p className="text-xs text-gray-500">{user.email}</p>
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <Link href="/auth" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
-                    Login / Sign Up
-                  </Link>
-                </div>
-              )}
-              <Link href="/list-property" onClick={() => setIsOpen(false)} className="w-full block">
-                <Button className="w-full bg-primary hover:bg-primary/90 py-3">
-                  List Property
-                  <span className="bg-accent text-accent-foreground px-2 py-0.5 rounded-full text-xs ml-2 font-bold">FREE</span>
-                </Button>
-              </Link>
-            </div>
+
+                <Link
+                  href="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full text-center py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors font-medium"
+                >
+                  My Profile
+                </Link>
+
+                <Link
+                  href="/profile/my-ads"
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full text-center py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors font-medium"
+                >
+                  My Ads
+                </Link>
+
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }}
+                  className="w-full text-center py-3 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors font-medium"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <Link
+                  href="/auth"
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full text-center py-3 rounded-lg bg-[#eb6239] text-white hover:brightness-110 transition-all font-semibold"
+                >
+                  Login / Sign Up
+                </Link>
+
+                <Link
+                  href="/agent-registration"
+                  onClick={() => setIsOpen(false)}
+                  className="block w-full text-center py-3 rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Register as Agent
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
