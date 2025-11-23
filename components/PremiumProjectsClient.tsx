@@ -34,11 +34,152 @@ export default function PremiumProjectsClient() {
                 const res = await fetch('/api/projects?limit=9');
                 const data = await res.json();
 
-                if (res.ok) {
-                    setProjects(data || []);
+                if (res.ok && data && data.length > 0) {
+                    setProjects(data);
+                } else {
+                    // Fallback to hardcoded data if API returns empty
+                    const fallbackProjects: Project[] = [
+                        {
+                            _id: 'fallback-1',
+                            name: "Kalyan Garden View",
+                            location: { locality: "Indira Nagar", city: "Lucknow" },
+                            minPrice: 8030000,
+                            maxPrice: 9500000,
+                            coverImage: "/apartment-complex.jpg",
+                            status: "Ready to Move",
+                            category: "3 BHK Flats",
+                            builderId: { name: "Krishna Colonisers" }
+                        },
+                        {
+                            _id: 'fallback-2',
+                            name: "Property Boss Green Park City",
+                            location: { locality: "Sultanpur Road", city: "Lucknow" },
+                            minPrice: 760000,
+                            maxPrice: 1500000,
+                            coverImage: "/residential-plots.jpg",
+                            status: "New Launch",
+                            category: "Residential Plots",
+                            builderId: { name: "Property Boss Real Infrastructure LLP" }
+                        },
+                        {
+                            _id: 'fallback-3',
+                            name: "Sahu City Phase 2",
+                            location: { locality: "Sultanpur Road", city: "Lucknow" },
+                            minPrice: 5790000,
+                            maxPrice: 7500000,
+                            coverImage: "/featured-property.jpg",
+                            status: "Under Construction",
+                            category: "2, 3 BHK Flats",
+                            builderId: { name: "Sahu Land Developers Pvt Ltd" }
+                        },
+                        {
+                            _id: 'fallback-4',
+                            name: "Excella Kutumb",
+                            location: { locality: "Sultanpur Road", city: "Lucknow" },
+                            minPrice: 5150000,
+                            maxPrice: 6500000,
+                            coverImage: "/modern-apartment.jpg",
+                            status: "Ready to Move",
+                            category: "2 BHK Flats",
+                            builderId: { name: "Township Experts" }
+                        },
+                        {
+                            _id: 'fallback-5',
+                            name: "Rishita Manhattan",
+                            location: { locality: "Gomti Nagar Extension", city: "Lucknow" },
+                            minPrice: 6500000,
+                            maxPrice: 12000000,
+                            coverImage: "/luxury-apartment.jpg",
+                            status: "Ready to Move",
+                            category: "3, 4 BHK Apartments",
+                            builderId: { name: "Rishita Developers" }
+                        },
+                        {
+                            _id: 'fallback-6',
+                            name: "Omaxe Residency 1",
+                            location: { locality: "Gomti Nagar Extension", city: "Lucknow" },
+                            minPrice: 4500000,
+                            maxPrice: 8500000,
+                            coverImage: "/premium-apartment.jpg",
+                            status: "Ready to Move",
+                            category: "2, 3 BHK Apartments",
+                            builderId: { name: "Omaxe Ltd" }
+                        }
+                    ];
+                    setProjects(fallbackProjects);
                 }
             } catch (error) {
                 console.error('Error fetching projects:', error);
+                // Use same fallback on error
+                const fallbackProjects: Project[] = [
+                    {
+                        _id: 'fallback-1',
+                        name: "Kalyan Garden View",
+                        location: { locality: "Indira Nagar", city: "Lucknow" },
+                        minPrice: 8030000,
+                        maxPrice: 9500000,
+                        coverImage: "/apartment-complex.jpg",
+                        status: "Ready to Move",
+                        category: "3 BHK Flats",
+                        builderId: { name: "Krishna Colonisers" }
+                    },
+                    {
+                        _id: 'fallback-2',
+                        name: "Property Boss Green Park City",
+                        location: { locality: "Sultanpur Road", city: "Lucknow" },
+                        minPrice: 760000,
+                        maxPrice: 1500000,
+                        coverImage: "/residential-plots.jpg",
+                        status: "New Launch",
+                        category: "Residential Plots",
+                        builderId: { name: "Property Boss Real Infrastructure LLP" }
+                    },
+                    {
+                        _id: 'fallback-3',
+                        name: "Sahu City Phase 2",
+                        location: { locality: "Sultanpur Road", city: "Lucknow" },
+                        minPrice: 5790000,
+                        maxPrice: 7500000,
+                        coverImage: "/featured-property.jpg",
+                        status: "Under Construction",
+                        category: "2, 3 BHK Flats",
+                        builderId: { name: "Sahu Land Developers Pvt Ltd" }
+                    },
+                    {
+                        _id: 'fallback-4',
+                        name: "Excella Kutumb",
+                        location: { locality: "Sultanpur Road", city: "Lucknow" },
+                        minPrice: 5150000,
+                        maxPrice: 6500000,
+                        coverImage: "/modern-apartment.jpg",
+                        status: "Ready to Move",
+                        category: "2 BHK Flats",
+                        builderId: { name: "Township Experts" }
+                    },
+                    {
+                        _id: 'fallback-5',
+                        name: "Rishita Manhattan",
+                        location: { locality: "Gomti Nagar Extension", city: "Lucknow" },
+                        minPrice: 6500000,
+                        maxPrice: 12000000,
+                        coverImage: "/luxury-apartment.jpg",
+                        status: "Ready to Move",
+                        category: "3, 4 BHK Apartments",
+                        builderId: { name: "Rishita Developers" }
+                    },
+                    {
+                        _id: 'fallback-6',
+                        name: "Omaxe Residency 1",
+                        location: { locality: "Gomti Nagar Extension", city: "Lucknow" },
+                        minPrice: 4500000,
+                        maxPrice: 8500000,
+                        coverImage: "/premium-apartment.jpg",
+                        status: "Ready to Move",
+                        category: "2, 3 BHK Apartments",
+                        builderId: { name: "Omaxe Ltd" }
+                    }
+                ];
+                setProjects(fallbackProjects);
             } finally {
                 setLoading(false);
             }
