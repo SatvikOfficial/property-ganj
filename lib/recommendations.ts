@@ -1,10 +1,26 @@
+'use server';
+
 import connectDB from '@/lib/db';
 import Property, { IProperty } from '@/models/Property';
 
-export async function getRecommendedProperties(userId: string | null): Promise<IProperty[]> {
+import { cookies } from 'next/headers';
+import { verifyAuthToken } from '@/lib/auth';
+
+export async function getRecommendedProperties(limit: number = 6, excludeIds: string[] = []): Promise<IProperty[]> {
     await connectDB();
 
     try {
+        let userId: string | null = null;
+        const cookieStore = await cookies();
+        const token = cookieStore.get('token')?.value;
+
+        if (token) {
+            const payload = verifyAuthToken(token);
+            if (payload) {
+                userId = payload.userId;
+            }
+        }
+
         let recommended: IProperty[] = [];
         const popularLocalities = ['Gomti Nagar', 'Hazratganj', 'Indira Nagar', 'Aliganj'];
 

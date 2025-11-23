@@ -49,7 +49,10 @@ export default async function BuildersPage() {
                                     {builder.headquarters && (
                                         <div className="flex items-center gap-2">
                                             <MapPin className="h-4 w-4" />
-                                            <span>{builder.headquarters}</span>
+                                            <span>
+                                                {builder.headquarters.city}
+                                                {builder.headquarters.state ? `, ${builder.headquarters.state}` : ''}
+                                            </span>
                                         </div>
                                     )}
                                     {builder.contactPhone && (

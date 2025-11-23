@@ -9,7 +9,11 @@ export interface IBuilder extends Document {
     totalProjects?: number;
     ongoingProjects?: number;
     completedProjects?: number;
-    headquarters?: string;
+    headquarters?: {
+        city?: string;
+        state?: string;
+        address?: string;
+    };
     contactEmail?: string;
     contactPhone?: string;
     website?: string;
@@ -28,7 +32,11 @@ const BuilderSchema = new Schema<IBuilder>(
         totalProjects: { type: Number, default: 0 },
         ongoingProjects: { type: Number, default: 0 },
         completedProjects: { type: Number, default: 0 },
-        headquarters: { type: String, trim: true },
+        headquarters: {
+            city: { type: String, trim: true },
+            state: { type: String, trim: true },
+            address: { type: String, trim: true }
+        },
         contactEmail: { type: String, trim: true },
         contactPhone: { type: String, trim: true },
         website: { type: String, trim: true },

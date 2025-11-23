@@ -31,6 +31,8 @@ interface RecommendedPropertiesProps {
     limit?: number;
 }
 
+import { getRecommendedProperties } from '@/lib/recommendations';
+
 export default function RecommendedProperties({
     title = 'Recommended For You',
     className = '',
@@ -48,12 +50,10 @@ export default function RecommendedProperties({
 
         async function fetchRecommendations() {
             try {
-                // Import recommendations dynamically to avoid SSR issues
-                const { getRecommendations } = await import('@/lib/recommendations');
-                const recommended = await getRecommendations(limit, excludeIds);
+                const recommended = await getRecommendedProperties(limit, excludeIds);
 
                 if (isMounted) {
-                    setProperties(recommended);
+                    setProperties(recommended as unknown as Property[]);
                 }
             } catch (error) {
                 console.error('Error fetching recommendations:', error);
