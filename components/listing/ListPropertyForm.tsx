@@ -511,40 +511,7 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
       return;
     }
 
-    // Check if user is logged in
-    if (!user) {
-      // Show toast prompting user to login
-      toast({
-        title: "Login Required",
-        description: "You need to login or register to post your property listing. Saving your form data...",
-      });
 
-      // Save form data to localStorage
-      try {
-        const formDataToSave = {
-          form,
-          contact,
-          amenities,
-          tags,
-          highlights,
-          photos
-        };
-        localStorage.setItem('propertyFormData', JSON.stringify(formDataToSave));
-      } catch (error) {
-        console.error('Error saving form data:', error);
-        toast({
-          title: "Save Failed",
-          description: "Could not save your form data. Please complete it again after login.",
-          variant: "destructive",
-        });
-      }
-
-      // Redirect to login after a delay to let the user see the toast
-      setTimeout(() => {
-        router.push('/auth');
-      }, 3000); // 3 seconds delay
-      return;
-    }
 
     setIsSubmitting(true);
 
@@ -807,19 +774,18 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
               key={type.id}
               type="button"
               onClick={() => setForm((prev) => ({ ...prev, ownerType: type.id }))}
-              className={`rounded-2xl border px-5 py-4 text-left transition-all ${
-                form.ownerType === type.id
-                  ? 'border-[#eb6239] bg-[#fff3ed] shadow-[4px_4px_0_#f8c18a]'
-                  : 'border-[#e5e7eb]'
-              }`}
+              className={`rounded-2xl border px-5 py-4 text-left transition-all ${form.ownerType === type.id
+                ? 'border-[#eb6239] bg-[#fff3ed] shadow-[4px_4px_0_#f8c18a]'
+                : 'border-[#e5e7eb]'
+                }`}
             >
               <p className="font-semibold text-[#1f2a2e]">{type.label}</p>
               <p className="text-xs text-[#6b7280]">
                 {type.id === 'owner'
                   ? 'List as direct owner'
                   : type.id === 'agent'
-                  ? 'Registered agent/broker'
-                  : 'Builder or developer'}
+                    ? 'Registered agent/broker'
+                    : 'Builder or developer'}
               </p>
             </button>
           ))}
@@ -831,11 +797,10 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
               key={option.id}
               type="button"
               onClick={() => setForm((prev) => ({ ...prev, purpose: option.id }))}
-              className={`rounded-2xl border px-5 py-4 text-left transition-all ${
-                form.purpose === option.id
-                  ? 'border-[#1f2a2e] bg-[#1f2a2e] text-white'
-                  : 'border-[#e5e7eb]'
-              }`}
+              className={`rounded-2xl border px-5 py-4 text-left transition-all ${form.purpose === option.id
+                ? 'border-[#1f2a2e] bg-[#1f2a2e] text-white'
+                : 'border-[#e5e7eb]'
+                }`}
             >
               <p className="font-semibold">{option.label}</p>
               <p className="text-xs opacity-80">
@@ -978,11 +943,10 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
                   key={amenity}
                   type="button"
                   onClick={() => toggleSelection(amenity, amenities, setAmenities)}
-                  className={`rounded-full border px-3 py-1 text-sm ${
-                    amenities.includes(amenity)
-                      ? 'border-[#eb6239] bg-[#fff3ed]'
-                      : 'border-[#e5e7eb]'
-                  }`}
+                  className={`rounded-full border px-3 py-1 text-sm ${amenities.includes(amenity)
+                    ? 'border-[#eb6239] bg-[#fff3ed]'
+                    : 'border-[#e5e7eb]'
+                    }`}
                 >
                   {amenity}
                 </button>
@@ -999,11 +963,10 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
                   key={tag}
                   type="button"
                   onClick={() => toggleSelection(tag, tags, setTags)}
-                  className={`rounded-full border px-3 py-1 text-sm ${
-                    tags.includes(tag)
-                      ? 'border-[#264143] bg-[#264143] text-white'
-                      : 'border-[#e5e7eb]'
-                  }`}
+                  className={`rounded-full border px-3 py-1 text-sm ${tags.includes(tag)
+                    ? 'border-[#264143] bg-[#264143] text-white'
+                    : 'border-[#e5e7eb]'
+                    }`}
                 >
                   {tag}
                 </button>

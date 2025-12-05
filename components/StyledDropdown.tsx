@@ -38,7 +38,7 @@ const StyledWrapper = styled.div`
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: #0a3cff;
+    background-color: #eb6239;
     z-index: -1;
     transform: scaleX(0);
     transform-origin: left;
@@ -102,7 +102,7 @@ const StyledWrapper = styled.div`
     transform: translateY(0);
     pointer-events: auto;
     border-top: transparent;
-    border-color: #0a3cff;
+    border-color: #eb6239;
   }
 
   .menu .item:hover .link {
@@ -155,7 +155,7 @@ const StyledWrapper = styled.div`
     transform: scaleX(0);
     width: 100%;
     height: 100%;
-    background-color: #0a3cff;
+    background-color: #eb6239;
     z-index: -1;
     transform-origin: left;
     transition: transform 0.48s cubic-bezier(0.23, 1, 0.32, 1);

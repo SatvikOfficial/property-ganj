@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Eye,
   EyeOff,
@@ -10,7 +10,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useToast } from '@/hooks/use-toast';
 
@@ -25,12 +25,23 @@ const initialFormState = {
 
 export default function AuthPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get('returnUrl');
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (returnUrl) {
+      toast({
+        title: "Login Required",
+        description: "Please sign in to access that page.",
+      });
+    }
+  }, [returnUrl, toast]);
 
   const resetForm = () => {
     setFormData(initialFormState);
@@ -68,9 +79,14 @@ export default function AuthPage() {
 
     toast({
       title: `Welcome back, ${data.user.name}`,
-      description: 'Redirecting you to the home page...',
+      description: 'Redirecting you...',
     });
-    router.push('/');
+
+    if (returnUrl) {
+      router.push(decodeURIComponent(returnUrl));
+    } else {
+      router.push('/');
+    }
     router.refresh();
   };
 
@@ -104,12 +120,14 @@ export default function AuthPage() {
 
         toast({
           title: `Welcome back, ${data.user.name}`,
-          description: data.user.role === 'admin' ? 'Redirecting to admin dashboard...' : 'Redirecting you to the home page...',
+          description: data.user.role === 'admin' ? 'Redirecting to admin dashboard...' : 'Redirecting you...',
         });
 
-        // Redirect admin to dashboard, others to home
+        // Redirect admin to dashboard, others to home or returnUrl
         if (data.user.role === 'admin') {
           router.push('/admin/dashboard');
+        } else if (returnUrl) {
+          router.push(decodeURIComponent(returnUrl));
         } else {
           router.push('/');
         }

@@ -269,11 +269,10 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
                 key={item.value}
                 type="button"
                 onClick={() => togglePropertyType(item.value)}
-                className={`rounded-full border px-3 py-1 text-sm ${
-                  selectedPropertyTypes.includes(item.value)
+                className={`rounded-full border px-3 py-1 text-sm ${selectedPropertyTypes.includes(item.value)
                     ? "border-[#eb6239] bg-[#fff1eb] text-[#eb6239]"
                     : "border-border text-foreground hover:border-[#eb6239]"
-                }`}
+                  }`}
               >
                 {item.label}
               </button>
@@ -289,11 +288,10 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
               key={option}
               type="button"
               onClick={() => setSelectedBedroom((prev) => (prev === option ? null : option))}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                selectedBedroom === option
+              className={`rounded-full border px-3 py-1 text-sm ${selectedBedroom === option
                   ? "border-[#264143] bg-[#264143] text-white"
                   : "border-border text-foreground hover:border-[#264143]"
-              }`}
+                }`}
             >
               {option === 6 ? "5+ BHK" : `${option} BHK`}
             </button>
@@ -316,11 +314,10 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
                   key={`min-${value}`}
                   type="button"
                   onClick={() => setSelectedMinBudget(value)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${
-                    selectedMinBudget === value
+                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${selectedMinBudget === value
                       ? "border-[#eb6239] bg-[#fff1eb] text-[#eb6239]"
                       : "border-border text-foreground hover:border-[#eb6239]"
-                  }`}
+                    }`}
                 >
                   ₹{formatBudgetValue(value, normalizedFilter)}
                 </button>
@@ -335,11 +332,10 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
                   key={`max-${value}`}
                   type="button"
                   onClick={() => setSelectedMaxBudget(value)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${
-                    selectedMaxBudget === value
+                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${selectedMaxBudget === value
                       ? "border-[#264143] bg-[#264143] text-white"
                       : "border-border text-foreground hover:border-[#264143]"
-                  }`}
+                    }`}
                 >
                   ₹{formatBudgetValue(value, normalizedFilter)}
                 </button>

@@ -6,6 +6,8 @@ import Link from "next/link"
 import Header from "@/components/header"
 import SearchBar from "@/components/search-bar"
 import DynamicGreeting from "@/components/dynamic-greeting"
+import DynamicBackground from "@/components/DynamicBackground"
+import AdCard from "@/components/AdCard"
 import PropertyCarousel from "@/components/property-carousel"
 import FeaturedStackCard from "@/components/FeaturedStackCard"
 import LikeButton from "@/components/LikeButton"
@@ -217,32 +219,7 @@ export default function HomePage() {
     </div>
   )
 
-  const quickCards = [
-    {
-      id: 1,
-      title: "Over 10,000+ Properties waiting for you",
-      subtitle: "Continue your last search",
-      bgColor: "bg-accent/20",
-    },
-    {
-      id: 2,
-      title: "Share your Property Ganj story and WIN vouchers worth ₹5000",
-      subtitle: "#MeriPropertyMeraGanj",
-      bgColor: "bg-accent/40",
-    },
-    {
-      id: 3,
-      title: "Top Handpicked Projects for you",
-      subtitle: "See all",
-      bgColor: "bg-accent/20",
-    },
-    {
-      id: 4,
-      title: "Commercial Spaces & Offices",
-      subtitle: "See all",
-      bgColor: "bg-accent/20",
-    },
-  ]
+
 
   const featuredProjects = [
     {
@@ -425,25 +402,12 @@ export default function HomePage() {
       <Header />
 
       {/* Hero & Search Section */}
-      <section id="hero-section" className="bg-background pt-8 pb-6 px-4 sm:px-6 md:px-8 relative">
+      <section id="hero-section" className="pt-8 pb-6 px-4 sm:px-6 md:px-8 relative">
         {/* Video Background */}
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            className="w-full h-full object-cover"
-          >
-            <source src="/hero_brightener.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-          </video>
-          {/* Dark overlay to enhance text contrast */}
-          <div className="absolute inset-0 bg-black/40"></div>
-        </div>
+        {/* Dynamic Background */}
+        <DynamicBackground variant="landing" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex flex-col lg:flex-row gap-4 md:gap-6 lg:gap-8">
             {/* Left side: Content */}
             <div className="flex-1 min-w-0"> {/* min-w-0 prevents flex item from overflowing */}
@@ -507,21 +471,31 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Quick Cards Section */}
-      <section className="bg-accent/20 py-4 md:py-8 px-4">
+      {/* Ad Cards Section */}
+      <section className="bg-accent/20 py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-foreground font-bold text-base md:text-lg lg:text-xl mb-3 md:mb-6">Discover Properties in Lucknow</h2>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-            {quickCards.map((card) => (
-              <Link
-                key={card.id}
-                href={card.id === 1 ? "/search?q=Lucknow" : card.id === 2 ? "/about" : card.id === 3 ? "/search?purpose=sale" : "/search?ownerType=owner"}
-                className={`${card.bgColor} rounded-lg p-3 md:p-4 lg:p-6 cursor-pointer hover:shadow-md transition-shadow active:scale-95 touch-manipulation block`}
-              >
-                <p className="text-primary font-bold text-sm md:text-base lg:text-lg mb-1 md:mb-2 leading-tight">{card.title}</p>
-                <p className="text-primary text-xs md:text-sm lg:text-base hover:underline line-clamp-1">{card.subtitle}</p>
-              </Link>
-            ))}
+          <h2 className="text-foreground font-bold text-xl md:text-2xl lg:text-3xl mb-6 md:mb-8">Discover Properties</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <AdCard
+              image="/modern-apartment.jpg"
+              title="Luxury Apartments in Gomti Nagar"
+              redirectUrl="/search?q=Gomti+Nagar"
+            />
+            <AdCard
+              image="/residential-plots.jpg"
+              title="Premium Plots at Kishan Path"
+              redirectUrl="/search?q=Kishan+Path"
+            />
+            <AdCard
+              image="/office-commercial-space.jpg"
+              title="Commercial Spaces for Your Business"
+              redirectUrl="/search?purpose=rent&type=commercial"
+            />
+            <AdCard
+              image="/luxury-apartment.jpg"
+              title="Top Rated Projects in Lucknow"
+              redirectUrl="/projects"
+            />
           </div>
         </div>
       </section>

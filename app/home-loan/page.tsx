@@ -109,30 +109,31 @@ export default function HomeLoanPage() {
             <Header />
 
             {/* Hero Section */}
-            <div id="hero-section" className="relative bg-gray-900 text-white overflow-hidden">
-                <div className="absolute inset-0">
+            <div id="hero-section" className="relative bg-background text-foreground overflow-hidden">
+                <div className="absolute inset-0 -z-10">
+                    <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-transparent z-10"></div>
+                    {/* Use a subtle gradient or pattern instead of the image if desired, or keep image with better blending */}
                     <img
                         src="/modern-apartment.jpg"
                         alt="Home Loan Background"
-                        className="w-full h-full object-cover opacity-20"
+                        className="w-full h-full object-cover opacity-10"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/90 to-transparent"></div>
                 </div>
 
                 <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                         <div className="space-y-8">
-                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight">
+                            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold leading-tight text-foreground">
                                 Get Home Loans <br />
-                                <span className="text-red-500">Starting At 7.75% P.A.*</span>
+                                <span className="text-primary">Starting At 7.75% P.A.*</span>
                             </h1>
-                            <p className="text-xl text-gray-300">
+                            <p className="text-xl text-muted-foreground">
                                 With Loan Amount From ₹15 Lacs*. We partner with top banks to get you the best deal.
                             </p>
 
                             <div className="space-y-4">
-                                <h3 className="text-lg font-semibold text-red-400 uppercase tracking-wider">Key Benefits</h3>
-                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-gray-300">
+                                <h3 className="text-lg font-semibold text-primary uppercase tracking-wider">Key Benefits</h3>
+                                <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 text-muted-foreground">
                                     {[
                                         "Attractive Interest Rates",
                                         "Loan Tenure Up To 30 Years*",
@@ -142,18 +143,18 @@ export default function HomeLoanPage() {
                                         "Doorstep Services"
                                     ].map((benefit, idx) => (
                                         <li key={idx} className="flex items-center gap-2">
-                                            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                            <CheckCircle className="w-5 h-5 text-secondary flex-shrink-0" />
                                             <span>{benefit}</span>
                                         </li>
                                     ))}
                                 </ul>
                             </div>
-                            <p className="text-xs text-gray-500">*T&C Applied. For floating rate home loans given to individuals.</p>
+                            <p className="text-xs text-muted-foreground">*T&C Applied. For floating rate home loans given to individuals.</p>
                         </div>
 
                         {/* Lead Form */}
-                        <div className="bg-white rounded-2xl shadow-2xl p-6 md:p-8 text-gray-900">
-                            <h3 className="text-2xl font-bold mb-6 text-gray-800">Get Home Loan</h3>
+                        <div className="bg-card rounded-2xl shadow-xl p-6 md:p-8 text-card-foreground border border-border">
+                            <h3 className="text-2xl font-bold mb-6 text-foreground">Get Home Loan</h3>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <input
                                     type="text"
@@ -162,10 +163,10 @@ export default function HomeLoanPage() {
                                     value={formData.name}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                 />
                                 <div className="flex gap-2">
-                                    <span className="px-4 py-3 bg-gray-100 border border-gray-200 rounded-lg text-gray-500 font-medium">+91</span>
+                                    <span className="px-4 py-3 bg-muted border border-input rounded-lg text-muted-foreground font-medium">+91</span>
                                     <input
                                         type="tel"
                                         name="phone"
@@ -173,7 +174,7 @@ export default function HomeLoanPage() {
                                         value={formData.phone}
                                         onChange={handleChange}
                                         required
-                                        className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                                        className="w-full px-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                     />
                                 </div>
                                 <input
@@ -183,7 +184,7 @@ export default function HomeLoanPage() {
                                     value={formData.pincode}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                 />
                                 <input
                                     type="text"
@@ -191,7 +192,7 @@ export default function HomeLoanPage() {
                                     placeholder="Enter Current Address"
                                     value={formData.address}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                 />
                                 <input
                                     type="number"
@@ -200,7 +201,7 @@ export default function HomeLoanPage() {
                                     value={formData.loanAmount}
                                     onChange={handleChange}
                                     required
-                                    className="w-full px-4 py-3 rounded-lg bg-gray-50 border border-gray-200 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none transition-all"
+                                    className="w-full px-4 py-3 rounded-lg bg-background border border-input focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                                 />
 
                                 <label className="flex items-start gap-2 cursor-pointer">
@@ -209,26 +210,26 @@ export default function HomeLoanPage() {
                                         name="agree"
                                         checked={formData.agree}
                                         onChange={handleChange}
-                                        className="mt-1 w-4 h-4 text-red-600 rounded border-gray-300 focus:ring-red-500"
+                                        className="mt-1 w-4 h-4 text-primary rounded border-input focus:ring-primary"
                                     />
-                                    <span className="text-sm text-gray-600">I agree to the Terms and Conditions and authorize Property Ganj to contact me.</span>
+                                    <span className="text-sm text-muted-foreground">I agree to the Terms and Conditions and authorize Property Ganj to contact me.</span>
                                 </label>
 
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-4 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-red-500/30"
+                                    className="w-full py-4 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all duration-200 disabled:opacity-50 shadow-lg hover:shadow-primary/30"
                                 >
                                     {loading ? 'Submitting...' : 'Apply Now'}
                                 </button>
 
                                 {success && (
-                                    <div className="p-3 bg-green-50 text-green-700 rounded-lg text-center text-sm font-medium">
+                                    <div className="p-3 bg-green-50 text-green-700 rounded-lg text-center text-sm font-medium border border-green-200">
                                         Application submitted successfully! We will contact you shortly.
                                     </div>
                                 )}
                                 {error && (
-                                    <div className="p-3 bg-red-50 text-red-700 rounded-lg text-center text-sm font-medium">
+                                    <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-center text-sm font-medium border border-destructive/20">
                                         {error}
                                     </div>
                                 )}
@@ -239,7 +240,7 @@ export default function HomeLoanPage() {
             </div>
 
             {/* Stats Section */}
-            <div className="bg-white py-12 border-b">
+            <div className="bg-background py-12 border-b border-border">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
                         {[
@@ -249,11 +250,11 @@ export default function HomeLoanPage() {
                             { label: "AUM (Cr)", value: "31,053", icon: Building2 },
                         ].map((stat, idx) => (
                             <div key={idx} className="space-y-2 group">
-                                <div className="w-12 h-12 mx-auto bg-red-50 rounded-full flex items-center justify-center text-red-600 group-hover:scale-110 transition-transform">
+                                <div className="w-12 h-12 mx-auto bg-primary/10 rounded-full flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
                                     <stat.icon className="w-6 h-6" />
                                 </div>
-                                <p className="text-2xl md:text-3xl font-bold text-gray-900">{stat.value}</p>
-                                <p className="text-sm text-gray-500 uppercase tracking-wide">{stat.label}</p>
+                                <p className="text-2xl md:text-3xl font-bold text-foreground">{stat.value}</p>
+                                <p className="text-sm text-muted-foreground uppercase tracking-wide">{stat.label}</p>
                             </div>
                         ))}
                     </div>
@@ -261,21 +262,21 @@ export default function HomeLoanPage() {
             </div>
 
             {/* EMI Calculator Section */}
-            <div className="py-16 bg-gray-50">
+            <div className="py-16 bg-muted/30">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-gray-900">Home Loan EMI Calculator</h2>
-                        <p className="mt-2 text-gray-600">Plan your finances with our easy-to-use calculator</p>
+                        <h2 className="text-3xl font-bold text-foreground">Home Loan EMI Calculator</h2>
+                        <p className="mt-2 text-muted-foreground">Plan your finances with our easy-to-use calculator</p>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-xl p-6 md:p-10">
+                    <div className="bg-card rounded-2xl shadow-xl p-6 md:p-10 border border-border">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                             <div className="space-y-8">
                                 {/* Loan Amount Slider */}
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
-                                        <label className="font-semibold text-gray-700">Loan Amount</label>
-                                        <div className="bg-red-50 px-4 py-1 rounded-full text-red-700 font-bold">
+                                        <label className="font-semibold text-foreground">Loan Amount</label>
+                                        <div className="bg-primary/10 px-4 py-1 rounded-full text-primary font-bold">
                                             {formatCurrency(emiAmount)}
                                         </div>
                                     </div>
@@ -287,7 +288,7 @@ export default function HomeLoanPage() {
                                         onValueChange={(val) => setEmiAmount(val[0])}
                                         className="py-4"
                                     />
-                                    <div className="flex justify-between text-xs text-gray-400">
+                                    <div className="flex justify-between text-xs text-muted-foreground">
                                         <span>₹ 1L</span>
                                         <span>₹ 1.2Cr</span>
                                     </div>
@@ -296,8 +297,8 @@ export default function HomeLoanPage() {
                                 {/* Tenure Slider */}
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
-                                        <label className="font-semibold text-gray-700">Tenure (Years)</label>
-                                        <div className="bg-red-50 px-4 py-1 rounded-full text-red-700 font-bold">
+                                        <label className="font-semibold text-foreground">Tenure (Years)</label>
+                                        <div className="bg-primary/10 px-4 py-1 rounded-full text-primary font-bold">
                                             {emiTenure} Years
                                         </div>
                                     </div>
@@ -309,7 +310,7 @@ export default function HomeLoanPage() {
                                         onValueChange={(val) => setEmiTenure(val[0])}
                                         className="py-4"
                                     />
-                                    <div className="flex justify-between text-xs text-gray-400">
+                                    <div className="flex justify-between text-xs text-muted-foreground">
                                         <span>1 Year</span>
                                         <span>30 Years</span>
                                     </div>
@@ -318,8 +319,8 @@ export default function HomeLoanPage() {
                                 {/* Interest Rate Slider */}
                                 <div className="space-y-4">
                                     <div className="flex justify-between items-center">
-                                        <label className="font-semibold text-gray-700">Interest Rate (% P.A.)</label>
-                                        <div className="bg-red-50 px-4 py-1 rounded-full text-red-700 font-bold">
+                                        <label className="font-semibold text-foreground">Interest Rate (% P.A.)</label>
+                                        <div className="bg-primary/10 px-4 py-1 rounded-full text-primary font-bold">
                                             {emiRate}%
                                         </div>
                                     </div>
@@ -331,7 +332,7 @@ export default function HomeLoanPage() {
                                         onValueChange={(val) => setEmiRate(val[0])}
                                         className="py-4"
                                     />
-                                    <div className="flex justify-between text-xs text-gray-400">
+                                    <div className="flex justify-between text-xs text-muted-foreground">
                                         <span>7%</span>
                                         <span>15%</span>
                                     </div>
@@ -342,7 +343,7 @@ export default function HomeLoanPage() {
                             <div className="bg-gray-900 rounded-xl p-8 text-white flex flex-col justify-center space-y-8">
                                 <div className="text-center">
                                     <p className="text-gray-400 text-sm mb-1">Monthly EMI</p>
-                                    <p className="text-4xl font-bold text-green-400">{formatCurrency(calculatedEmi)}</p>
+                                    <p className="text-4xl font-bold text-secondary">{formatCurrency(calculatedEmi)}</p>
                                 </div>
 
                                 <div className="space-y-4 pt-8 border-t border-gray-700">
@@ -352,7 +353,7 @@ export default function HomeLoanPage() {
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-gray-400">Total Interest</span>
-                                        <span className="font-semibold text-red-400">{formatCurrency(totalInterest)}</span>
+                                        <span className="font-semibold text-primary">{formatCurrency(totalInterest)}</span>
                                     </div>
                                     <div className="flex justify-between items-center pt-4 border-t border-gray-700">
                                         <span className="text-gray-300 font-medium">Total Amount Payable</span>
@@ -360,7 +361,7 @@ export default function HomeLoanPage() {
                                     </div>
                                 </div>
 
-                                <button className="w-full py-3 bg-red-600 hover:bg-red-700 rounded-lg font-bold transition-colors">
+                                <button className="w-full py-3 bg-primary hover:bg-primary/90 rounded-lg font-bold transition-colors text-primary-foreground">
                                     Apply for this Loan
                                 </button>
                             </div>
@@ -370,11 +371,11 @@ export default function HomeLoanPage() {
             </div>
 
             {/* Plans Section */}
-            <div className="py-16 bg-white">
+            <div className="py-16 bg-background">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
-                        <h2 className="text-base text-red-600 font-semibold tracking-wide uppercase">Features</h2>
-                        <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                        <h2 className="text-base text-primary font-semibold tracking-wide uppercase">Features</h2>
+                        <p className="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-foreground sm:text-4xl">
                             Transparent and hassle-free plans
                         </p>
                     </div>
@@ -412,15 +413,15 @@ export default function HomeLoanPage() {
                                 ]
                             }
                         ].map((plan, idx) => (
-                            <div key={idx} className="bg-gray-50 rounded-2xl p-8 hover:shadow-xl transition-shadow border border-gray-100">
-                                <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center text-red-600 mb-6">
+                            <div key={idx} className="bg-card rounded-2xl p-8 hover:shadow-xl transition-shadow border border-border">
+                                <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center text-primary mb-6">
                                     <plan.icon className="w-8 h-8" />
                                 </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-4">{plan.title}</h3>
+                                <h3 className="text-xl font-bold text-foreground mb-4">{plan.title}</h3>
                                 <ul className="space-y-3">
                                     {plan.features.map((feature, fIdx) => (
-                                        <li key={fIdx} className="flex items-start gap-2 text-gray-600 text-sm">
-                                            <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0"></div>
+                                        <li key={fIdx} className="flex items-start gap-2 text-muted-foreground text-sm">
+                                            <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0"></div>
                                             <span>{feature}</span>
                                         </li>
                                     ))}
@@ -454,7 +455,7 @@ export default function HomeLoanPage() {
                             }
                         ].map((offer, idx) => (
                             <div key={idx} className="bg-gray-800 rounded-xl p-8 hover:bg-gray-700 transition-colors border border-gray-700">
-                                <h3 className="text-xl font-bold mb-4 text-red-400">{offer.title}</h3>
+                                <h3 className="text-xl font-bold mb-4 text-primary">{offer.title}</h3>
                                 <p className="text-gray-300 mb-6 leading-relaxed">{offer.desc}</p>
                                 <button className="text-white font-semibold flex items-center gap-2 hover:gap-3 transition-all" onClick={() => document.getElementById('hero-section')?.scrollIntoView({ behavior: 'smooth' })}>
                                     Know More <ArrowRight className="w-4 h-4" />
@@ -466,14 +467,14 @@ export default function HomeLoanPage() {
             </div>
 
             {/* Steps Section */}
-            <div className="py-16 bg-red-50">
+            <div className="py-16 bg-primary/5">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <h2 className="text-3xl font-bold text-center text-gray-900 mb-16">
+                    <h2 className="text-3xl font-bold text-center text-foreground mb-16">
                         Get a home loan in 5 easy steps
                     </h2>
                     <div className="relative">
                         {/* Connecting Line (Desktop) */}
-                        <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-red-200 -translate-y-1/2 z-0"></div>
+                        <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-primary/20 -translate-y-1/2 z-0"></div>
 
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 relative z-10">
                             {[
@@ -483,12 +484,12 @@ export default function HomeLoanPage() {
                                 { title: "Documents", desc: "Share documents with us" },
                                 { title: "Get Loan", desc: "Get your Home Loan" },
                             ].map((step, idx) => (
-                                <div key={idx} className="flex flex-col items-center text-center bg-white p-6 rounded-xl shadow-sm md:bg-transparent md:shadow-none md:p-0">
-                                    <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center font-bold text-xl mb-4 shadow-lg ring-4 ring-red-50">
+                                <div key={idx} className="flex flex-col items-center text-center bg-card p-6 rounded-xl shadow-sm md:bg-transparent md:shadow-none md:p-0">
+                                    <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-xl mb-4 shadow-lg ring-4 ring-primary/10">
                                         {idx + 1}
                                     </div>
-                                    <h3 className="font-bold text-gray-900 mb-2">{step.title}</h3>
-                                    <p className="text-sm text-gray-600">{step.desc}</p>
+                                    <h3 className="font-bold text-foreground mb-2">{step.title}</h3>
+                                    <p className="text-sm text-muted-foreground">{step.desc}</p>
                                 </div>
                             ))}
                         </div>
@@ -497,10 +498,10 @@ export default function HomeLoanPage() {
             </div>
 
             {/* Signature Club Section */}
-            <div className="py-16 bg-white">
+            <div className="py-16 bg-background">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-3xl p-8 md:p-12 text-white overflow-hidden relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-red-600 rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-primary rounded-full mix-blend-overlay filter blur-3xl opacity-20"></div>
 
                         <div className="relative z-10">
                             <h2 className="text-3xl font-bold mb-2">Signature Club</h2>
@@ -514,7 +515,7 @@ export default function HomeLoanPage() {
                                     { title: "Benefits worth ₹2999 at ₹299", icon: Gift, code: "FLAT10" },
                                 ].map((offer, idx) => (
                                     <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/20 transition-colors">
-                                        <offer.icon className="w-8 h-8 text-red-400 mb-4" />
+                                        <offer.icon className="w-8 h-8 text-primary mb-4" />
                                         <p className="font-medium mb-4 min-h-[3rem]">{offer.title}</p>
                                         <div className="bg-black/30 rounded-lg p-2 text-center text-sm font-mono text-red-300 border border-dashed border-red-900/50">
                                             Code: {offer.code}
@@ -528,9 +529,9 @@ export default function HomeLoanPage() {
             </div>
 
             {/* FAQ Section */}
-            <div className="py-16 bg-gray-50">
+            <div className="py-16 bg-muted/30">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">Got Questions? We've Got Answers!</h2>
+                    <h2 className="text-3xl font-bold text-center text-foreground mb-12">Got Questions? We've Got Answers!</h2>
                     <Accordion type="single" collapsible className="w-full space-y-4">
                         {[
                             {
@@ -550,26 +551,26 @@ export default function HomeLoanPage() {
                                 a: "Yes, you can get a pre-approved home loan based on your income and creditworthiness, which is valid for a specific period (usually 3-6 months)."
                             }
                         ].map((faq, idx) => (
-                            <AccordionItem key={idx} value={`item-${idx}`} className="bg-white rounded-lg border px-4">
-                                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-red-600 hover:no-underline py-4">
+                            <AccordionItem key={idx} value={`item-${idx}`} className="bg-card rounded-lg border border-border px-4">
+                                <AccordionTrigger className="text-left font-semibold text-foreground hover:text-primary hover:no-underline py-4">
                                     {faq.q}
                                 </AccordionTrigger>
-                                <AccordionContent className="text-gray-600 pb-4">
+                                <AccordionContent className="text-muted-foreground pb-4">
                                     {faq.a}
                                 </AccordionContent>
                             </AccordionItem>
                         ))}
                     </Accordion>
                     <div className="text-center mt-8">
-                        <button className="text-red-600 font-semibold hover:underline" onClick={() => alert('More FAQs coming soon!')}>Load more FAQs</button>
+                        <button className="text-primary font-semibold hover:underline" onClick={() => alert('More FAQs coming soon!')}>Load more FAQs</button>
                     </div>
                 </div>
             </div>
 
             {/* Testimonials Section */}
-            <div className="py-16 bg-white">
+            <div className="py-16 bg-background">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">What Our Users Say</h2>
+                    <h2 className="text-3xl font-bold text-center text-foreground mb-12">What Our Users Say</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                         {[
                             {
@@ -594,17 +595,17 @@ export default function HomeLoanPage() {
                                 color: "bg-purple-100 text-purple-600"
                             }
                         ].map((testimonial, idx) => (
-                            <div key={idx} className="bg-gray-50 rounded-2xl p-8 relative">
+                            <div key={idx} className="bg-card rounded-2xl p-8 relative border border-border">
                                 <div className="absolute -top-4 left-8">
-                                    <div className={`w-12 h-12 rounded-full ${testimonial.color} flex items-center justify-center font-bold text-xl border-4 border-white shadow-sm`}>
+                                    <div className={`w-12 h-12 rounded-full ${testimonial.color} flex items-center justify-center font-bold text-xl border-4 border-card shadow-sm`}>
                                         {testimonial.initial}
                                     </div>
                                 </div>
                                 <div className="mt-6">
-                                    <p className="text-gray-600 italic mb-6 leading-relaxed">"{testimonial.text}"</p>
+                                    <p className="text-muted-foreground italic mb-6 leading-relaxed">"{testimonial.text}"</p>
                                     <div>
-                                        <p className="font-bold text-gray-900">{testimonial.name}</p>
-                                        <p className="text-sm text-gray-500">{testimonial.location}</p>
+                                        <p className="font-bold text-foreground">{testimonial.name}</p>
+                                        <p className="text-sm text-muted-foreground">{testimonial.location}</p>
                                     </div>
                                 </div>
                             </div>

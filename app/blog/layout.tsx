@@ -1,4 +1,5 @@
 import Header from '@/components/header'
+import DynamicBackground from '@/components/DynamicBackground'
 
 export const metadata = {
   title: 'Blog | Property Ganj',
@@ -13,22 +14,8 @@ export default function BlogLayout({
   return (
     <main className="min-h-screen relative">
       {/* Video Background */}
-      <div className="fixed inset-0 -z-10 overflow-hidden">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          preload="metadata"
-          className="w-full h-full object-cover min-w-full min-h-full opacity-80"
-          style={{ objectFit: 'cover' }}
-        >
-          <source src="/blog.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
-        {/* Dark overlay to enhance text contrast */}
-        <div className="absolute inset-0 bg-black/40"></div>
-      </div>
+      {/* Dynamic Background */}
+      <DynamicBackground variant="blog" />
 
       <div className="relative z-10">
         <Header />

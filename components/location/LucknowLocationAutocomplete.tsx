@@ -5,6 +5,7 @@ import { Loader2, LocateFixed, MapPin, AlertTriangle } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { POPULAR_LUCKNOW_LOCALITIES, PopularLucknowLocality } from '@/data/lucknowLocalities';
+import { useToast } from '@/hooks/use-toast';
 
 export type ResolvedLucknowLocation = {
   label: string;
@@ -24,9 +25,8 @@ export type ResolvedLucknowLocation = {
 
 type LucknowSuggestion = ResolvedLucknowLocation & { id: string };
 
-const CITY_NAME = 'Lucknow';
+// Removed strict city restriction
 const CITY_CENTROID = { lat: 26.8467, lon: 80.9462 };
-const BOUNDING_BOX = 'rect:80.7506,26.7002,81.1104,27.1502'; // lon,lat order as required by Geoapify
 
 interface LucknowLocationAutocompleteProps {
   value: string;
@@ -69,7 +69,7 @@ export default function LucknowLocationAutocomplete({
   value,
   onChange,
   onSelect,
-  placeholder = 'Search Lucknow localities, sectors, roads…',
+  placeholder = 'Search localities, sectors, roads…',
   className,
   inputClassName,
   dense = false,
@@ -79,12 +79,12 @@ export default function LucknowLocationAutocomplete({
   const apiKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
   const [suggestions, setSuggestions] = useState<LucknowSuggestion[]>([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const { toast } = useToast();
 
   const debouncedValue = useDebouncedValue(value, 250);
   const trimmedValue = (debouncedValue || '').trim();
@@ -95,25 +95,20 @@ export default function LucknowLocationAutocomplete({
 
   useEffect(() => {
     if (!apiKey) {
-      setError('Geoapify API key missing. Add NEXT_PUBLIC_GEOAPIFY_API_KEY in your env file.');
+      // Only show warning in dev/console or if really needed, but user asked to remove red text.
+      // We'll keep the GeoapifyWarning component usage below if key is missing.
       setSuggestions(curatedSuggestions);
       setHighlightIndex(curatedSuggestions.length ? 0 : -1);
       return;
     }
-    setError(null);
   }, [apiKey, curatedSuggestions]);
 
   useEffect(() => {
-    const shouldSkipGeo = !apiKey || trimmedValue.length < 2 || trimmedValue.toLowerCase() === CITY_NAME.toLowerCase();
+    const shouldSkipGeo = !apiKey || trimmedValue.length < 2;
     if (shouldSkipGeo) {
       setSuggestions(curatedSuggestions);
       setHighlightIndex(curatedSuggestions.length ? 0 : -1);
       setLoading(false);
-      if (!curatedSuggestions.length) {
-        setError('No Lucknow matches found');
-      } else {
-        setError(null);
-      }
       return;
     }
 
@@ -126,8 +121,8 @@ export default function LucknowLocationAutocomplete({
         setLoading(true);
         const params = new URLSearchParams({
           text: trimmedValue,
-          filter: BOUNDING_BOX,
-          bias: `proximity:${CITY_CENTROID.lon},${CITY_CENTROID.lat}`,
+          // Removed BOUNDING_BOX to allow broader search
+          bias: `proximity:${CITY_CENTROID.lon},${CITY_CENTROID.lat}`, // Still bias towards Lucknow but don't restrict
           limit: '7',
           lang: 'en',
           apiKey,
@@ -149,14 +144,12 @@ export default function LucknowLocationAutocomplete({
         const combined = mergeWithCurated(parsed, curatedSuggestions);
         setSuggestions(combined);
         setHighlightIndex(combined.length ? 0 : -1);
-        setError(combined.length ? null : 'No Lucknow matches found');
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
         console.error('Geoapify autocomplete error', err);
         const combined = curatedSuggestions;
         setSuggestions(combined);
         setHighlightIndex(combined.length ? 0 : -1);
-        setError(combined.length ? null : 'Unable to fetch suggestions right now.');
       } finally {
         setLoading(false);
       }
@@ -199,8 +192,20 @@ export default function LucknowLocationAutocomplete({
   };
 
   const handleDetect = () => {
-    if (!apiKey || !navigator.geolocation) {
-      setError('Geolocation not available in this browser.');
+    if (!apiKey) {
+      toast({
+        title: "Configuration Error",
+        description: "Geoapify API key is missing.",
+        variant: "destructive",
+      });
+      return;
+    }
+    if (!navigator.geolocation) {
+      toast({
+        title: "Not Supported",
+        description: "Geolocation is not supported by your browser.",
+        variant: "destructive",
+      });
       return;
     }
     setIsDetecting(true);
@@ -220,22 +225,44 @@ export default function LucknowLocationAutocomplete({
             throw new Error('Unable to reverse geocode your location');
           }
           const data = await response.json();
-          const suggestion = data.features?.[0] ? transformFeatureToSuggestion(data.features[0]) : null;
-          if (suggestion && suggestion.city.toLowerCase().includes(CITY_NAME.toLowerCase())) {
+          // Use the first result
+          const suggestion = data.results?.[0] ? transformFeatureToSuggestion({ properties: data.results[0], geometry: { coordinates: [longitude, latitude] } }) : null;
+
+          if (suggestion) {
             handleSelect(suggestion);
+            toast({
+              title: "Location Detected",
+              description: `Detected: ${suggestion.label}`,
+            });
           } else {
-            setError('Current location is outside Lucknow. Please pick a Lucknow address.');
+            toast({
+              title: "Location Not Found",
+              description: "Could not determine a valid address from your location.",
+              variant: "destructive",
+            });
           }
         } catch (err) {
           console.error('Reverse geocoding failed', err);
-          setError('Unable to detect a Lucknow address from your GPS fix.');
+          toast({
+            title: "Error",
+            description: "Failed to fetch address details.",
+            variant: "destructive",
+          });
         } finally {
           setIsDetecting(false);
         }
       },
       (geoError) => {
         console.error('Geolocation error', geoError);
-        setError(geoError.message || 'Unable to read your GPS location.');
+        let errorMsg = "Unable to retrieve your location.";
+        if (geoError.code === geoError.PERMISSION_DENIED) {
+          errorMsg = "Location permission denied. Please enable location services.";
+        }
+        toast({
+          title: "Location Error",
+          description: errorMsg,
+          variant: "destructive",
+        });
         setIsDetecting(false);
       },
       { enableHighAccuracy: true, timeout: 12000 }
@@ -305,18 +332,14 @@ export default function LucknowLocationAutocomplete({
             className="inline-flex items-center justify-center rounded-full border-2 border-[#eb6239] bg-[#fff3ed] p-2.5 text-[#eb6239] shadow-sm hover:bg-[#ffe6d9] disabled:opacity-60"
             title="Use current location"
           >
-            <LocateFixed className="h-5 w-5" />
+            {isDetecting ? <Loader2 className="h-5 w-5 animate-spin" /> : <LocateFixed className="h-5 w-5" />}
             <span className="sr-only">Use current location</span>
           </button>
         )}
       </div>
       {suggestionList}
       {!apiKey && <GeoapifyWarning message="Geoapify key missing. Update your .env file to enable smart search." />}
-      {!!error && apiKey && !loading && (
-        <p className="mt-1 text-xs text-rose-600">
-          {error}
-        </p>
-      )}
+      {/* Removed red error text below input */}
     </div>
   );
 }
@@ -326,41 +349,46 @@ function transformFeatureToSuggestion(feature: any): LucknowSuggestion | null {
   const { properties, geometry } = feature;
   const latitude = geometry?.coordinates?.[1];
   const longitude = geometry?.coordinates?.[0];
-  const cityName = (properties.city || properties.county || '').toLowerCase();
 
-  if (!cityName.includes(CITY_NAME.toLowerCase())) {
-    return null;
-  }
+  // Extract specific fields as requested by user
+  const housenumber = properties.housenumber;
+  const street = properties.street || properties.road;
+  const suburb = properties.suburb;
+  const district = properties.district;
+  const city = properties.city;
+  const postcode = properties.postcode;
 
   const locality =
-    properties.suburb ||
+    suburb ||
     properties.quarter ||
     properties.neighbourhood ||
     properties.city_block ||
     properties.city_district;
 
-  const area = properties.district || properties.borough || properties.suburb;
+  const area = district || properties.borough || suburb;
 
   const sector = properties.city_block || properties.quarter;
   const block = properties.neighbourhood || properties.block;
-  const road = properties.street || properties.road;
+  const road = street;
+
+  // Use formatted property as primary label if available, as requested
   const label =
-    properties.name ||
-    properties.address_line1 ||
     properties.formatted ||
-    [locality, area, CITY_NAME].filter(Boolean).join(', ');
+    properties.address_line1 ||
+    properties.name ||
+    [locality, area, city].filter(Boolean).join(', ');
 
   return {
     id: String(properties.place_id || properties.osm_id || `${latitude}-${longitude}`),
     label,
-    city: properties.city || CITY_NAME,
+    city: city || 'Unknown City', // Default if city missing
     locality: locality || properties.name,
     area,
     sector,
     block,
     road,
     neighbourhood: properties.neighbourhood || properties.quarter,
-    pincode: properties.postcode,
+    pincode: postcode,
     latitude,
     longitude,
     formattedAddress: properties.formatted || properties.address_line1,
@@ -390,7 +418,7 @@ function curatedEntryToSuggestion(entry: PopularLucknowLocality): LucknowSuggest
   return {
     id: `curated-${entry.label}`,
     label: entry.label,
-    city: CITY_NAME,
+    city: 'Lucknow', // Curated list is still Lucknow-specific
     locality: entry.locality,
     area: entry.area,
     sector: entry.sector,
