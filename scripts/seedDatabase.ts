@@ -4,8 +4,8 @@ import Project from '../models/Project';
 
 async function seedDatabase() {
   try {
-    // Use the MongoDB URI from .env.local directly
-    const MONGODB_URI = 'mongodb+srv://satwikmudgal_db_user:vZb90YuMIN0DNanm@cluster0.0fusjl6.mongodb.net/?appName=Cluster0';
+    // Use the MongoDB URI from environment variable
+    const MONGODB_URI = process.env.MONGODB_URI;
 
     if (!MONGODB_URI) {
       throw new Error('Please define the MONGODB_URI environment variable inside .env.local');

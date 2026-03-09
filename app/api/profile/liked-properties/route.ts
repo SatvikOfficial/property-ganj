@@ -1,33 +1,72 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/models/User';
-import { verifyAuthToken } from '@/lib/auth';
+import { createClient } from '@/utils/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const token = request.cookies.get('token')?.value;
-    const payload = verifyAuthToken(token);
-
-    if (!payload) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const user = await User.findById(payload.userId).populate({
-      path: 'likedProperties',
-      model: 'Property',
-    });
+    const { data: likes, error } = await supabase
+      .from('likes')
+      .select(`
+            property_id,
+            properties (*)
+        `)
+      .eq('user_id', user.id);
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    if (error) throw error;
 
-    return NextResponse.json({ likedProperties: user.likedProperties });
-  } catch (error) {
+    // Map to frontend format
+    // Original returned: { likedProperties: [PropertyObject, ...] }
+    const likedProperties = (likes as any[])
+      .filter(like => like.properties) // Ensure property exists
+      .map(like => {
+        // Handle if properties is array or object depending on relationship (usually object for many-to-one or one-to-one here)
+        // But select('properties(*)') on a foreign key usually returns a single object if it's One-to-One or Many-to-One
+        // Safely cast to any to avoid TS issues for now
+        const p = Array.isArray(like.properties) ? like.properties[0] : like.properties;
+
+        if (!p) return null;
+
+        return {
+          _id: p.id,
+          title: p.title,
+          description: p.description,
+          price: p.price,
+          purpose: p.purpose,
+          propertyType: p.property_type,
+          ownerType: p.owner_type,
+          specs: {
+            bedrooms: p.bedrooms,
+            bathrooms: p.bathrooms,
+            carpetArea: p.carpet_area,
+            builtUpArea: p.built_up_area,
+            areaUnit: p.area_unit,
+          },
+          location: {
+            city: p.city,
+            locality: p.locality,
+            address: p.address,
+          },
+          media: {
+            photos: p.images ? p.images.map((url: string) => ({ url })) : []
+          },
+          createdAt: p.created_at,
+          listedBy: p.listed_by
+        };
+      })
+      .filter(Boolean);
+
+    return NextResponse.json({ likedProperties });
+
+  } catch (error: any) {
     console.error('Failed to fetch liked properties:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch liked properties' },
+      { error: error.message },
       { status: 500 }
     );
   }

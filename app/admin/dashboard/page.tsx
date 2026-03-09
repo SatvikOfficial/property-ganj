@@ -1,72 +1,41 @@
-import { notFound, redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import connectDB from '@/lib/db';
-import User from '@/models/User';
-import Property from '@/models/Property';
-import { verifyAuthToken } from '@/lib/auth';
+import { notFound } from 'next/navigation';
+import { createClient } from '@/utils/supabase/server';
 import AdminDashboardClient from './AdminDashboardClient';
+import { getAdminStats, getAgents, getProjects } from '../actions';
 
 export default async function AdminDashboardPage() {
-    await connectDB();
+    const supabase = await createClient();
 
-    const cookieStore = await cookies();
-    const token = cookieStore.get('token')?.value;
-    const payload = verifyAuthToken(token);
+    // Check Auth
+    const { data: { user } } = await supabase.auth.getUser();
 
-    if (!payload) {
-        notFound(); // Or redirect to login, but requirement says 404 for non-admins
-    }
-
-    const user = await User.findById(payload.userId);
-
-    // Strict check for the specific admin email and role
-    if (!user || user.email !== 'kplmdgl@gmail.com' || user.role !== 'admin') {
+    if (!user) {
         notFound();
     }
 
-    // Fetch data
-    const [
-        listings,
-        agents,
-        totalListings,
-        totalAgents,
-        totalUsers
-    ] = await Promise.all([
-        Property.find().populate('listedBy', 'name email').lean(),
-        User.find({ role: 'agent' }).lean(),
-        Property.countDocuments(),
-        User.countDocuments({ role: 'agent' }),
-        User.countDocuments(),
+    // Check Admin Role
+    const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile || profile.role !== 'admin') {
+        notFound();
+    }
+
+    // Fetch data using server actions
+    const [stats, agents, projects] = await Promise.all([
+        getAdminStats(),
+        getAgents(),
+        getProjects(),
     ]);
-
-    // Serialize data to pass to client component
-    const serializedListings = listings.map((l: any) => ({
-        ...l,
-        _id: l._id.toString(),
-        listedBy: l.listedBy ? { ...l.listedBy, _id: l.listedBy._id.toString() } : null,
-        createdAt: l.createdAt?.toISOString(),
-        updatedAt: l.updatedAt?.toISOString(),
-        // Handle other ObjectId fields if necessary
-        location: l.location || { city: '', locality: '' },
-    }));
-
-    const serializedAgents = agents.map((a: any) => ({
-        ...a,
-        _id: a._id.toString(),
-        createdAt: a.createdAt?.toISOString(),
-        updatedAt: a.updatedAt?.toISOString(),
-        likedProperties: a.likedProperties?.map((id: any) => id.toString()) || [],
-    }));
 
     return (
         <AdminDashboardClient
-            initialListings={serializedListings}
-            initialAgents={serializedAgents}
-            stats={{
-                totalListings,
-                totalAgents,
-                totalUsers,
-            }}
+            initialProjects={projects as any[]} // Type casting for simplicity, actions return correct shape
+            initialAgents={agents as any[]}
+            stats={stats}
         />
     );
 }

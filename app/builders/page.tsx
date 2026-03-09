@@ -1,16 +1,32 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import connectDB from '@/lib/db';
-import Builder from '@/models/Builder';
+import { createClient } from '@/utils/supabase/server';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, MapPin, Phone } from 'lucide-react';
 
 async function getBuilders() {
-    await connectDB();
-    const builders = await Builder.find({}).sort({ createdAt: -1 }).lean();
-    return JSON.parse(JSON.stringify(builders));
+    const supabase = await createClient();
+    const { data } = await supabase
+        .from('projects')
+        .select('builder_name, rera_number')
+        .not('builder_name', 'is', null);
+    
+    if (!data || data.length === 0) return [];
+    
+    // Group by builder name and return unique builders
+    const builderMap = new Map();
+    data.forEach(project => {
+        if (project.builder_name && !builderMap.has(project.builder_name)) {
+            builderMap.set(project.builder_name, {
+                name: project.builder_name,
+                reraId: project.rera_number,
+            });
+        }
+    });
+    
+    return Array.from(builderMap.values());
 }
 
 export default async function BuildersPage() {
@@ -21,53 +37,23 @@ export default async function BuildersPage() {
             <h1 className="text-3xl font-bold mb-8">Top Builders in Lucknow</h1>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {builders.map((builder: any) => (
-                    <Link href={`/builders/${builder._id}`} key={builder._id}>
+                {builders.map((builder: any, index: number) => (
+                    <Link href={`/builders/${encodeURIComponent(builder.name)}`} key={index}>
                         <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer overflow-hidden group">
                             <div className="relative h-48 w-full bg-gray-100 flex items-center justify-center p-4">
-                                {builder.logoUrl ? (
-                                    <Image
-                                        src={builder.logoUrl}
-                                        alt={builder.name}
-                                        fill
-                                        className="object-contain p-4 group-hover:scale-105 transition-transform duration-300"
-                                    />
-                                ) : (
-                                    <Building2 className="h-16 w-16 text-gray-400" />
-                                )}
+                                <Building2 className="h-16 w-16 text-gray-400" />
                             </div>
                             <CardHeader>
                                 <div className="flex justify-between items-start">
                                     <CardTitle className="text-xl font-semibold">{builder.name}</CardTitle>
-                                    {builder.totalProjects > 0 && (
-                                        <Badge variant="secondary">{builder.totalProjects} Projects</Badge>
+                                    {builder.reraId && (
+                                        <Badge variant="outline">RERA: {builder.reraId}</Badge>
                                     )}
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-2 text-sm text-gray-600">
-                                    {builder.headquarters && (
-                                        <div className="flex items-center gap-2">
-                                            <MapPin className="h-4 w-4" />
-                                            <span>
-                                                {builder.headquarters.city}
-                                                {builder.headquarters.state ? `, ${builder.headquarters.state}` : ''}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {builder.contactPhone && (
-                                        <div className="flex items-center gap-2">
-                                            <Phone className="h-4 w-4" />
-                                            <span>{builder.contactPhone}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex flex-wrap gap-2 mt-3">
-                                        {builder.tags?.slice(0, 3).map((tag: string) => (
-                                            <Badge key={tag} variant="outline" className="text-xs">
-                                                {tag}
-                                            </Badge>
-                                        ))}
-                                    </div>
+                                <div className="text-sm text-gray-600">
+                                    <p>View projects from this builder</p>
                                 </div>
                             </CardContent>
                         </Card>

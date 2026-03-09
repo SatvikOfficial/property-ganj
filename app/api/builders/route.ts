@@ -1,13 +1,40 @@
 import { NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import Builder from '@/models/Builder';
+import { createClient } from '@/utils/supabase/server';
 
 export async function GET() {
     try {
-        await connectDB();
-        const builders = await Builder.find({}).sort({ createdAt: -1 });
-        return NextResponse.json(builders);
-    } catch (error) {
+        const supabase = await createClient();
+        const { data: builders, error } = await supabase
+            .from('builders')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Map snake_case to camelCase for frontend compatibility if needed
+        // But for now, returning as is (frontend might need slight adjustment or we map here)
+        // Let's map strict camelCase to minimal disruption
+        const mappedBuilders = builders?.map(b => ({
+            _id: b.id,
+            name: b.name,
+            reraId: b.rera_id,
+            logoUrl: b.logo_url,
+            description: b.description,
+            establishedYear: b.established_year,
+            totalProjects: b.total_projects,
+            ongoingProjects: b.ongoing_projects,
+            completedProjects: b.completed_projects,
+            headquarters: b.headquarters, // jsonb is already object
+            contactEmail: b.contact_email,
+            contactPhone: b.contact_phone,
+            website: b.website,
+            tags: b.tags,
+            createdAt: b.created_at,
+            updatedAt: b.updated_at
+        }));
+
+        return NextResponse.json(mappedBuilders);
+    } catch (error: any) {
         console.error('Error fetching builders:', error);
         return NextResponse.json(
             { error: 'Failed to fetch builders' },
@@ -18,11 +45,35 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        await connectDB();
+        const supabase = await createClient();
+        // Check auth (assuming admin only for creating builders, though logic was loose before)
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
         const body = await request.json();
-        const builder = await Builder.create(body);
-        return NextResponse.json(builder, { status: 201 });
-    } catch (error) {
+
+        // Map camelCase body to snake_case db
+        const dbBody = {
+            name: body.name,
+            rera_id: body.reraId,
+            logo_url: body.logoUrl,
+            description: body.description,
+            established_year: body.establishedYear,
+            total_projects: body.totalProjects,
+            ongoing_projects: body.ongoingProjects,
+            completed_projects: body.completedProjects,
+            headquarters: body.headquarters,
+            contact_email: body.contactEmail,
+            contact_phone: body.contactPhone,
+            website: body.website,
+            tags: body.tags
+        };
+
+        const { data, error } = await supabase.from('builders').insert(dbBody).select().single();
+        if (error) throw error;
+
+        return NextResponse.json(data, { status: 201 });
+    } catch (error: any) {
         console.error('Error creating builder:', error);
         return NextResponse.json(
             { error: 'Failed to create builder' },

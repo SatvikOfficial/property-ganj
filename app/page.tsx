@@ -15,15 +15,14 @@ import FeaturedBuildersClient from "@/components/FeaturedBuildersClient"
 import PremiumProjectsClient from "@/components/PremiumProjectsClient"
 import RecommendedProperties from "@/components/RecommendedProperties"
 import { TOOL_DEFINITIONS } from "@/data/tools"
-import { POPULAR_LUCKNOW_LOCALITIES } from "@/data/lucknowLocalities"
 import { SAMPLE_BUILDERS } from "@/data/sampleBuilders"
+import PopularLocalitiesClient from "@/components/PopularLocalitiesClient"
 
 export default function HomePage() {
   const [selectedTab, setSelectedTab] = useState("Buy")
   const [hoveredTab, setHoveredTab] = useState<string | null>(null)
   const [currentCarouselIndex, setCurrentCarouselIndex] = useState(0)
   const [agentCarouselIndex, setAgentCarouselIndex] = useState(0)
-  const [localityCarouselIndex, setLocalityCarouselIndex] = useState(0)
   const [underlineStyle, setUnderlineStyle] = useState({ left: 0, width: 0 })
   const [liveProperties, setLiveProperties] = useState<any[]>([])
   const [likedProperties, setLikedProperties] = useState<string[]>([])
@@ -260,16 +259,7 @@ export default function HomePage() {
     },
   ]
 
-  const localities = POPULAR_LUCKNOW_LOCALITIES.slice(0, 4).map((locality, index) => ({
-    id: index + 1,
-    name: locality.label,
-    slug: locality.label.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, '-'),
-    priceRange: `₹${(locality.insights?.averagePricePerSqft ?? 4000) * 0.5} - ₹${(locality.insights?.averagePricePerSqft ?? 8000) * 1.5} per sqft`,
-    rating: locality.insights?.safetyRating ?? 4.0,
-    reviews: locality.insights?.ranking ? (20 - locality.insights?.ranking) * 20 + 10 : 100,
-    properties: locality.insights?.ranking ? (20 - locality.insights?.ranking) * 50 + 20 : 200,
-    image: `/kanpur-road-locality.jpg`, // default image
-  }));
+
 
   const [agents, setAgents] = useState<any[]>([])
 
@@ -393,9 +383,7 @@ export default function HomePage() {
     setAgentCarouselIndex((prev) => (prev + 1) % agents.length)
   }
 
-  const nextLocalityCarousel = () => {
-    setLocalityCarouselIndex((prev) => (prev + 1) % (localities.length - 2))
-  }
+
 
   return (
     <main className="min-h-fit bg-background overflow-x-hidden">
@@ -412,6 +400,42 @@ export default function HomePage() {
             {/* Left side: Content */}
             <div className="flex-1 min-w-0"> {/* min-w-0 prevents flex item from overflowing */}
               <DynamicGreeting />
+
+              <div className="space-y-3 md:space-y-4">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight text-white">
+                  Find the right property in Lucknow without the guesswork.
+                </h1>
+                <p className="text-sm sm:text-base lg:text-lg text-white/80 max-w-2xl">
+                  Search apartments, villas, plots, and commercial spaces with clear pricing, locality context, and smart filters.
+                </p>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <Link
+                  href="/search?q=Lucknow"
+                  className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm sm:text-base font-semibold text-white shadow-[0_12px_30px_rgba(235,98,57,0.35)] transition-transform hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  Explore listings
+                </Link>
+                <Link
+                  href="/list-property"
+                  className="inline-flex items-center justify-center rounded-full border border-white/20 bg-white/10 px-5 py-2 text-sm sm:text-base font-semibold text-white backdrop-blur transition hover:bg-white/20"
+                >
+                  Post free property ad
+                </Link>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2 text-xs sm:text-sm text-white/70">
+                {["Gomti Nagar", "Hazratganj", "Indira Nagar", "Aliganj", "Sushant Golf City"].map((locality) => (
+                  <Link
+                    key={locality}
+                    href={`/search?q=${encodeURIComponent(locality)}`}
+                    className="rounded-full border border-white/15 bg-white/10 px-3 py-1 transition hover:border-white/30 hover:bg-white/20"
+                  >
+                    {locality}
+                  </Link>
+                ))}
+              </div>
 
               {/* Property Type Tabs */}
               <div className="relative flex gap-2 md:gap-4 lg:gap-6 mb-4 md:mb-6 mt-4 overflow-x-auto pb-1">
@@ -461,6 +485,24 @@ export default function HomePage() {
               <div className="w-full max-w-full md:max-w-2xl lg:max-w-4xl">
                 <SearchBar activeFilter={selectedTab} />
               </div>
+
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-white/80">
+                {[
+                  { step: "1", title: "Choose intent", description: "Buy, rent, plot, or commercial in one tap." },
+                  { step: "2", title: "Set your range", description: "Use budget and BHK filters to narrow fast." },
+                  { step: "3", title: "Compare smarter", description: "Shortlist listings and revisit later." },
+                ].map((item) => (
+                  <div key={item.step} className="glass-dark rounded-2xl px-4 py-3">
+                    <div className="flex items-center gap-2 text-sm font-semibold text-white">
+                      <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-white/20 text-xs">
+                        {item.step}
+                      </span>
+                      {item.title}
+                    </div>
+                    <p className="mt-1 text-xs sm:text-sm text-white/70">{item.description}</p>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Right side: Carousel */}
@@ -474,7 +516,7 @@ export default function HomePage() {
       {/* Ad Cards Section */}
       <section className="bg-accent/20 py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-foreground font-bold text-xl md:text-2xl lg:text-3xl mb-6 md:mb-8">Discover Properties</h2>
+          <h2 className="text-foreground font-bold text-xl md:text-2xl lg:text-3xl mb-6 md:mb-8">Top Trending Projects in Lucknow</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             <AdCard
               image="/modern-apartment.jpg"
@@ -610,50 +652,7 @@ export default function HomePage() {
       <section className="bg-background py-8 md:py-12 px-4">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground mb-6 md:mb-10">Popular Localities in Lucknow</h2>
-          <div className="relative">
-            <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x snap-mandatory" data-locality-scroll>
-              {/* Locality cards */}
-              {localities.map((locality) => (
-                <Link href={`/locality/${locality.slug}`} key={locality.id}>
-                  <div
-                    className="card-premium p-6 min-w-[300px] lg:min-w-[350px] snap-start group cursor-pointer"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <h3 className="font-bold text-foreground text-xl lg:text-2xl flex items-center gap-2 group-hover:text-primary transition-colors">
-                        {locality.name}
-                        <span className="text-primary text-sm lg:text-base">↗</span>
-                      </h3>
-                    </div>
-                    <p className="text-sm md:text-base text-muted-foreground mb-4 font-medium">{locality.priceRange}</p>
-                    <div className="flex items-center gap-2 mb-6">
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <span key={i} className={`text-lg ${i < Math.floor(locality.rating) ? 'text-accent' : 'text-gray-300'}`}>★</span>
-                        ))}
-                      </div>
-                      <span className="font-semibold text-foreground">{locality.rating}</span>
-                      <span className="text-muted-foreground text-sm md:text-base">({locality.reviews} Reviews)</span>
-                    </div>
-                    <div className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-xl p-4 text-center group-hover:from-primary/10 group-hover:to-secondary/10 transition-all">
-                      <p className="text-primary font-bold text-base md:text-lg">{locality.properties} Properties for Sale →</p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-            <button
-              onClick={() => {
-                const container = document.querySelector('[data-locality-scroll]');
-                if (container) {
-                  container.scrollBy({ left: 300, behavior: 'smooth' });
-                }
-              }}
-              className="hidden md:flex absolute right-0 md:-right-4 top-1/2 transform -translate-y-1/2 bg-white rounded-full p-3 shadow-xl hover:shadow-2xl hover:scale-110 active:scale-95 z-10 transition-all items-center justify-center border border-gray-200"
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="w-6 h-6 text-foreground" />
-            </button>
-          </div>
+          <PopularLocalitiesClient />
         </div>
       </section>
 

@@ -1,9 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import connectDB from '@/lib/db';
-import Project from '@/models/Project';
-import '@/models/Builder'; // Ensure Builder model is registered
+import { createClient } from '@/utils/supabase/server';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Building2, MapPin } from 'lucide-react';
@@ -12,9 +10,24 @@ import Header from '@/components/header';
 import { ChevronLeft } from 'lucide-react';
 
 async function getProjects() {
-    await connectDB();
-    const projects = await Project.find({}).populate('builderId').sort({ createdAt: -1 }).lean();
-    return JSON.parse(JSON.stringify(projects));
+    const supabase = await createClient();
+    const { data } = await supabase
+        .from('projects')
+        .select('*, areas(name), cities(name)')
+        .order('created_at', { ascending: false });
+    
+    if (!data) return [];
+    
+    return data.map(project => ({
+        ...project,
+        _id: project.id,
+        builderName: project.builder_name,
+        reraId: project.rera_number,
+        location: {
+            locality: project.areas?.name,
+            city: project.cities?.name,
+        }
+    }));
 }
 
 export default async function ProjectsPage() {
@@ -37,9 +50,9 @@ export default async function ProjectsPage() {
                         <Link href={`/projects/${project._id}`} key={project._id}>
                             <Card className="h-full hover:shadow-lg transition-shadow overflow-hidden group">
                                 <div className="relative h-56 w-full bg-gray-200">
-                                    {project.coverImage ? (
+                                    {project.image_url ? (
                                         <Image
-                                            src={project.coverImage}
+                                            src={project.image_url}
                                             alt={project.name}
                                             fill
                                             className="object-cover group-hover:scale-105 transition-transform duration-500"
@@ -50,7 +63,7 @@ export default async function ProjectsPage() {
                                         </div>
                                     )}
                                     <div className="absolute top-2 right-2">
-                                        <Badge className={`${project.status === 'Ready to Move' ? 'bg-green-500' :
+                                        <Badge className={`${project.status === 'Ready to Move' || project.status === 'Ready' ? 'bg-green-500' :
                                             project.status === 'New Launch' ? 'bg-blue-500' : 'bg-orange-500'
                                             }`}>
                                             {project.status}
@@ -58,31 +71,18 @@ export default async function ProjectsPage() {
                                     </div>
                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4">
                                         <h3 className="text-white text-xl font-bold">{project.name}</h3>
-                                        <p className="text-gray-200 text-sm">{project.builderId?.name}</p>
+                                        <p className="text-gray-200 text-sm">{project.builder_name || 'Builder'}</p>
                                     </div>
                                 </div>
                                 <CardContent className="p-4">
                                     <div className="flex items-center text-gray-500 text-sm mb-3">
                                         <MapPin className="w-4 h-4 mr-1" />
-                                        {project.location.locality}, {project.location.city}
+                                        {project.location?.locality || project.areas?.name}, {project.location?.city || project.cities?.name}
                                     </div>
                                     <div className="flex justify-between items-center mt-4">
                                         <div className="text-lg font-bold text-primary">
-                                            ₹{(project.minPrice / 100000).toFixed(1)}L - ₹{(project.maxPrice / 100000).toFixed(1)}L
+                                            {project.description ? `${project.description.substring(0, 50)}...` : 'Premium Project'}
                                         </div>
-                                        <Badge variant="outline">{project.category}</Badge>
-                                    </div>
-                                    <div className="mt-4 flex flex-wrap gap-2">
-                                        {project.amenities?.slice(0, 3).map((amenity: string) => (
-                                            <span key={amenity} className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">
-                                                {amenity}
-                                            </span>
-                                        ))}
-                                        {project.amenities?.length > 3 && (
-                                            <span className="text-xs bg-gray-100 px-2 py-1 rounded-full text-gray-600">
-                                                +{project.amenities.length - 3} more
-                                            </span>
-                                        )}
                                     </div>
                                 </CardContent>
                             </Card>

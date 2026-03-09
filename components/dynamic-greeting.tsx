@@ -49,8 +49,8 @@ export default function DynamicGreeting() {
   }, [greetingMessages]);
 
   return (
-    <h1 className="text-2xl md:text-4xl font-bold text-foreground mb-2 md:mb-3">
-      <div className="relative h-8 md:h-10 overflow-hidden">
+    <div className="text-sm md:text-base font-semibold text-white/80 mb-2 md:mb-3">
+      <div className="relative h-6 md:h-7 overflow-hidden">
         {greetingMessages.map((message, index) => (
           <span
             key={index}
@@ -61,11 +61,9 @@ export default function DynamicGreeting() {
           </span>
         ))}
       </div>
-      <div className="mt-1 md:mt-2 text-primary block overflow-hidden">
-        <TypingAnimatedText
-          delayBeforeDelete={3000} // Changed to 3 seconds as requested
-        />
+      <div className="mt-1 text-primary block overflow-hidden">
+        <TypingAnimatedText delayBeforeDelete={3000} />
       </div>
-    </h1>
+    </div>
   );
 }

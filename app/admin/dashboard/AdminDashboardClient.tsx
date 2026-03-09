@@ -4,68 +4,62 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import BuildersTab from '@/components/admin/BuildersTab';
 import ProjectsTab from '@/components/admin/ProjectsTab';
+import InventoryTable from '@/components/admin/InventoryTable';
 
-interface Property {
-    _id: string;
-    title: string;
-    location: {
-        city: string;
-        locality: string;
-    };
-    price: number;
-    listedBy?: {
+interface Project {
+    id: string;
+    name: string;
+    city_id: string;
+    cities?: {
         name: string;
-        email: string;
     };
+    status: string;
+    promoter_id?: string;
+    promoters?: {
+        email: string;
+        full_name: string;
+    };
+    created_at: string;
 }
 
-interface User {
-    _id: string;
-    name: string;
+interface Profile {
+    id: string;
+    full_name: string;
     email: string;
-    phone: string;
+    phone?: string;
     role: string;
+    created_at: string;
 }
 
 interface DashboardProps {
-    initialListings: Property[];
-    initialAgents: User[];
+    initialProjects: Project[];
+    initialAgents: Profile[];
     stats: {
-        totalListings: number;
-        totalAgents: number;
+        totalProjects: number;
+        totalUnits: number;
         totalUsers: number;
+        totalAgents: number;
     };
 }
 
 export default function AdminDashboardClient({
-    initialListings,
+    initialProjects,
     initialAgents,
     stats,
 }: DashboardProps) {
-    const [listings, setListings] = useState<Property[]>(initialListings);
-    const [agents, setAgents] = useState<User[]>(initialAgents);
-    const [activeTab, setActiveTab] = useState<'listings' | 'agents' | 'builders' | 'projects'>('listings');
+    const [projects, setProjects] = useState<Project[]>(initialProjects);
+    const [agents, setAgents] = useState<Profile[]>(initialAgents);
+    const [activeTab, setActiveTab] = useState<'overview' | 'inventory' | 'agents' | 'builders' | 'projects'>('overview');
     const [isLoading, setIsLoading] = useState(false);
     const router = useRouter();
 
-    const handleDeleteListing = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this listing?')) return;
-
+    const handleDeleteProject = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this project?')) return;
         try {
             setIsLoading(true);
-            const res = await fetch(`/api/admin/listings/${id}`, {
-                method: 'DELETE',
-            });
-
-            if (res.ok) {
-                setListings(listings.filter((l) => l._id !== id));
-                alert('Listing deleted successfully');
-            } else {
-                const data = await res.json();
-                alert(data.error || 'Failed to delete listing');
-            }
+            alert('Delete functionality to be implemented with server actions');
         } catch (error) {
-            console.error('Error deleting listing:', error);
+            console.error('Error deleting project:', error);
             alert('An error occurred');
         } finally {
             setIsLoading(false);
@@ -74,20 +68,9 @@ export default function AdminDashboardClient({
 
     const handleRemoveAgent = async (id: string) => {
         if (!confirm('Are you sure you want to remove this agent?')) return;
-
         try {
             setIsLoading(true);
-            const res = await fetch(`/api/admin/agents/${id}`, {
-                method: 'DELETE',
-            });
-
-            if (res.ok) {
-                setAgents(agents.filter((a) => a._id !== id));
-                alert('Agent removed successfully');
-            } else {
-                const data = await res.json();
-                alert(data.error || 'Failed to remove agent');
-            }
+            alert('Remove functionality to be implemented with server actions');
         } catch (error) {
             console.error('Error removing agent:', error);
             alert('An error occurred');
@@ -99,13 +82,24 @@ export default function AdminDashboardClient({
     return (
         <div className="min-h-screen bg-gray-50 p-8">
             <div className="max-w-7xl mx-auto">
-                <h1 className="text-3xl font-bold text-gray-900 mb-8">Admin Dashboard</h1>
+                <header className="flex justify-between items-center mb-8">
+                    <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+                    <div className="space-x-4">
+                        <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                            Add Project
+                        </button>
+                    </div>
+                </header>
 
                 {/* Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-                        <h3 className="text-gray-500 text-sm font-medium">Total Listings</h3>
-                        <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalListings}</p>
+                        <h3 className="text-gray-500 text-sm font-medium">Total Projects</h3>
+                        <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalProjects}</p>
+                    </div>
+                    <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+                        <h3 className="text-gray-500 text-sm font-medium">Total Units</h3>
+                        <p className="text-3xl font-bold text-gray-900 mt-2">{stats.totalUnits}</p>
                     </div>
                     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
                         <h3 className="text-gray-500 text-sm font-medium">Total Agents</h3>
@@ -122,13 +116,22 @@ export default function AdminDashboardClient({
                     <div className="border-b border-gray-200">
                         <nav className="flex -mb-px">
                             <button
-                                onClick={() => setActiveTab('listings')}
-                                className={`py-4 px-6 text-sm font-medium ${activeTab === 'listings'
+                                onClick={() => setActiveTab('overview')}
+                                className={`py-4 px-6 text-sm font-medium ${activeTab === 'overview'
                                     ? 'border-b-2 border-blue-500 text-blue-600'
                                     : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     }`}
                             >
-                                Listings
+                                Overview
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('inventory')}
+                                className={`py-4 px-6 text-sm font-medium ${activeTab === 'inventory'
+                                    ? 'border-b-2 border-blue-500 text-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Inventory
                             </button>
                             <button
                                 onClick={() => setActiveTab('agents')}
@@ -148,127 +151,59 @@ export default function AdminDashboardClient({
                             >
                                 Builders
                             </button>
-                            <button
-                                onClick={() => setActiveTab('projects')}
-                                className={`py-4 px-6 text-sm font-medium ${activeTab === 'projects'
-                                    ? 'border-b-2 border-blue-500 text-blue-600'
-                                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    }`}
-                            >
-                                Projects
-                            </button>
                         </nav>
                     </div>
 
                     <div className="p-6">
-                        {activeTab === 'listings' ? (
+                        {activeTab === 'overview' ? (
                             <div className="overflow-x-auto">
+                                <h2 className="text-xl font-semibold mb-4">Recent Projects</h2>
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Property
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Location
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Price
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Owner
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Actions
-                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Project Name</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Promoter</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
-                                        {listings.map((listing) => (
-                                            <tr key={listing._id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {listing.title}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-500">
-                                                        {listing.location.locality}, {listing.location.city}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-900">
-                                                        ₹{listing.price.toLocaleString()}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-500">
-                                                        {listing.listedBy?.email || 'N/A'}
-                                                    </div>
-                                                </td>
+                                        {projects.map((project) => (
+                                            <tr key={project.id}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{project.name}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{project.cities?.name || 'Unknown'}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap"><span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">{project.status}</span></td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{project.promoters?.full_name || 'Unassigned'}</td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button
-                                                        onClick={() => handleDeleteListing(listing._id)}
-                                                        disabled={isLoading}
-                                                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                                                    >
-                                                        Delete
-                                                    </button>
+                                                    <button onClick={() => handleDeleteProject(project.id)} className="text-red-600 hover:text-red-900">Delete</button>
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </table>
                             </div>
+                        ) : activeTab === 'inventory' ? (
+                            <InventoryTable />
                         ) : activeTab === 'agents' ? (
                             <div className="overflow-x-auto">
                                 <table className="min-w-full divide-y divide-gray-200">
                                     <thead className="bg-gray-50">
                                         <tr>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Name
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Email
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Phone
-                                            </th>
-                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Role
-                                            </th>
-                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                Actions
-                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-200">
                                         {agents.map((agent) => (
-                                            <tr key={agent._id}>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm font-medium text-gray-900">
-                                                        {agent.name}
-                                                    </div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-500">{agent.email}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-gray-500">{agent.phone}</div>
-                                                </td>
-                                                <td className="px-6 py-4 whitespace-nowrap">
-                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                        {agent.role}
-                                                    </span>
-                                                </td>
+                                            <tr key={agent.id}>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{agent.full_name}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{agent.email}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap max-w-[100px] overflow-hidden text-ellipsis"><span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">{agent.role}</span></td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                    <button
-                                                        onClick={() => handleRemoveAgent(agent._id)}
-                                                        disabled={isLoading}
-                                                        className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                                                    >
-                                                        Remove
-                                                    </button>
+                                                    <button onClick={() => handleRemoveAgent(agent.id)} className="text-red-600 hover:text-red-900">Remove</button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -277,8 +212,6 @@ export default function AdminDashboardClient({
                             </div>
                         ) : activeTab === 'builders' ? (
                             <BuildersTab />
-                        ) : activeTab === 'projects' ? (
-                            <ProjectsTab />
                         ) : null}
                     </div>
                 </div>

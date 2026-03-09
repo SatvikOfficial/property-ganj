@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { useToast } from '@/hooks/use-toast';
+import { createClient } from '@/utils/supabase/client';
 
 const initialFormState = {
   name: '',
@@ -20,7 +21,6 @@ const initialFormState = {
   phone: '',
   password: '',
   confirmPassword: '',
-  identifier: '',
 };
 
 export default function AuthPage() {
@@ -33,6 +33,8 @@ export default function AuthPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState(initialFormState);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const supabase = createClient();
 
   useEffect(() => {
     if (returnUrl) {
@@ -57,119 +59,85 @@ export default function AuthPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const autoLogin = async (identifierOverride?: string, passwordOverride?: string) => {
-    const loginIdentifier =
-      identifierOverride || formData.email || formData.phone;
-    const loginPassword = passwordOverride || formData.password;
-
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        identifier: loginIdentifier,
-        password: loginPassword,
-      }),
-    });
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to login');
-    }
-
-    toast({
-      title: `Welcome back, ${data.user.name}`,
-      description: 'Redirecting you...',
-    });
-
-    if (returnUrl) {
-      router.push(decodeURIComponent(returnUrl));
-    } else {
-      router.push('/');
-    }
-    router.refresh();
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
 
     try {
       if (isLogin) {
-        const loginIdentifier =
-          formData.identifier || formData.email || formData.phone;
-
-        if (!loginIdentifier) {
-          throw new Error('Enter your email or phone number');
+        if (!formData.email) {
+          throw new Error('Please enter your email');
         }
 
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({
-            identifier: loginIdentifier,
-            password: formData.password,
-          }),
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: formData.email,
+          password: formData.password,
         });
-        const data = await response.json();
 
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to login');
+        if (error) {
+          throw error;
+        }
+
+        // Check Role for Redirect
+        if (data.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+
+          toast({
+            title: "Welcome back",
+            description: "Successfully logged in",
+          });
+
+          if (profile?.role === 'admin') {
+            router.push('/admin/dashboard');
+          } else if (returnUrl) {
+            router.push(returnUrl);
+          } else {
+            router.push('/');
+          }
+          router.refresh();
+        }
+      } else {
+        // REGISTER
+        if (formData.password !== formData.confirmPassword) {
+          throw new Error('Passwords do not match');
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+          options: {
+            data: {
+              full_name: formData.name,
+              phone: formData.phone, // stored in metadata to be used by trigger
+            }
+          }
+        });
+
+        if (error) {
+          throw error;
         }
 
         toast({
-          title: `Welcome back, ${data.user.name}`,
-          description: data.user.role === 'admin' ? 'Redirecting to admin dashboard...' : 'Redirecting you...',
+          title: "Account Created",
+          description: "Please check your email to verify your account.",
         });
 
-        // Redirect admin to dashboard, others to home or returnUrl
-        if (data.user.role === 'admin') {
-          router.push('/admin/dashboard');
-        } else if (returnUrl) {
-          router.push(decodeURIComponent(returnUrl));
-        } else {
+        // Auto login might not work if email verification is enabled, 
+        // but if it is disabled or auto-confirm is on:
+        if (data.session) {
           router.push('/');
+          router.refresh();
         }
-        router.refresh();
-        return;
       }
 
-      if (formData.password !== formData.confirmPassword) {
-        throw new Error('Passwords do not match');
-      }
-
-      if (!formData.phone) {
-        throw new Error('Phone number is required');
-      }
-
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email || undefined,
-          phone: formData.phone,
-          password: formData.password,
-        }),
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to register');
-      }
-
-      toast({
-        title: 'Account created',
-        description: 'Logging you in...',
-      });
-
-      await autoLogin(formData.phone, formData.password);
     } catch (error) {
       toast({
-        title: 'Something went wrong',
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'An unknown error occurred',
         variant: 'destructive',
       });
     } finally {
@@ -187,6 +155,7 @@ export default function AuthPage() {
           playsInline
           className="w-full h-full object-cover"
         >
+          {/* Ensure this video file exists in public folder */}
           <source src="/dark.mp4" type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-black/70" />
@@ -240,48 +209,26 @@ export default function AuthPage() {
               </div>
             )}
 
-            {isLogin ? (
-              <div className="flex flex-col text-left">
-                <label className="font-semibold text-[#264143] mb-1">
-                  Email or Phone
-                </label>
-                <div className="relative">
-                  <Mail
-                    className="absolute left-3 top-3.5 text-[#264143]"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    name="identifier"
-                    value={formData.identifier}
-                    onChange={handleChange}
-                    placeholder="you@example.com or 9876543210"
-                    required
-                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
-                  />
-                </div>
+            <div className="flex flex-col text-left">
+              <label className="font-semibold text-[#264143] mb-1">
+                Email
+              </label>
+              <div className="relative">
+                <Mail
+                  className="absolute left-3 top-3.5 text-[#264143]"
+                  size={18}
+                />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  required
+                  className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
+                />
               </div>
-            ) : (
-              <div className="flex flex-col text-left">
-                <label className="font-semibold text-[#264143] mb-1">
-                  Email <span className="text-xs text-muted-foreground">(optional)</span>
-                </label>
-                <div className="relative">
-                  <Mail
-                    className="absolute left-3 top-3.5 text-[#264143]"
-                    size={18}
-                  />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="you@example.com"
-                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
-                  />
-                </div>
-              </div>
-            )}
+            </div>
 
             {!isLogin && (
               <div className="flex flex-col text-left">
@@ -381,6 +328,11 @@ export default function AuthPage() {
               >
                 {isLogin ? 'Sign Up' : 'Sign In'}
               </button>
+            </p>
+
+            {/* Disclaimer for User */}
+            <p className="text-xs text-muted-foreground mt-2 max-w-[290px]">
+              Note: By default new accounts are 'PGA'. Contact Admin for 'Promoter' or 'Admin' access.
             </p>
           </form>
         </div>

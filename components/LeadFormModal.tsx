@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Loader2, CheckCircle } from 'lucide-react';
 
 interface LeadFormModalProps {
@@ -31,6 +31,14 @@ export default function LeadFormModal({
 
     if (!isOpen) return null;
 
+    const [referrer, setReferrer] = useState('');
+
+    useEffect(() => {
+        if (isOpen) {
+            setReferrer(document.referrer || 'Direct');
+        }
+    }, [isOpen]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -45,6 +53,8 @@ export default function LeadFormModal({
                     type,
                     targetId,
                     targetName,
+                    referrer,
+                    sourceUrl: window.location.href
                 }),
             });
 

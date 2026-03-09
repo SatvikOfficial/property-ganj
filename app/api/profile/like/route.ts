@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/models/User';
-import { verifyAuthToken } from '@/lib/auth';
-import Property from '@/models/Property';
+import { createClient } from '@/utils/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const token = request.cookies.get('token')?.value;
-    const payload = verifyAuthToken(token);
-
-    if (!payload) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -21,41 +16,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Property ID is required' }, { status: 400 });
     }
 
-    const user = await User.findById(payload.userId);
-
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // Handle placeholder properties (don't require database lookup)
+    // Handle placeholder properties
     const isPlaceholder = propertyId.toString().startsWith('placeholder-') || propertyId.toString().startsWith('featured-');
-    
-    if (!isPlaceholder) {
-      const property = await Property.findById(propertyId);
-      if (!property) {
-        return NextResponse.json({ error: 'Property not found' }, { status: 404 });
-      }
+    if (isPlaceholder) {
+      // We cannot save placeholders in the DB as they are not persistent
+      // Return simulated success
+      return NextResponse.json({ message: 'Placeholder liked (simulated)', liked: true });
     }
 
-    const isLiked = user.likedProperties.includes(propertyId);
+    // Check if property exists in UUID format
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(propertyId)) {
+      return NextResponse.json({ error: 'Invalid Property ID' }, { status: 400 });
+    }
 
-    if (isLiked) {
+    // Check if liked
+    const { data: existingLike } = await supabase
+      .from('likes')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('property_id', propertyId)
+      .single();
+
+    if (existingLike) {
       // Unlike
-      user.likedProperties = user.likedProperties.filter(
-        (id) => id.toString() !== propertyId
-      );
-      await user.save();
+      const { error } = await supabase.from('likes').delete().eq('id', existingLike.id);
+      if (error) throw error;
       return NextResponse.json({ message: 'Property unliked successfully', liked: false });
     } else {
       // Like
-      user.likedProperties.push(propertyId);
-      await user.save();
+      // Verify property validity first (optional but good)
+      const { data: property } = await supabase.from('properties').select('id').eq('id', propertyId).single();
+      if (!property) {
+        return NextResponse.json({ error: 'Property not found' }, { status: 404 });
+      }
+
+      const { error } = await supabase.from('likes').insert({
+        user_id: user.id,
+        property_id: propertyId
+      });
+      if (error) throw error;
       return NextResponse.json({ message: 'Property liked successfully', liked: true });
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to like/unlike property:', error);
     return NextResponse.json(
-      { error: 'Failed to like/unlike property' },
+      { error: error.message },
       { status: 500 }
     );
   }
