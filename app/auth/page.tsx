@@ -91,14 +91,14 @@ export default function AuthPage() {
             description: "Successfully logged in",
           });
 
+          // Redirect based on role
           if (profile?.role === 'admin') {
-            router.push('/admin/dashboard');
+            window.location.href = '/admin/dashboard';
           } else if (returnUrl) {
-            router.push(returnUrl);
+            window.location.href = returnUrl;
           } else {
-            router.push('/');
+            window.location.href = '/';
           }
-          router.refresh();
         }
       } else {
         // REGISTER
@@ -130,7 +130,6 @@ export default function AuthPage() {
         // but if it is disabled or auto-confirm is on:
         if (data.session) {
           router.push('/');
-          router.refresh();
         }
       }
 
@@ -143,9 +142,6 @@ export default function AuthPage() {
     } finally {
       setIsSubmitting(false);
     }
-    
-    // Refresh to ensure auth state is synced
-    router.refresh();
   };
 
   return (
