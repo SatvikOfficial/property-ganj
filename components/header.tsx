@@ -11,7 +11,7 @@ import { useRouter } from "next/navigation"
 type User = {
   name: string;
   email: string;
-  role?: 'user' | 'agent' | 'admin';
+  role?: 'user' | 'agent' | 'admin' | 'builder';
 };
 
 export default function Header() {
@@ -86,7 +86,7 @@ export default function Header() {
 
 
   return (
-    <header className="bg-white text-foreground sticky top-0 z-[9999] backdrop-blur-sm overflow-visible shadow-sm border-b border-gray-100">
+    <header className="bg-white text-foreground sticky top-0 z-[9999] backdrop-blur-sm overflow-visible shadow-sm border-b border-gray-200">
       <style jsx global>{`
         .burger {
           position: relative;
@@ -246,14 +246,27 @@ export default function Header() {
                   <User className="w-4 h-4 mr-1" />
                   {user.name} <ChevronDown className="w-4 h-4" />
                 </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
+                  <Link href="/dashboard" className="block px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 border-b border-gray-200">Dashboard</Link>
                   <Link href="/profile" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">My Profile</Link>
                   <Link href="/profile/liked" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">Liked Properties</Link>
-                  <Link href="/profile/my-ads" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">My Ads</Link>
+                  <Link href="/profile/my-ads" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">My Postings</Link>
                   {user?.role === 'admin' && (
                     <>
                       <div className="border-t my-2"></div>
-                      <Link href="/admin/dashboard" className="block px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 font-medium">Admin Dashboard</Link>
+                      <Link href="/admin/dashboard" className="block px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 font-semibold">Admin Panel</Link>
+                    </>
+                  )}
+                  {user?.role === 'agent' && (
+                    <>
+                      <div className="border-t my-2"></div>
+                      <Link href="/agent/dashboard" className="block px-4 py-2 text-sm text-pink-600 hover:bg-pink-50 font-semibold">Agent Dashboard</Link>
+                    </>
+                  )}
+                  {user?.role === 'builder' && (
+                    <>
+                      <div className="border-t my-2"></div>
+                      <Link href="/builder/dashboard" className="block px-4 py-2 text-sm text-orange-600 hover:bg-orange-50 font-semibold">Builder Portal</Link>
                     </>
                   )}
                   <div className="border-t my-2"></div>

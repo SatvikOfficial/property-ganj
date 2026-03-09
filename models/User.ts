@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 export interface IUser extends Document {
+  supabaseId?: string;
   name: string;
   phone: string;
   email?: string | null;
@@ -9,7 +10,7 @@ export interface IUser extends Document {
   likedProperties: mongoose.Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
-  role: 'user' | 'agent' | 'admin';
+  role: 'user' | 'agent' | 'admin' | 'builder';
   agentProfile?: {
     experience?: number;
     specialization?: string[];
@@ -24,6 +25,11 @@ export interface IUser extends Document {
 
 const UserSchema: Schema = new Schema(
   {
+    supabaseId: {
+      type: String,
+      unique: true,
+      sparse: true,
+    },
     name: {
       type: String,
       required: [true, 'Name is required'],
@@ -59,7 +65,7 @@ const UserSchema: Schema = new Schema(
     ],
     role: {
       type: String,
-      enum: ['user', 'agent', 'admin'],
+      enum: ['user', 'agent', 'admin', 'builder'],
       default: 'user',
     },
     agentProfile: {

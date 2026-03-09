@@ -1,39 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import jwt from 'jsonwebtoken';
+import connectDB from '@/lib/db';
+import User from '@/models/User';
 
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Get user from Supabase auth
-    const { data: { user }, error } = await supabase.auth.getUser();
+    // Try to get user from Supabase auth
+    let supabaseUser = null;
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session?.user) {
+        supabaseUser = session.user;
+      }
+    } catch (e) {
+      // Session error is okay, we have JWT fallback
+    }
 
-    if (error) {
-      console.error('Supabase auth error:', error);
+    // If no Supabase user, try JWT token from cookie
+    let userId = null;
+    if (supabaseUser) {
+      userId = supabaseUser.id;
+    } else {
+      const token = request.cookies.get('token')?.value;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+          userId = decoded.supabaseId;
+        } catch (e) {
+          // Token verification failed
+        }
+      }
+    }
+
+    if (!userId) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
+    // Get user from MongoDB
+    await connectDB();
+    const user = await User.findOne({ supabaseId: userId });
+
     if (!user) {
       return NextResponse.json(
-        { error: 'No user found' },
-        { status: 401 }
-      );
-    }
-
-    // Get profile from Supabase
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('full_name, email, role, phone')
-      .eq('id', user.id)
-      .single();
-
-    if (profileError) {
-      console.error('Profile fetch error:', profileError);
-      return NextResponse.json(
-        { error: 'Profile not found' },
+        { error: 'User not found' },
         { status: 404 }
       );
     }
@@ -41,15 +56,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         user: {
-          id: user.id,
-          name: profile.full_name || user.email?.split('@')[0] || 'User',
-          email: profile.email || user.email,
-          phone: profile.phone,
-          role: profile.role || 'pga',
+          id: user._id.toString(),
+          supabaseId: user.supabaseId,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role || 'user',
         },
       },
       { status: 200 }
     );
+
   } catch (error) {
     console.error('Error fetching user:', error);
     return NextResponse.json(

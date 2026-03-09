@@ -39,12 +39,21 @@ export async function POST(request: NextRequest) {
     let dbUser = await User.findOne({ supabaseId: user.id });
 
     if (!dbUser) {
+      // Determine role based on user metadata or default to 'user'
+      let userRole = user.user_metadata?.role || 'user';
+      
+      // Validate role
+      if (!['user', 'agent', 'admin', 'builder'].includes(userRole)) {
+        userRole = 'user';
+      }
+
       // Create new user
       dbUser = await User.create({
         supabaseId: user.id,
         email: user.email,
         name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
         phone: user.user_metadata?.phone,
+        role: userRole,
       });
     }
 
@@ -54,6 +63,7 @@ export async function POST(request: NextRequest) {
         userId: dbUser._id.toString(),
         email: dbUser.email,
         supabaseId: user.id,
+        role: dbUser.role,
       },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
