@@ -83,17 +83,20 @@ export default function AuthPage() {
           description: "Successfully logged in",
         });
 
+        // Wait a moment for session to be established
+        await new Promise(resolve => setTimeout(resolve, 500));
+
         // Generate JWT token via API
         try {
           const tokenResponse = await fetch('/api/auth/generate-token', {
             method: 'POST',
           });
 
-          if (!tokenResponse.ok) {
-            throw new Error('Failed to generate token');
-          }
-
           const tokenData = await tokenResponse.json();
+
+          if (!tokenResponse.ok) {
+            throw new Error(tokenData.error || 'Failed to generate token');
+          }
 
           // Get profile for role check
           const { data: profile } = await supabase
@@ -113,11 +116,13 @@ export default function AuthPage() {
         } catch (tokenError) {
           console.error('Token generation error:', tokenError);
           toast({
-            title: "Warning",
-            description: "Logged in but token generation failed. Attempting redirect...",
+            title: "Login Successful",
+            description: "You are now logged in. Redirecting...",
           });
-          // Still redirect even if token generation fails
-          window.location.assign('/');
+          // Redirect even if token generation fails - user is authenticated in Supabase
+          setTimeout(() => {
+            window.location.assign(returnUrl || '/');
+          }, 1000);
         }
         return;
       } else {
@@ -164,6 +169,9 @@ export default function AuthPage() {
 
         // Try to generate token if user is auto-logged in
         if (data.session) {
+          // Wait for session to establish
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           try {
             const tokenResponse = await fetch('/api/auth/generate-token', {
               method: 'POST',
@@ -174,13 +182,13 @@ export default function AuthPage() {
               return;
             }
           } catch (tokenError) {
-            console.error('Token generation error:', tokenError);
+            console.error('Token generation error during signup:', tokenError);
           }
         }
 
         toast({
           title: "Account Created",
-          description: "Please check your email to verify your account.",
+          description: "You're all set! You can now log in to your account.",
         });
       }
 

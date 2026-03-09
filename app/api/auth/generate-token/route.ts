@@ -12,16 +12,25 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
 
-    // Get the authenticated user from Supabase
-    const { data: { user }, error } = await supabase.auth.getUser();
+    // Get the authenticated user from Supabase session
+    const { data: { session }, error } = await supabase.auth.getSession();
 
-    if (error || !user) {
-      console.error('Auth error:', error);
+    if (error) {
+      console.error('[v0] Session error:', error);
       return NextResponse.json(
-        { error: 'Not authenticated' },
+        { error: 'Failed to get session' },
         { status: 401 }
       );
     }
+
+    if (!session || !session.user) {
+      return NextResponse.json(
+        { error: 'Not authenticated. Please login first.' },
+        { status: 401 }
+      );
+    }
+
+    const user = session.user;
 
     // Connect to MongoDB
     await connectDB();
@@ -39,36 +48,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Also ensure user profile exists in Supabase
-    try {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', user.id)
-        .single();
-
-      if (!existingProfile) {
-        // Create profile if it doesn't exist
-        await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
-            email: user.email,
-            phone: user.user_metadata?.phone,
-            role: 'pga',
-          });
-      }
-    } catch (profileError) {
-      console.error('Error ensuring profile exists:', profileError);
-      // Don't throw - token generation is more important
-    }
-
     // Generate JWT token
     const token = jwt.sign(
       {
         userId: dbUser._id.toString(),
         email: dbUser.email,
+        supabaseId: user.id,
       },
       process.env.JWT_SECRET!,
       { expiresIn: '7d' }
@@ -98,9 +83,9 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error) {
-    console.error('Error generating token:', error);
+    console.error('Token generation error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
     );
   }

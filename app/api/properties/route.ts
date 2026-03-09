@@ -118,20 +118,44 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   try {
+    const supabase = await createClient();
+    
+    // Try to get user from Supabase session
+    let userId: string | null = null;
+    
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        userId = session.user.id;
+      }
+    } catch (e) {
+      console.error('Session fetch error:', e);
+    }
+
+    // If no session, try JWT token from cookie
+    if (!userId) {
+      const token = request.cookies.get('token')?.value;
+      if (token) {
+        try {
+          const jwt = require('jsonwebtoken');
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!);
+          userId = decoded.supabaseId;
+        } catch (e) {
+          console.error('JWT verification error:', e);
+        }
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized - Please login first' }, { status: 401 });
+    }
+
     const body = await request.json();
-    // Frontend sends: title, purpose, propertyType, ownerType, price, location: {city, locality}, specs: {bedrooms, ...}, media: {photos: []}
 
     // Validate required fields (basic)
     if (!body.title || !body.price || !body.purpose) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      return NextResponse.json({ error: 'Missing required fields: title, price, purpose' }, { status: 400 });
     }
 
     const { error } = await supabase.from('properties').insert({
@@ -150,17 +174,23 @@ export async function POST(request: NextRequest) {
       built_up_area: body.specs?.builtUpArea,
       area_unit: body.specs?.areaUnit,
       images: body.media?.photos?.map((p: any) => p.url) || [],
-      listed_by: user.id,
+      listed_by: userId,
       status: 'published'
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase insert error:', error);
+      throw error;
+    }
 
     return NextResponse.json({ success: true }, { status: 201 });
 
   } catch (error: any) {
-    console.error('Create property error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('[v0] Create property error:', error);
+    return NextResponse.json({ 
+      error: error.message || 'Failed to create property',
+      details: process.env.NODE_ENV === 'development' ? error.toString() : undefined
+    }, { status: 500 });
   }
 }
 
