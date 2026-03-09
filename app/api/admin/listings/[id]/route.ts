@@ -1,33 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import Property from '@/models/Property';
-import { verifyAuthToken } from '@/lib/auth';
-import User from '@/models/User';
+import { createClient } from '@/utils/supabase/server';
 
 export async function DELETE(
     request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
-        await connectDB();
+        const supabase = await createClient();
 
-        const token = request.cookies.get('token')?.value;
-        const payload = verifyAuthToken(token);
+        const { data: { user } } = await supabase.auth.getUser();
 
-        if (!payload) {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const user = await User.findById(payload.userId);
+        // Check admin role
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
 
-        if (!user || user.role !== 'admin') {
+        if (!profile || profile.role !== 'admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const listing = await Property.findByIdAndDelete(params.id);
+        // Delete the listing
+        const { error } = await supabase
+            .from('properties')
+            .delete()
+            .eq('id', params.id);
 
-        if (!listing) {
-            return NextResponse.json({ error: 'Listing not found' }, { status: 404 });
+        if (error) {
+            return NextResponse.json(
+                { error: 'Failed to delete listing' },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json({ message: 'Listing deleted successfully' });

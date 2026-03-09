@@ -1,82 +1,95 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/models/User';
-import { verifyAuthToken } from '@/lib/auth';
+import { createClient } from '@/utils/supabase/server';
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile) {
+      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      profile: {
+        id: profile.id,
+        name: profile.full_name,
+        email: profile.email,
+        phone: profile.phone,
+        role: profile.role,
+        createdAt: profile.created_at,
+        updatedAt: profile.updated_at,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching profile:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PUT(request: NextRequest) {
   try {
-    await connectDB();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const token = request.cookies.get('token')?.value;
-    const payload = verifyAuthToken(token);
-
-    if (!payload) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { name, email, phone } = body;
+    const { full_name, phone } = body;
 
-    if (!name && !email && !phone) {
+    if (!full_name && !phone) {
       return NextResponse.json(
         { error: 'Please provide at least one field to update' },
         { status: 400 }
       );
     }
 
-    const user = await User.findById(payload.userId).select('+password');
+    const updateData: any = {};
+    if (full_name) updateData.full_name = full_name;
+    if (phone) updateData.phone = phone;
+    updateData.updated_at = new Date().toISOString();
 
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .update(updateData)
+      .eq('id', user.id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to update profile' },
+        { status: 500 }
+      );
     }
 
-    if (typeof email === 'string' && email.trim() !== (user.email || '')) {
-      const normalizedEmail = email.trim().toLowerCase();
-      if (normalizedEmail && normalizedEmail !== user.email) {
-        const existingEmail = await User.findOne({ email: normalizedEmail });
-        if (existingEmail) {
-          return NextResponse.json(
-            { error: 'Email is already in use' },
-            { status: 400 }
-          );
-        }
-        user.email = normalizedEmail;
-      } else if (!normalizedEmail) {
-        user.email = null;
-      }
-    }
-
-    if (name && name !== user.name) {
-      user.name = name;
-    }
-
-    if (phone && phone !== user.phone) {
-      const phoneInUse = await User.findOne({ phone });
-      if (phoneInUse) {
-        return NextResponse.json(
-          { error: 'Phone number already in use' },
-          { status: 400 }
-        );
-      }
-      user.phone = phone;
-    }
-
-    await user.save();
-
-    return NextResponse.json(
-      {
-        message: 'Profile updated successfully',
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
-        },
+    return NextResponse.json({
+      message: 'Profile updated successfully',
+      profile: {
+        id: profile.id,
+        name: profile.full_name,
+        email: profile.email,
+        phone: profile.phone,
+        role: profile.role,
+        createdAt: profile.created_at,
+        updatedAt: profile.updated_at,
       },
-      { status: 200 }
-    );
+    });
   } catch (error) {
     console.error('Error updating profile:', error);
     return NextResponse.json(

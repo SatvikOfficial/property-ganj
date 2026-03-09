@@ -58,8 +58,22 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     const supabase = await createClient();
     try {
+        // Check auth
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized - Please login' }, { status: 401 });
+        }
+
+        // Check admin role
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+            
+        if (!profile || profile.role !== 'admin') {
+            return NextResponse.json({ error: 'Forbidden - Admin access required' }, { status: 403 });
+        }
 
         const body = await request.json();
 

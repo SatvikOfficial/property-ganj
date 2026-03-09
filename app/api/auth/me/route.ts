@@ -1,30 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-import connectDB from '@/lib/db';
-import User from '@/models/User';
-import { verifyAuthToken } from '@/lib/auth';
+import { createClient } from '@/utils/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
+    const supabase = await createClient();
 
-    const token = request.cookies.get('token')?.value;
-    const payload = verifyAuthToken(token);
+    // Get user from Supabase auth
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (!payload) {
+    if (error || !user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
-    const user = await User.findById(payload.userId).select(
-      'name email phone role createdAt updatedAt'
-    );
+    // Get profile from Supabase
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, email, role, phone')
+      .eq('id', user.id)
+      .single();
 
-    if (!user) {
+    if (!profile) {
       return NextResponse.json(
-        { error: 'User not found' },
+        { error: 'Profile not found' },
         { status: 404 }
       );
     }
@@ -32,13 +32,11 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          role: user.role,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt,
+          id: user.id,
+          name: profile.full_name || user.email?.split('@')[0] || 'User',
+          email: profile.email || user.email,
+          phone: profile.phone,
+          role: profile.role || 'pga',
         },
       },
       { status: 200 }

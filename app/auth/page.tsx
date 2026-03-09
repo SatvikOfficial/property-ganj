@@ -126,7 +126,7 @@ export default function AuthPage() {
           description: "Please check your email to verify your account.",
         });
 
-        // Auto login might not work if email verification is enabled, 
+        // Auto login might not work if email verification is enabled,
         // but if it is disabled or auto-confirm is on:
         if (data.session) {
           router.push('/');
@@ -143,6 +143,9 @@ export default function AuthPage() {
     } finally {
       setIsSubmitting(false);
     }
+    
+    // Refresh to ensure auth state is synced
+    router.refresh();
   };
 
   return (

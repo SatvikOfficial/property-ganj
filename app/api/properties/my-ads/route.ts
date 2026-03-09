@@ -1,24 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import Property from '@/models/Property';
-import { verifyAuthToken } from '@/lib/auth';
+import { createClient } from '@/utils/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    const token = request.cookies.get('token')?.value;
-    const payload = verifyAuthToken(token);
-
-    if (!payload) {
+    if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const properties = await Property.find({ listedBy: payload.userId })
-      .sort({ createdAt: -1 })
-      .lean();
+    const { data: properties, error } = await supabase
+      .from('properties')
+      .select('*')
+      .eq('listed_by', user.id)
+      .order('created_at', { ascending: false });
 
-    return NextResponse.json({ properties }, { status: 200 });
+    if (error) {
+      return NextResponse.json(
+        { error: 'Failed to fetch properties' },
+        { status: 500 }
+      );
+    }
+
+    const mappedProperties = properties?.map(p => ({
+      _id: p.id,
+      title: p.title,
+      description: p.description,
+      price: p.price,
+      purpose: p.purpose,
+      propertyType: p.property_type,
+      ownerType: p.owner_type,
+      specs: {
+        bedrooms: p.bedrooms,
+        bathrooms: p.bathrooms,
+        carpetArea: p.carpet_area,
+        builtUpArea: p.built_up_area,
+        areaUnit: p.area_unit,
+      },
+      location: {
+        city: p.city,
+        locality: p.locality,
+        address: p.address,
+      },
+      media: {
+        photos: p.images ? p.images.map((url: string) => ({ url })) : []
+      },
+      status: p.status,
+      createdAt: p.created_at,
+      listedBy: p.listed_by
+    }));
+
+    return NextResponse.json({ properties: mappedProperties || [] }, { status: 200 });
   } catch (error) {
     console.error('Failed to fetch user properties:', error);
     return NextResponse.json(

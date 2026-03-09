@@ -1,32 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/models/User';
-import { verifyAuthToken } from '@/lib/auth';
+import { createClient } from '@/utils/supabase/server';
 
 export async function DELETE(
     request: NextRequest,
     { params }: { params: { id: string } }
 ) {
     try {
-        await connectDB();
+        const supabase = await createClient();
 
-        const token = request.cookies.get('token')?.value;
-        const payload = verifyAuthToken(token);
+        const { data: { user } } = await supabase.auth.getUser();
 
-        if (!payload) {
+        if (!user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const adminUser = await User.findById(payload.userId);
+        // Check admin role
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
 
-        if (!adminUser || adminUser.role !== 'admin') {
+        if (!profile || profile.role !== 'admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
-        const userToDelete = await User.findByIdAndDelete(params.id);
+        // Delete the user from auth and profiles
+        const { error } = await supabase.auth.admin.deleteUser(params.id);
 
-        if (!userToDelete) {
-            return NextResponse.json({ error: 'User not found' }, { status: 404 });
+        if (error) {
+            return NextResponse.json(
+                { error: 'Failed to delete user' },
+                { status: 500 }
+            );
         }
 
         return NextResponse.json({ message: 'User deleted successfully' });

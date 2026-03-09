@@ -85,8 +85,17 @@ export default function AdminDashboardClient({
                 <header className="flex justify-between items-center mb-8">
                     <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
                     <div className="space-x-4">
-                        <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
-                            Add Project
+                        <button 
+                            onClick={() => router.push('/admin/projects')}
+                            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                        >
+                            Manage Projects
+                        </button>
+                        <button 
+                            onClick={() => router.push('/admin/builders')}
+                            className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700"
+                        >
+                            Manage Builders
                         </button>
                     </div>
                 </header>
@@ -151,6 +160,15 @@ export default function AdminDashboardClient({
                             >
                                 Builders
                             </button>
+                            <button
+                                onClick={() => setActiveTab('projects')}
+                                className={`py-4 px-6 text-sm font-medium ${activeTab === 'projects'
+                                    ? 'border-b-2 border-blue-500 text-blue-600'
+                                    : 'text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    }`}
+                            >
+                                Projects
+                            </button>
                         </nav>
                     </div>
 
@@ -212,6 +230,8 @@ export default function AdminDashboardClient({
                             </div>
                         ) : activeTab === 'builders' ? (
                             <BuildersTab />
+                        ) : activeTab === 'projects' ? (
+                            <ProjectsTab />
                         ) : null}
                     </div>
                 </div>
