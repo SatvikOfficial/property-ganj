@@ -8,21 +8,30 @@ export async function GET(request: NextRequest) {
     // Get user from Supabase auth
     const { data: { user }, error } = await supabase.auth.getUser();
 
-    if (error || !user) {
+    if (error) {
+      console.error('Supabase auth error:', error);
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
+    if (!user) {
+      return NextResponse.json(
+        { error: 'No user found' },
+        { status: 401 }
+      );
+    }
+
     // Get profile from Supabase
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('full_name, email, role, phone')
       .eq('id', user.id)
       .single();
 
-    if (!profile) {
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
       return NextResponse.json(
         { error: 'Profile not found' },
         { status: 404 }

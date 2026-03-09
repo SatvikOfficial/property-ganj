@@ -78,28 +78,27 @@ export default function AuthPage() {
           throw error;
         }
 
-        // Check Role for Redirect
-        if (data.user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
+        toast({
+          title: "Welcome back",
+          description: "Successfully logged in",
+        });
 
-          toast({
-            title: "Welcome back",
-            description: "Successfully logged in",
-          });
+        // Get profile for role check
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', data.user.id)
+          .single();
 
-          // Redirect based on role
-          if (profile?.role === 'admin') {
-            window.location.href = '/admin/dashboard';
-          } else if (returnUrl) {
-            window.location.href = returnUrl;
-          } else {
-            window.location.href = '/';
-          }
+        // Redirect based on role - use window.location for full page reload
+        if (profile?.role === 'admin') {
+          window.location.assign('/admin/dashboard');
+        } else if (returnUrl) {
+          window.location.assign(returnUrl);
+        } else {
+          window.location.assign('/');
         }
+        return;
       } else {
         // REGISTER
         if (formData.password !== formData.confirmPassword) {
@@ -126,10 +125,10 @@ export default function AuthPage() {
           description: "Please check your email to verify your account.",
         });
 
-        // Auto login might not work if email verification is enabled,
-        // but if it is disabled or auto-confirm is on:
+        // Auto login if session exists
         if (data.session) {
-          router.push('/');
+          window.location.assign('/');
+          return;
         }
       }
 
