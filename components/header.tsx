@@ -39,6 +39,16 @@ export default function Header() {
 
   useEffect(() => {
     fetchUser()
+    
+    // Refresh user on visibility change (when user returns to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchUser()
+      }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [])
 
   const handleLogout = async (e?: React.MouseEvent) => {
@@ -76,7 +86,7 @@ export default function Header() {
 
 
   return (
-    <header className="bg-gray-100/90 text-foreground sticky top-0 z-[9999] backdrop-blur-sm overflow-visible">
+    <header className="bg-white text-foreground sticky top-0 z-[9999] backdrop-blur-sm overflow-visible shadow-sm border-b border-gray-100">
       <style jsx global>{`
         .burger {
           position: relative;
@@ -240,6 +250,12 @@ export default function Header() {
                   <Link href="/profile" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">My Profile</Link>
                   <Link href="/profile/liked" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">Liked Properties</Link>
                   <Link href="/profile/my-ads" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">My Ads</Link>
+                  {user?.role === 'admin' && (
+                    <>
+                      <div className="border-t my-2"></div>
+                      <Link href="/admin/dashboard" className="block px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 font-medium">Admin Dashboard</Link>
+                    </>
+                  )}
                   <div className="border-t my-2"></div>
                   <Button
                     onClick={handleLogout}

@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import StyledComponentsRegistry from '@/components/StyledComponentsRegistry'
 import { Toaster } from '@/components/ui/toaster'
 import ClientLayoutWrapper from './ClientLayoutWrapper'
+import { AuthListener } from '@/components/AuthListener'
 
 const _geist = Geist({ subsets: ["latin"] });
 const _geistMono = Geist_Mono({ subsets: ["latin"] });
@@ -43,6 +44,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
+            <AuthListener />
             <ClientLayoutWrapper>{children}</ClientLayoutWrapper>
             <Toaster />
           </ThemeProvider>

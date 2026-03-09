@@ -83,19 +83,40 @@ export default function AuthPage() {
           description: "Successfully logged in",
         });
 
-        // Get profile for role check
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', data.user.id)
-          .single();
+        // Generate JWT token via API
+        try {
+          const tokenResponse = await fetch('/api/auth/generate-token', {
+            method: 'POST',
+          });
 
-        // Redirect based on role - use window.location for full page reload
-        if (profile?.role === 'admin') {
-          window.location.assign('/admin/dashboard');
-        } else if (returnUrl) {
-          window.location.assign(returnUrl);
-        } else {
+          if (!tokenResponse.ok) {
+            throw new Error('Failed to generate token');
+          }
+
+          const tokenData = await tokenResponse.json();
+
+          // Get profile for role check
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .single();
+
+          // Redirect based on role - use window.location for full page reload
+          if (profile?.role === 'admin') {
+            window.location.assign('/admin/dashboard');
+          } else if (returnUrl) {
+            window.location.assign(returnUrl);
+          } else {
+            window.location.assign('/');
+          }
+        } catch (tokenError) {
+          console.error('Token generation error:', tokenError);
+          toast({
+            title: "Warning",
+            description: "Logged in but token generation failed. Attempting redirect...",
+          });
+          // Still redirect even if token generation fails
           window.location.assign('/');
         }
         return;
@@ -111,7 +132,7 @@ export default function AuthPage() {
           options: {
             data: {
               full_name: formData.name,
-              phone: formData.phone, // stored in metadata to be used by trigger
+              phone: formData.phone,
             }
           }
         });
@@ -120,16 +141,47 @@ export default function AuthPage() {
           throw error;
         }
 
+        // Create user profile in Supabase
+        if (data.user) {
+          try {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: data.user.id,
+                full_name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                role: 'pga',
+              });
+
+            if (profileError) {
+              console.error('Profile creation error:', profileError);
+            }
+          } catch (profileError) {
+            console.error('Profile creation error:', profileError);
+          }
+        }
+
+        // Try to generate token if user is auto-logged in
+        if (data.session) {
+          try {
+            const tokenResponse = await fetch('/api/auth/generate-token', {
+              method: 'POST',
+            });
+
+            if (tokenResponse.ok) {
+              window.location.assign('/');
+              return;
+            }
+          } catch (tokenError) {
+            console.error('Token generation error:', tokenError);
+          }
+        }
+
         toast({
           title: "Account Created",
           description: "Please check your email to verify your account.",
         });
-
-        // Auto login if session exists
-        if (data.session) {
-          window.location.assign('/');
-          return;
-        }
       }
 
     } catch (error) {

@@ -15,13 +15,8 @@ export default async function ListPropertyPage() {
 
   // Redirect to login if not authenticated
   if (!payload) {
-    // Encode the current path to redirect back after login
-    // Since we are in a server component, we can just hardcode the path or use headers if needed, 
-    // but for this specific page we know it is /list-property
-    const returnUrl = encodeURIComponent('/list-property');
-    // We can't use router.push here, we need to use redirect from next/navigation
     const { redirect } = await import('next/navigation');
-    redirect(`/auth?returnUrl=${returnUrl}`);
+    redirect('/auth?returnUrl=%2Flist-property');
   }
 
   // Get user data if authenticated
