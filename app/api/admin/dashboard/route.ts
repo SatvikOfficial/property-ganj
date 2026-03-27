@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { extractInterestLeadsFromProperty } from '@/lib/property-listing';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { isFeaturedAddressLine2, isPropertyGanjAddressLine2 } from '@/lib/property-ganj';
@@ -23,7 +24,7 @@ export async function GET() {
     { data: allProps, error: propErr },
   ] = await Promise.all([
     admin.from('profiles').select('*').order('created_at', { ascending: false }),
-    admin.from('properties').select('*').order('created_at', { ascending: false }),
+    admin.from('properties').select('*, property_images(*), property_floorplans(*)').order('created_at', { ascending: false }),
   ]);
 
   if (profErr) return NextResponse.json({ error: profErr.message }, { status: 500 });
@@ -32,6 +33,7 @@ export async function GET() {
   const featuredProps = (allProps || []).filter((property: any) =>
     isFeaturedAddressLine2(property.address_line2) || isPropertyGanjAddressLine2(property.address_line2),
   );
+  const interestLeads = (allProps || []).flatMap((property: any) => extractInterestLeadsFromProperty(property));
 
   const applications = (allProfiles || []).filter((p: any) => {
     const raw = p.company_name;
@@ -41,6 +43,7 @@ export async function GET() {
   return NextResponse.json({
     profiles: allProfiles || [],
     properties: allProps || [],
+    interestLeads,
     featured: featuredProps || [],
     agentApplications: applications,
   });

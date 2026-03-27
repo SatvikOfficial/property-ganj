@@ -9,6 +9,8 @@ type UploadOptions = {
 type UploadResult = {
   url: string;
   publicId: string;
+  bucket: string;
+  path: string;
   provider: 'supabase';
 };
 
@@ -42,7 +44,8 @@ export async function uploadPropertyPhoto(buffer: Buffer, opts: UploadOptions): 
   return {
     url: data.publicUrl,
     publicId: path,
+    bucket,
+    path,
     provider: 'supabase',
   };
 }
-

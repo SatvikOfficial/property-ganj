@@ -9,9 +9,16 @@ import { createClient } from '@/utils/supabase/client';
 interface LikeButtonProps {
   propertyId: string;
   initialLiked: boolean;
+  className?: string;
+  iconClassName?: string;
 }
 
-export default function LikeButton({ propertyId, initialLiked }: LikeButtonProps) {
+export default function LikeButton({
+  propertyId,
+  initialLiked,
+  className,
+  iconClassName,
+}: LikeButtonProps) {
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -65,12 +72,16 @@ export default function LikeButton({ propertyId, initialLiked }: LikeButtonProps
     <button
       onClick={handleLike}
       disabled={isSubmitting}
-      className="absolute top-2 right-2 z-10 p-2 bg-white/70 rounded-full hover:bg-white transition-all duration-200"
+      className={cn(
+        'absolute top-2 right-2 z-10 rounded-full bg-white/70 p-2 transition-all duration-200 hover:bg-white',
+        className,
+      )}
     >
       <Heart
         className={cn(
-          'w-6 h-6 transition-all duration-300',
-          isLiked ? 'text-red-500 fill-red-500' : 'text-gray-500'
+          'h-6 w-6 transition-all duration-300',
+          isLiked ? 'text-red-500 fill-red-500' : 'text-gray-500',
+          iconClassName,
         )}
       />
     </button>

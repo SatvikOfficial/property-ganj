@@ -38,12 +38,18 @@ function generatePlaceholderProperty(id: string) {
   
   return {
     id,
+    listingId: `PG-${String(index).padStart(4, '0')}`,
     title: `${bhk} BHK ${propertyType} for ${isSale ? 'Sale' : 'Rent'}`,
     description: 'Beautiful property in prime location with all modern amenities. Well connected to major landmarks. Spacious rooms with natural lighting, modern kitchen, and premium finishes throughout. The property features excellent ventilation, modern fixtures, and is located in a well-maintained neighborhood.',
     price: (5000000 + index * 500000) * (isSale ? 1 : 0.3),
     currency: 'INR',
     purpose: (isSale ? 'sale' : 'rent') as 'sale' | 'rent',
     propertyType,
+    dbPropertyType: propertyType === 'Plot/Land' ? 'land' : propertyType === 'Independent House/Villa' ? 'house' : 'apartment',
+    status: 'published',
+    listedBy: 'Property Ganj',
+    listedByRole: 'property-ganj',
+    propertyGanjSubdivision: propertyType === 'Plot/Land' ? 'Plot' : propertyType === 'Independent House/Villa' ? 'Houses / Villas' : 'Flats / Apartments',
     location: {
       city: 'Lucknow',
       locality: location,
@@ -62,6 +68,7 @@ function generatePlaceholderProperty(id: string) {
       facing: ['North', 'South', 'East', 'West'][index % 4],
       parking: bhk,
     },
+    pricing: {},
     amenities: [
       'Power Backup',
       'Lift',
@@ -76,17 +83,21 @@ function generatePlaceholderProperty(id: string) {
       'Modern Amenities',
       ...(index % 2 === 0 ? ['Ready to Move'] : ['Under Construction']),
     ],
+    tags: index % 2 === 0 ? ['Ready to Move', 'Gated Community'] : ['New Launch', 'Family Friendly'],
     media: {
       photos: [
-        { url: propertyImages[index % propertyImages.length], category: 'exterior' as const },
-        ...(index % 2 === 0 ? [{ url: propertyImages[(index + 1) % propertyImages.length], category: 'livingRoom' as const }] : []),
+        { id: `${id}-photo-1`, url: propertyImages[index % propertyImages.length], category: 'exterior' as const },
+        ...(index % 2 === 0 ? [{ id: `${id}-photo-2`, url: propertyImages[(index + 1) % propertyImages.length], category: 'livingRoom' as const }] : []),
       ],
+      floorplans: [],
     },
-    contact: {
+    owner: {
       name: `Owner ${index + 1}`,
       phone: `+91 98765${String(index).padStart(5, '0')}`,
       email: `owner${index + 1}@example.com`,
+      ownerType: 'owner' as const,
     },
+    hold: {},
   };
 }
 
@@ -94,12 +105,18 @@ function generatePlaceholderProperty(id: string) {
 const placeholderProperties = [
   {
     id: 'placeholder-0',
+    listingId: 'PG-0001',
     title: '1 BHK Apartment for Sale',
     description: 'Beautiful property in prime location with all modern amenities. Well connected to major landmarks. Spacious rooms with natural lighting, modern kitchen, and premium finishes throughout.',
     price: 5000000,
     currency: 'INR',
     purpose: 'sale' as const,
     propertyType: 'Apartment',
+    dbPropertyType: 'apartment',
+    status: 'published',
+    listedBy: 'Property Ganj',
+    listedByRole: 'property-ganj',
+    propertyGanjSubdivision: 'Flats / Apartments',
     location: {
       city: 'Lucknow',
       locality: 'Gomti Nagar',
@@ -114,25 +131,36 @@ const placeholderProperties = [
       floorNo: 2,
       totalFloors: 4,
     },
+    pricing: {},
     amenities: ['Power Backup', 'Lift', 'Parking', 'Security'],
     highlights: ['Prime Location', 'Well Connected', 'Modern Amenities'],
+    tags: ['Ready to Move', 'Family Friendly'],
     media: {
-      photos: [{ url: '/2bhk-apartment.jpg', category: 'exterior' }],
+      photos: [{ id: 'placeholder-0-photo-1', url: '/2bhk-apartment.jpg', category: 'exterior' }],
+      floorplans: [],
     },
-    contact: {
+    owner: {
       name: 'Owner 1',
       phone: '+91 9876500000',
       email: 'owner1@example.com',
+      ownerType: 'owner' as const,
     },
+    hold: {},
   },
   {
     id: 'placeholder-1',
+    listingId: 'PG-0002',
     title: '2 BHK Independent House/Villa for Rent',
     description: 'Beautiful property in prime location with all modern amenities. Well connected to major landmarks. Spacious rooms with natural lighting, modern kitchen, and premium finishes throughout.',
     price: 1500000,
     currency: 'INR',
     purpose: 'rent' as const,
     propertyType: 'Independent House/Villa',
+    dbPropertyType: 'house',
+    status: 'published',
+    listedBy: 'Property Ganj',
+    listedByRole: 'property-ganj',
+    propertyGanjSubdivision: 'Houses / Villas',
     location: {
       city: 'Lucknow',
       locality: 'Hazratganj',
@@ -147,25 +175,36 @@ const placeholderProperties = [
       floorNo: 1,
       totalFloors: 2,
     },
+    pricing: {},
     amenities: ['Garden', 'Parking', 'Security', 'Power Backup'],
     highlights: ['Furnished', 'Ready to Move', 'Pet Friendly'],
+    tags: ['Ready to Move', 'Luxury'],
     media: {
-      photos: [{ url: '/3bhk-apartment.jpg', category: 'exterior' }],
+      photos: [{ id: 'placeholder-1-photo-1', url: '/3bhk-apartment.jpg', category: 'exterior' }],
+      floorplans: [],
     },
-    contact: {
+    owner: {
       name: 'Owner 2',
       phone: '+91 9876500001',
       email: 'owner2@example.com',
+      ownerType: 'owner' as const,
     },
+    hold: {},
   },
   {
     id: 'placeholder-2',
+    listingId: 'PG-0003',
     title: '3 BHK Plot/Land for Sale',
     description: 'Beautiful property in prime location with all modern amenities. Well connected to major landmarks. Spacious rooms with natural lighting, modern kitchen, and premium finishes throughout.',
     price: 5500000,
     currency: 'INR',
     purpose: 'sale' as const,
     propertyType: 'Plot/Land',
+    dbPropertyType: 'land',
+    status: 'published',
+    listedBy: 'Property Ganj',
+    listedByRole: 'property-ganj',
+    propertyGanjSubdivision: 'Plot',
     location: {
       city: 'Lucknow',
       locality: 'Aliganj',
@@ -176,16 +215,21 @@ const placeholderProperties = [
       carpetArea: 1200,
       areaUnit: 'sqft',
     },
+    pricing: {},
     amenities: ['Gated Community', 'Near Metro', 'Parking'],
     highlights: ['Gated Community', 'Corner Plot', 'Ready to Move'],
+    tags: ['Corner Unit', 'Gated Community'],
     media: {
-      photos: [{ url: '/4bhk-apartment.jpg', category: 'exterior' }],
+      photos: [{ id: 'placeholder-2-photo-1', url: '/4bhk-apartment.jpg', category: 'exterior' }],
+      floorplans: [],
     },
-    contact: {
+    owner: {
       name: 'Owner 3',
       phone: '+91 9876500002',
       email: 'owner3@example.com',
+      ownerType: 'owner' as const,
     },
+    hold: {},
   },
 ];
 
@@ -230,8 +274,13 @@ export default async function PlaceholderPropertyPage({ params }: { params: Prom
   return (
     <main className="min-h-screen bg-background">
       <Header />
-      <PropertyDetailClient property={property} similar={similar} initialLiked={false} />
+      <PropertyDetailClient
+        property={property}
+        similar={similar}
+        initialSaved={false}
+        initialInterest={false}
+        viewer={{ isAuthenticated: false }}
+      />
     </main>
   );
 }
-

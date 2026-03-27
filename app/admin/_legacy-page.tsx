@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +11,7 @@ import {
   TrendingUp, Home, UserCheck, AlertCircle, Eye, MoreVertical, X
 } from 'lucide-react';
 import Link from 'next/link';
+import ListPropertyForm from '@/components/listing/ListPropertyForm';
 import {
   PROPERTY_GANJ_DEFAULT_SUBDIVISION,
   PROPERTY_GANJ_SUBDIVISIONS,
@@ -81,6 +82,7 @@ export default function AdminDashboardPage() {
   const [allUsers, setAllUsers] = useState<any[]>([]);
   const [allProperties, setAllProperties] = useState<any[]>([]);
   const [allLeads, setAllLeads] = useState<any[]>([]);
+  const [leadAssignees, setLeadAssignees] = useState<Record<string, string>>({});
 
   // Filters
   const [userSearch, setUserSearch] = useState('');
@@ -96,6 +98,127 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const { toast } = useToast();
 
+  const agentUsers = useMemo(
+    () => allUsers.filter((user: any) => user.role === 'agent'),
+    [allUsers],
+  );
+
+  const refreshAdminData = async () => {
+    const dashRes = await fetch('/api/admin/dashboard');
+    if (!dashRes.ok) {
+      const data = await dashRes.json().catch(() => ({} as any));
+      throw new Error(data?.error || 'Unable to fetch admin data.');
+    }
+
+    const dash = await dashRes.json();
+    const allProfiles = dash.profiles || [];
+    const allProps = dash.properties || [];
+    const fData = dash.featured || [];
+    const interestLeadData = dash.interestLeads || [];
+    const applicationData = dash.agentApplications || [];
+    const uCount = allProfiles.length;
+    const pCount = allProps.length;
+
+    setProjects((fData || []).map((p: any) => {
+      const isPropertyGanjListing = isPropertyGanjAddressLine2(p.address_line2);
+      const subdivision = getPropertyGanjSubdivisionFromProperty({
+        addressLine2: p.address_line2,
+        propertyType: p.property_type,
+        title: p.title,
+        description: p.description,
+      }) ?? PROPERTY_GANJ_DEFAULT_SUBDIVISION;
+
+      return {
+        id: p.id,
+        name: p.title,
+        location: p.locality || p.formatted_address || '',
+        type: p.property_type || '',
+        price: formatPriceLabel(p.price || p.rent),
+        builder: isPropertyGanjListing ? 'PROPERTY_GANJ_LISTING' : (p.description || ''),
+        image: p.provider || DEFAULT_FEATURED_IMAGE,
+        category: isPropertyGanjListing ? 'pg_listing' : 'regular',
+        subdivision,
+      } satisfies FeaturedProject;
+    }));
+
+    setAllUsers(allProfiles);
+    setAllProperties(allProps);
+
+    const interestLeads = interestLeadData.map((lead: any) => ({
+      ...lead,
+      assigned_agent_id:
+        lead.assigned_agent_id ||
+        allProps.find((item: any) => item.id === lead.property_id)?.hold_by_user_id,
+      assigned_agent_expires_at:
+        lead.assigned_agent_expires_at ||
+        allProps.find((item: any) => item.id === lead.property_id)?.hold_expires_at,
+    }));
+
+    const mappedAgentApplications = applicationData.map((application: any) => {
+      let appData: any = {};
+      try {
+        appData = JSON.parse(application.company_name);
+      } catch {
+        appData = {};
+      }
+
+      return {
+        id: application.user_id,
+        kind: 'agent_application',
+        agent_id: application.user_id,
+        name: application.full_name || 'Prospect',
+        email: application.email,
+        phone: application.phone,
+        status: 'agent_application',
+        created_at: appData.applied_at || application.created_at,
+        message: `Specialties: ${(appData.specialties || []).join(', ')}. Languages: ${(appData.languages || []).join(', ')}. Bio: ${appData.bio?.slice(0, 50)}...`,
+      };
+    });
+
+    const combinedLeads = [...interestLeads, ...mappedAgentApplications].sort(
+      (left: any, right: any) =>
+        new Date(right.created_at || 0).getTime() - new Date(left.created_at || 0).getTime(),
+    );
+    setAllLeads(combinedLeads);
+
+    const agentCount = allProfiles.filter((user: any) => user.role === 'agent').length;
+    const builderCount = allProfiles.filter((user: any) => user.role === 'builder').length;
+    const saleCount = allProps.filter((property: any) => property.for_sale).length;
+    const rentCount = allProps.filter((property: any) => property.for_rent).length;
+    setAnalytics({
+      users: uCount || 0,
+      agents: agentCount,
+      builders: builderCount,
+      properties: pCount || 0,
+      propertiesSale: saleCount,
+      propertiesRent: rentCount,
+      leads: combinedLeads.length,
+    });
+
+    const activities: any[] = [];
+    activities.push(
+      ...allProfiles.slice(0, 8).map((profile: any) => ({
+        type: 'user',
+        data: profile,
+        time: new Date(profile.created_at).getTime(),
+        action: `Registered as ${profile.role || 'user'}`,
+      })),
+    );
+    activities.push(
+      ...allProps
+        .slice(0, 8)
+        .filter((property: any) => !isFeaturedAddressLine2(property.address_line2) && !isPropertyGanjAddressLine2(property.address_line2))
+        .map((property: any) => ({
+          type: 'property',
+          data: property,
+          time: new Date(property.created_at).getTime(),
+          action: `Posted new ${property.property_type || 'listing'}: ${property.title}`,
+        })),
+    );
+    activities.sort((left, right) => right.time - left.time);
+    setActivityFeed(activities.slice(0, 15));
+  };
+
   useEffect(() => {
     const checkAdminAndFetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -104,97 +227,18 @@ export default function AdminDashboardPage() {
       if (profile?.role !== 'admin') { router.push('/'); return; }
       setIsAdmin(true);
 
-      // Fetch admin data via server route (bypasses RLS)
-      const dashRes = await fetch('/api/admin/dashboard');
-      if (!dashRes.ok) {
+      try {
+        await refreshAdminData();
+      } catch (error: any) {
         setIsLoading(false);
-        const data = await dashRes.json().catch(() => ({} as any));
-        toast({ title: 'Admin load failed', description: data?.error || 'Unable to fetch admin data.', variant: 'destructive' });
+        toast({ title: 'Admin load failed', description: error?.message || 'Unable to fetch admin data.', variant: 'destructive' });
         return;
       }
-      const dash = await dashRes.json();
-      const allProfiles = dash.profiles || [];
-      const allProps = dash.properties || [];
-      const fData = dash.featured || [];
-      const leadsData = dash.agentApplications || [];
-      const uCount = allProfiles.length;
-      const pCount = allProps.length;
-
-      if (fData) {
-        setProjects(fData.map((p: any) => {
-          const isPropertyGanjListing = isPropertyGanjAddressLine2(p.address_line2);
-          const subdivision = getPropertyGanjSubdivisionFromProperty({
-            addressLine2: p.address_line2,
-            propertyType: p.property_type,
-            title: p.title,
-            description: p.description,
-          }) ?? PROPERTY_GANJ_DEFAULT_SUBDIVISION;
-
-          return {
-            id: p.id,
-            name: p.title,
-            location: p.locality || p.formatted_address || '',
-            type: p.property_type || '',
-            price: formatPriceLabel(p.price),
-            builder: isPropertyGanjListing ? 'PROPERTY_GANJ_LISTING' : (p.description || ''),
-            image: p.provider || DEFAULT_FEATURED_IMAGE,
-            category: isPropertyGanjListing ? 'pg_listing' : 'regular',
-            subdivision,
-          } satisfies FeaturedProject;
-        }));
-      }
-      if (allProfiles) {
-        setAllUsers(allProfiles);
-        const agentCount = allProfiles.filter(u => u.role === 'agent').length;
-        const builderCount = allProfiles.filter(u => u.role === 'builder').length;
-        setAnalytics(prev => ({ ...prev, users: uCount || 0, agents: agentCount, builders: builderCount }));
-      }
-      if (allProps) {
-        setAllProperties(allProps);
-        const saleCount = allProps.filter(p => p.for_sale).length;
-        const rentCount = allProps.filter(p => p.for_rent).length;
-        setAnalytics(prev => ({ ...prev, properties: pCount || 0, propertiesSale: saleCount, propertiesRent: rentCount }));
-      }
-      if (leadsData) {
-        const mappedLeads = leadsData.map((a: any) => {
-          let appData: any = {};
-          try { appData = JSON.parse(a.company_name); } catch(e) {}
-          return {
-            id: a.user_id,
-            agent_id: a.user_id,
-            name: a.full_name || 'Prospect',
-            email: a.email,
-            phone: a.phone,
-            status: 'agent_application',
-            created_at: appData.applied_at || a.created_at,
-            message: `Specialties: ${(appData.specialties || []).join(', ')}. Languages: ${(appData.languages || []).join(', ')}. Bio: ${appData.bio?.slice(0, 50)}...`,
-          };
-        });
-        setAllLeads(mappedLeads);
-        setAnalytics(prev => ({ ...prev, leads: mappedLeads.length }));
-      }
-
-      // Build activity feed
-      const activities: any[] = [];
-      if (allProfiles) {
-        activities.push(...allProfiles.slice(0, 8).map(u => ({
-          type: 'user', data: u, time: new Date(u.created_at).getTime(),
-          action: `Registered as ${u.role || 'user'}`
-        })));
-      }
-      if (allProps) {
-        activities.push(...allProps.slice(0, 8).filter((p: any) => !isFeaturedAddressLine2(p.address_line2) && !isPropertyGanjAddressLine2(p.address_line2)).map((p: any) => ({
-          type: 'property', data: p, time: new Date(p.created_at).getTime(),
-          action: `Posted new ${p.property_type || 'listing'}: ${p.title}`
-        })));
-      }
-      activities.sort((a, b) => b.time - a.time);
-      setActivityFeed(activities.slice(0, 15));
       setIsLoading(false);
     };
 
     checkAdminAndFetchData();
-  }, []);
+  }, [router, supabase, toast]);
 
   // === Agent Approval ===
   const handleApproveAgent = async (lead: any) => {
@@ -211,9 +255,34 @@ export default function AdminDashboardPage() {
       }
 
       toast({ title: 'Agent Approved', description: 'User upgraded to Agent status.' });
-      setAllLeads(allLeads.filter((l: any) => l.id !== lead.id));
+      await refreshAdminData();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const handleAssignLeadToAgent = async (lead: any) => {
+    const agentUserId = leadAssignees[lead.id] || lead.assigned_agent_id;
+    if (!agentUserId) {
+      toast({ title: 'Choose an agent', description: 'Select an agent before assigning this lead.', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/admin/holds', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ propertyId: lead.property_id, agentUserId, holdHours: 48 }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data?.error || 'Unable to assign property to agent');
+      }
+
+      toast({ title: 'Lead assigned', description: 'The property is now routed to the selected agent.' });
+      await refreshAdminData();
+    } catch (error: any) {
+      toast({ title: 'Assignment failed', description: error?.message || 'Please try again.', variant: 'destructive' });
     }
   };
 
@@ -246,17 +315,7 @@ export default function AdminDashboardPage() {
         toast({ title: 'Error updating', description: data?.error || 'Unable to update listing', variant: 'destructive' });
       } else {
         toast({ title: 'Updated successfully' });
-        setProjects(projects.map((project) => project.id === editingId ? {
-          ...project,
-          name: formData.name,
-          location: formData.location,
-          type: formData.type,
-          price: formData.price,
-          builder: isPg ? 'PROPERTY_GANJ_LISTING' : formData.builder,
-          image: formData.image,
-          category: formData.category,
-          subdivision,
-        } : project));
+        await refreshAdminData();
         resetFeaturedForm();
       }
     } else {
@@ -270,18 +329,7 @@ export default function AdminDashboardPage() {
         toast({ title: 'Error creating', description: data?.error || 'Unable to create listing', variant: 'destructive' });
       } else if (data?.property) {
         toast({ title: 'Created successfully' });
-        const newProject: FeaturedProject = {
-          id: data.property.id,
-          name: formData.name,
-          location: formData.location,
-          type: formData.type,
-          price: formData.price,
-          builder: isPg ? 'PROPERTY_GANJ_LISTING' : formData.builder,
-          image: formData.image,
-          category: formData.category,
-          subdivision,
-        };
-        setProjects([newProject, ...projects]);
+        await refreshAdminData();
         resetFeaturedForm();
       }
     }
@@ -292,7 +340,11 @@ export default function AdminDashboardPage() {
     const res = await fetch(`/api/admin/properties?propertyId=${id}`, { method: 'DELETE' });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) toast({ title: 'Error', description: data?.error || 'Unable to delete listing', variant: 'destructive' });
-    else { toast({ title: 'Deleted' }); setProjects(projects.filter(p => p.id !== id)); }
+    else {
+      toast({ title: 'Deleted' });
+      await refreshAdminData();
+      resetFeaturedForm();
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -403,6 +455,10 @@ export default function AdminDashboardPage() {
     .map((section) => ({ ...section, count: propertyGanjProjects.filter((project) => project.subdivision === section.id).length }))
     .filter((section) => section.count > 0);
   const activeListingCount = allProperties.filter((property: any) => property.status !== 'sold').length;
+  const selectedPgProperty =
+    formData.category === 'pg_listing' && editingId
+      ? allProperties.find((property: any) => property.id === editingId) || null
+      : null;
 
   if (isLoading) return (
     <div className="min-h-screen flex items-center justify-center bg-background">
@@ -707,12 +763,7 @@ export default function AdminDashboardPage() {
                                     });
                                     if (res.ok) {
                                       toast({ title: 'Hold released', description: 'Override applied.' });
-                                      const dashRes2 = await fetch('/api/admin/dashboard');
-                                      if (dashRes2.ok) {
-                                        const dash2 = await dashRes2.json();
-                                        setAllUsers(dash2.profiles || []);
-                                        setAllProperties(dash2.properties || []);
-                                      }
+                                      await refreshAdminData();
                                     } else {
                                       const data = await res.json().catch(() => ({}));
                                       toast({ title: 'Override failed', description: data?.error || 'Try again.', variant: 'destructive' });
@@ -1072,7 +1123,7 @@ export default function AdminDashboardPage() {
                       {formData.category === 'pg_listing' ? 'Property Ganj' : 'Featured'}
                     </div>
                   </div>
-                  <form onSubmit={handleCreateOrUpdate} className="space-y-4">
+                  <div className="space-y-4">
                     <div>
                       <label className="mb-1 block text-sm font-semibold text-slate-800">Category</label>
                       <select
@@ -1084,64 +1135,84 @@ export default function AdminDashboardPage() {
                         <option value="pg_listing">Property Ganj Listing</option>
                       </select>
                     </div>
-                    {formData.category === 'pg_listing' && (
-                      <div>
-                        <label className="mb-1 block text-sm font-semibold text-slate-800">Landing page subdivision</label>
-                        <select
-                          value={formData.subdivision}
-                          onChange={e => setFormData({ ...formData, subdivision: e.target.value as PropertyGanjSubdivision })}
-                          className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
-                        >
-                          {PROPERTY_GANJ_SUBDIVISIONS.map((section) => (
-                            <option key={section.id} value={section.id}>{section.label}</option>
-                          ))}
-                        </select>
-                        <p className="mt-2 text-xs leading-5 text-slate-500">{getPropertyGanjSubdivisionMeta(formData.subdivision).description}</p>
+
+                    {formData.category === 'pg_listing' ? (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="mb-1 block text-sm font-semibold text-slate-800">Landing page subdivision</label>
+                          <select
+                            value={formData.subdivision}
+                            onChange={e => setFormData({ ...formData, subdivision: e.target.value as PropertyGanjSubdivision })}
+                            className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-900 outline-none transition focus:border-slate-400 focus:bg-white"
+                          >
+                            {PROPERTY_GANJ_SUBDIVISIONS.map((section) => (
+                              <option key={section.id} value={section.id}>{section.label}</option>
+                            ))}
+                          </select>
+                          <p className="mt-2 text-xs leading-5 text-slate-500">
+                            {getPropertyGanjSubdivisionMeta(formData.subdivision).description}
+                          </p>
+                        </div>
+                        <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-600">
+                          Property Ganj listings now use the full property composer below so the detail page has complete pricing, specs, location, media, and private seller-contact data.
+                        </div>
+                        <ListPropertyForm
+                          user={null}
+                          mode="admin"
+                          initialProperty={selectedPgProperty}
+                          defaultSubdivision={formData.subdivision}
+                          submitLabel={editingId ? 'Update Property Ganj Listing' : 'Publish Property Ganj Listing'}
+                          onSuccess={async () => {
+                            await refreshAdminData();
+                            resetFeaturedForm();
+                          }}
+                        />
                       </div>
+                    ) : (
+                      <form onSubmit={handleCreateOrUpdate} className="space-y-4">
+                        <div>
+                          <label className="mb-1 block text-sm font-semibold text-slate-800">Name</label>
+                          <input required type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. Kalyan Garden View" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-sm font-semibold text-slate-800">Location</label>
+                          <input required type="text" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. Indira Nagar, Lucknow" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-sm font-semibold text-slate-800">Type label</label>
+                          <input required type="text" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. 3 BHK Flats" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-sm font-semibold text-slate-800">Price label</label>
+                          <input required type="text" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. ₹80.3 Lac onwards" />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-sm font-semibold text-slate-800">Builder / owner</label>
+                          <input required type="text" value={formData.builder} onChange={e => setFormData({ ...formData, builder: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. Krishna Colonisers" />
+                        </div>
+                        <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4">
+                          <label className="mb-2 block text-sm font-semibold text-slate-800">Image</label>
+                          <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-[#1f2a2e] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#2d3c40]">
+                            <Upload className="h-4 w-4" /> Upload image
+                            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                          </label>
+                          <p className="mt-3 text-xs leading-5 text-slate-500">Use a square or landscape cover. Data URLs work too for quick admin curation.</p>
+                          {formData.image.length > 50 && <span className="mt-2 block text-xs font-bold text-emerald-600">Image attached</span>}
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                          <button type="submit" className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#1f2a2e] py-3 text-sm font-bold text-white transition hover:bg-[#2d3c40]">
+                            {editingId ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                            {editingId ? 'Update placement' : 'Publish listing'}
+                          </button>
+                          {editingId && (
+                            <button type="button" onClick={resetFeaturedForm} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100">
+                              Cancel
+                            </button>
+                          )}
+                        </div>
+                      </form>
                     )}
-                    <div>
-                      <label className="mb-1 block text-sm font-semibold text-slate-800">Name</label>
-                      <input required type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. Kalyan Garden View" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-semibold text-slate-800">Location</label>
-                      <input required type="text" value={formData.location} onChange={e => setFormData({ ...formData, location: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. Indira Nagar, Lucknow" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-semibold text-slate-800">Type label</label>
-                      <input required type="text" value={formData.type} onChange={e => setFormData({ ...formData, type: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. 3 BHK Flats" />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm font-semibold text-slate-800">Price label</label>
-                      <input required type="text" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. ₹80.3 Lac onwards" />
-                    </div>
-                    {formData.category === 'regular' && (
-                      <div>
-                        <label className="mb-1 block text-sm font-semibold text-slate-800">Builder / owner</label>
-                        <input required type="text" value={formData.builder} onChange={e => setFormData({ ...formData, builder: e.target.value })} className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-slate-400 focus:bg-white" placeholder="E.g. Krishna Colonisers" />
-                      </div>
-                    )}
-                    <div className="rounded-[24px] border border-dashed border-slate-300 bg-slate-50 px-4 py-4">
-                      <label className="mb-2 block text-sm font-semibold text-slate-800">Image</label>
-                      <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-[#1f2a2e] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#2d3c40]">
-                        <Upload className="h-4 w-4" /> Upload image
-                        <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-                      </label>
-                      <p className="mt-3 text-xs leading-5 text-slate-500">Use a square or landscape cover. Data URLs work too for quick admin curation.</p>
-                      {formData.image.length > 50 && <span className="mt-2 block text-xs font-bold text-emerald-600">Image attached</span>}
-                    </div>
-                    <div className="flex gap-3 pt-2">
-                      <button type="submit" className="flex flex-1 items-center justify-center gap-2 rounded-2xl bg-[#1f2a2e] py-3 text-sm font-bold text-white transition hover:bg-[#2d3c40]">
-                        {editingId ? <Edit3 className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
-                        {editingId ? 'Update placement' : 'Publish listing'}
-                      </button>
-                      {editingId && (
-                        <button type="button" onClick={resetFeaturedForm} className="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-100">
-                          Cancel
-                        </button>
-                      )}
-                    </div>
-                  </form>
+                  </div>
                 </div>
 
                 {/* List */}
@@ -1227,7 +1298,7 @@ export default function AdminDashboardPage() {
             <div className="space-y-6 max-w-6xl">
               <div>
                 <h1 className="text-3xl font-extrabold text-foreground tracking-tight">Leads & Inquiries</h1>
-                <p className="text-muted-foreground mt-1">View contact inquiries from potential buyers and renters.</p>
+                <p className="text-muted-foreground mt-1">Interest requests from listing pages and inbound agent applications show up here.</p>
               </div>
 
               <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
@@ -1235,7 +1306,7 @@ export default function AdminDashboardPage() {
                   <div className="p-12 text-center text-muted-foreground">
                     <AlertCircle className="w-10 h-10 mx-auto mb-3 opacity-30" />
                     <p className="font-semibold">No leads yet</p>
-                    <p className="text-sm">Contact inquiries from property pages will appear here.</p>
+                    <p className="text-sm">Buyer interest requests and agent applications will appear here.</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -1255,18 +1326,53 @@ export default function AdminDashboardPage() {
                             <td className="p-4">
                               <p className="font-semibold text-foreground">{lead.name || '—'}</p>
                               <p className="text-xs text-muted-foreground">{lead.phone || lead.email || '—'}</p>
+                              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                                {lead.kind === 'interest' ? 'Buyer interest' : 'Agent application'}
+                              </p>
                             </td>
                             <td className="p-4 text-muted-foreground text-xs max-w-[200px] truncate">{lead.message || '—'}</td>
                             <td className="p-4">
                               {lead.property_id ? (
-                                <Link href={`/property/${lead.property_id}`} className="text-primary text-xs font-semibold hover:underline">View Property</Link>
+                                <div className="space-y-1">
+                                  <Link href={`/property/${lead.property_id}`} className="text-primary text-xs font-semibold hover:underline">
+                                    {lead.property_title || 'View Property'}
+                                  </Link>
+                                  {lead.assigned_agent_id ? (
+                                    <p className="text-[11px] text-muted-foreground">
+                                      Assigned to {allUsers.find((user: any) => user.user_id === lead.assigned_agent_id)?.full_name || 'agent'}
+                                    </p>
+                                  ) : null}
+                                </div>
                               ) : lead.status === 'agent_application' || lead.status === 'approved_agent' ? (
                                 <span className="text-xs font-semibold text-amber-600 bg-amber-100 px-2 py-1 rounded-full">Application</span>
                               ) : '—'}
                             </td>
                             <td className="p-4 text-xs text-muted-foreground">{lead.created_at ? formatDate(lead.created_at) : '—'}</td>
                             <td className="p-4 text-right">
-                              {lead.status === 'agent_application' ? (
+                              {lead.kind === 'interest' ? (
+                                <div className="flex flex-col items-end gap-2">
+                                  <select
+                                    value={leadAssignees[lead.id] || lead.assigned_agent_id || ''}
+                                    onChange={(event) =>
+                                      setLeadAssignees((prev) => ({ ...prev, [lead.id]: event.target.value }))
+                                    }
+                                    className="min-w-[180px] rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground outline-none"
+                                  >
+                                    <option value="">Assign to agent</option>
+                                    {agentUsers.map((agent: any) => (
+                                      <option key={agent.user_id} value={agent.user_id}>
+                                        {agent.full_name || agent.email || agent.user_id}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <button
+                                    onClick={() => handleAssignLeadToAgent(lead)}
+                                    className="rounded-lg bg-primary px-3 py-1.5 text-xs font-bold text-white transition hover:bg-primary/90"
+                                  >
+                                    {lead.assigned_agent_id ? 'Reassign' : 'Assign'}
+                                  </button>
+                                </div>
+                              ) : lead.status === 'agent_application' ? (
                                 <button
                                   onClick={() => handleApproveAgent(lead)}
                                   className="text-white bg-primary hover:bg-primary/90 px-3 py-1.5 rounded-lg text-xs font-bold transition"

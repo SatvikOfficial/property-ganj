@@ -7,6 +7,7 @@ import Link from "next/link"
 import Header from "@/components/header"
 import LikeButton from "@/components/LikeButton"
 import LucknowLocationAutocomplete, { ResolvedLucknowLocation } from "@/components/location/LucknowLocationAutocomplete"
+import { createClient } from "@/utils/supabase/client"
 
 const propertyTypeOptions = ["Apartment", "Independent House/Villa", "Plot/Land", "Office", "Retail"]
 const bhkOptions = ["1 BHK", "2 BHK", "3 BHK", "4 BHK", "5+ BHK"]
@@ -57,81 +58,6 @@ const formatCurrency = (value?: number) => {
   }).format(value)
 }
 
-// Generate placeholder properties with real images
-const propertyImages = [
-  "/2bhk-apartment.jpg",
-  "/3bhk-apartment.jpg",
-  "/4bhk-apartment.jpg",
-  "/modern-apartment.jpg",
-  "/luxury-apartment.jpg",
-  "/apartment-complex.jpg",
-  "/residential-property.jpg",
-  "/2bhk-flat.jpg",
-  "/3bhk-flat.jpg",
-  "/4bhk-flat.jpg",
-  "/premium-apartment.jpg",
-  "/modern-2bhk-apartment.jpg",
-  "/apartment-interior.jpg",
-  "/3bhk-luxury-living.jpg",
-  "/2bhk-residential-house.jpg",
-  "/3bhk-multistorey-apartment.jpg",
-]
-
-const generatePlaceholderProperties = (count: number, filters?: any) => {
-  const fallbackLocations = ["Gomti Nagar", "Hazratganj", "Aliganj", "Indira Nagar", "Aminabad", "Chowk", "Mahanagar", "Vrindavan Yojna", "Shaheed Path", "Gomti Nagar Extension", "Sushant Golf City", "Jankipuram", "Rajajipuram", "Alambagh", "Kalyanpur"]
-  const allPropertyTypes = ["Apartment", "Independent House/Villa", "Plot/Land", "Office", "Retail"]
-  const bhkOptions = [1, 2, 3, 4, 5]
-  
-  // Use filter criteria if available
-  const targetLocation = filters?.locality || filters?.location || ""
-  const locations = targetLocation ? [targetLocation] : fallbackLocations
-  const propertyTypes = filters?.propertyTypes?.length ? filters.propertyTypes : allPropertyTypes
-  const purpose = filters?.purpose || 'sale'
-  const minPrice = filters?.budgetMin || 0
-  const maxPrice = filters?.budgetMax || 100000000
-  const selectedBhk = filters?.bhk?.length ? parseInt(filters.bhk[0]) : null
-  
-  return Array.from({ length: count }, (_, i) => {
-    const baseIndex = Date.now() % 1000 + i // Add variety based on time
-    const bhk = selectedBhk || bhkOptions[baseIndex % bhkOptions.length]
-    const propertyType = propertyTypes[baseIndex % propertyTypes.length]
-    const locationIndex = locations.length === 1 ? 0 : baseIndex % locations.length
-    const priceBase = minPrice > 0 ? minPrice : (5000000 + baseIndex * 500000)
-    const priceRange = maxPrice > minPrice ? (maxPrice - minPrice) : 10000000
-    const price = purpose === 'rent' 
-      ? Math.min(priceBase * 0.3 + (baseIndex % 10) * 5000, maxPrice || 50000)
-      : Math.min(priceBase + (baseIndex % 20) * (priceRange / 20), maxPrice || priceBase * 2)
-    
-    return {
-      _id: `placeholder-${baseIndex}`,
-      title: `${bhk} BHK ${propertyType} for ${purpose === 'rent' ? 'Rent' : 'Sale'}`,
-      price: Math.round(price),
-      purpose: purpose,
-      propertyType: propertyType,
-      location: {
-        locality: locations[locationIndex],
-        city: "Lucknow"
-      },
-      specs: {
-        bedrooms: bhk,
-        carpetArea: 800 + (baseIndex % 15) * 100,
-        areaUnit: "sqft"
-      },
-      description: "Beautiful property in prime location with all modern amenities. Well connected to major landmarks. Spacious rooms with natural lighting, modern kitchen, and premium finishes throughout.",
-      media: {
-        photos: [{ url: propertyImages[baseIndex % propertyImages.length], category: 'exterior' }]
-      },
-      contact: {
-        name: `Owner ${baseIndex + 1}`,
-        phone: `+91 98765${String(baseIndex % 100000).padStart(5, '0')}`
-      },
-      ownerType: baseIndex % 3 === 0 ? 'owner' : baseIndex % 3 === 1 ? 'agent' : 'builder',
-      tags: tagOptions.slice(0, 2 + (baseIndex % 4)),
-      isPlaceholder: true
-    }
-  })
-}
-
 function SearchFiltersContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -155,6 +81,7 @@ function SearchFiltersContent() {
 
   const [properties, setProperties] = useState<any[]>([])
   const [likedProperties, setLikedProperties] = useState<string[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showBudgetModal, setShowBudgetModal] = useState(false)
@@ -212,10 +139,49 @@ function SearchFiltersContent() {
   const fetchProperties = async (params: URLSearchParams) => {
     setLoading(true)
     setError(null)
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setProperties(generatePlaceholderProperties(6, filters))
-    setLoading(false)
+    try {
+      const response = await fetch(`/api/properties?${params.toString()}`)
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data?.error || "Unable to load listings.")
+      }
+
+      const nextProperties = Array.isArray(data.properties) ? data.properties : []
+      setProperties(nextProperties)
+      setTotalCount(typeof data.count === "number" ? data.count : nextProperties.length)
+
+      const supabase = createClient()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user || nextProperties.length === 0) {
+        setLikedProperties([])
+        return
+      }
+
+      const propertyIds = nextProperties.map((property: any) => property._id).filter(Boolean)
+      const { data: likes, error: likesError } = await supabase
+        .from("likes")
+        .select("property_id")
+        .eq("user_id", user.id)
+        .in("property_id", propertyIds)
+
+      if (likesError) {
+        setLikedProperties([])
+        return
+      }
+
+      setLikedProperties((likes || []).map((like: any) => like.property_id))
+    } catch (fetchError) {
+      setProperties([])
+      setLikedProperties([])
+      setTotalCount(0)
+      setError(fetchError instanceof Error ? fetchError.message : "Unable to load listings.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -559,7 +525,7 @@ function SearchFiltersContent() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <h2 className="text-muted-foreground font-semibold text-lg mb-6">
-              {loading ? "Loading properties..." : `Showing ${properties.length} matching properties`}
+              {loading ? "Loading properties..." : `Showing ${totalCount} matching properties`}
             </h2>
             {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
@@ -605,21 +571,10 @@ function SearchFiltersContent() {
 
                       <div className="flex-1">
                         <div className="mb-3">
-                          {property.isPlaceholder ? (
-                            <>
-                              <Link href={`/property/placeholder/${property._id}`}>
-                                <h3 className="font-bold text-foreground hover:text-primary mb-1">{property.title}</h3>
-                              </Link>
-                              <p className="text-sm text-muted-foreground">{location}</p>
-                            </>
-                          ) : (
-                            <>
                           <Link href={`/property/${property._id}`}>
                             <h3 className="font-bold text-foreground hover:text-primary mb-1">{property.title}</h3>
                           </Link>
                           <p className="text-sm text-muted-foreground">{location}</p>
-                            </>
-                          )}
                         </div>
 
                         <div className="grid grid-cols-3 gap-2 mb-3 bg-muted p-3 rounded-md">
@@ -647,12 +602,14 @@ function SearchFiltersContent() {
 
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center font-bold text-secondary">
-                            {property.contact?.name?.charAt(0) || "P"}
+                            {(property.listedBy || "P").charAt(0)}
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground uppercase">{property.ownerType}</p>
+                            <p className="text-xs text-muted-foreground uppercase">
+                              {property.ownerType === "property-ganj" ? "property ganj managed" : `${property.ownerType} listed`}
+                            </p>
                             <p className="font-semibold text-foreground">
-                              {property.contact?.name || "Property Lister"}
+                              {property.listedBy === "Property Ganj" ? "Property Ganj" : "Verified lister"}
                             </p>
                           </div>
                         </div>
@@ -666,42 +623,18 @@ function SearchFiltersContent() {
                           {sqftPrice && <p className="text-sm text-muted-foreground text-right">{sqftPrice}</p>}
                         </div>
                         <div className="space-y-2 w-full mt-4 md:mt-0">
-                          {property.isPlaceholder ? (
-                            <>
-                              <Link 
-                                href={`/property/placeholder/${property._id}`}
-                                className="block w-full bg-primary text-primary-foreground py-2 font-semibold hover:bg-primary/90 rounded text-sm text-center"
-                              >
-                                View Details
-                              </Link>
-                              <button 
-                                onClick={() => router.push('/list-property')}
-                                className="w-full border-2 border-primary text-primary py-2 font-semibold hover:bg-primary/10 rounded text-sm"
-                              >
-                                List Your Property
-                              </button>
-                            </>
-                          ) : (
-                            <>
-                              <a 
-                                href={`tel:${property.contact?.phone || ''}`}
-                                className="block w-full bg-primary text-primary-foreground py-2 font-semibold hover:bg-primary/90 active:bg-primary/80 rounded text-sm text-center touch-manipulation"
-                              >
-                            Contact {property.ownerType === "owner" ? "Owner" : "Lister"}
-                              </a>
-                              <button 
-                                onClick={() => {
-                                  if (property.contact?.phone) {
-                                    navigator.clipboard.writeText(property.contact.phone);
-                                    alert(`Phone number copied: ${property.contact.phone}`);
-                                  }
-                                }}
-                                className="w-full border-2 border-primary text-primary py-2 font-semibold hover:bg-primary/10 active:bg-primary/20 rounded text-sm touch-manipulation"
-                              >
-                            Get Phone No.
-                          </button>
-                            </>
-                          )}
+                          <Link 
+                            href={`/property/${property._id}`}
+                            className="block w-full bg-primary text-primary-foreground py-2 font-semibold hover:bg-primary/90 active:bg-primary/80 rounded text-sm text-center touch-manipulation"
+                          >
+                            View Details
+                          </Link>
+                          <Link 
+                            href={`/property/${property._id}`}
+                            className="block w-full border-2 border-primary text-primary py-2 font-semibold hover:bg-primary/10 active:bg-primary/20 rounded text-sm text-center touch-manipulation"
+                          >
+                            Request Callback
+                          </Link>
                         </div>
                       </div>
                     </div>

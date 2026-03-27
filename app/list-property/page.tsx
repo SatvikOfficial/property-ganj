@@ -1,8 +1,27 @@
 import Header from '@/components/header';
 import ListPropertyForm from '@/components/listing/ListPropertyForm';
+import { createClient } from '@/utils/supabase/server';
 
 export default async function ListPropertyPage() {
-  const userData = null;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let userData = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, phone, email')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    userData = {
+      name: profile?.full_name || user.user_metadata?.full_name || '',
+      phone: profile?.phone || '',
+      email: profile?.email || user.email || '',
+    };
+  }
 
   return (
     <main className="min-h-screen">

@@ -30,6 +30,8 @@ export async function POST(request: NextRequest) {
       {
         url: uploadResult.url,
         publicId: uploadResult.publicId,
+        bucket: uploadResult.bucket,
+        path: uploadResult.path,
         category,
         provider: uploadResult.provider,
       },
@@ -43,4 +45,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

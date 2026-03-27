@@ -1,63 +1,121 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Share2, MapPin, Youtube } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import {
+  ArrowUpRight,
+  BedDouble,
+  Building2,
+  CalendarDays,
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Compass,
+  Copy,
+  HeartHandshake,
+  ImageIcon,
+  IndianRupee,
+  Layers3,
+  MapPin,
+  PlayCircle,
+  Ruler,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import LikeButton from '@/components/LikeButton';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
-type PropertyMedia = {
+type PropertyMediaItem = {
+  id: string;
   url: string;
   category?: string;
+  label?: string;
+  isPrimary?: boolean;
 };
 
 type PropertyDetail = {
   id: string;
+  listingId: string;
   title: string;
   description?: string;
   price: number;
   currency?: string;
   purpose: 'sale' | 'rent';
   propertyType: string;
+  dbPropertyType: string;
+  status: string;
+  listedBy: string;
+  listedByRole: string;
+  propertyGanjSubdivision?: string | null;
   location: {
     city?: string;
     locality?: string;
-    address?: string;
     area?: string;
     sector?: string;
     block?: string;
     road?: string;
-    pincode?: string;
+    address?: string;
     landmark?: string;
+    pincode?: string;
     latitude?: number;
     longitude?: number;
   };
-  specs?: {
+  specs: {
     bedrooms?: number;
     bathrooms?: number;
     balconies?: number;
+    parking?: number;
     carpetArea?: number;
     builtUpArea?: number;
+    plotArea?: number;
     areaUnit?: string;
+    furnishing?: string;
     floorNo?: number;
     totalFloors?: number;
-    furnishing?: string;
     age?: string;
     facing?: string;
-    parking?: number;
+    possessionStatus?: string;
+    availableFrom?: string;
+    noOfOpenSides?: number;
+    widthOfRoadFacing?: number;
+    anyConstructionDone?: boolean;
+    boundaryWallMade?: boolean;
+    isInGatedColony?: boolean;
+    isCornerPlot?: boolean;
+    floorsAllowedForConstruction?: number;
+  };
+  pricing: {
+    maintenance?: number;
+    deposit?: number;
+    bookingAmount?: number;
   };
   amenities: string[];
   highlights: string[];
+  tags: string[];
   media: {
-    photos: PropertyMedia[];
+    photos: PropertyMediaItem[];
+    floorplans: { id: string; url: string; label: string }[];
     videoUrl?: string;
   };
-  contact: {
-    name: string;
-    phone: string;
-    email?: string | null;
+  hold: {
+    byUserId?: string;
+    expiresAt?: string;
   };
+  createdAt?: string;
+  updatedAt?: string;
+  publishedAt?: string;
 };
 
 type SimilarProperty = {
@@ -67,12 +125,23 @@ type SimilarProperty = {
   price: number;
   area?: string;
   image?: string;
+  purpose?: 'sale' | 'rent';
+  propertyType?: string;
+};
+
+type ViewerProfile = {
+  isAuthenticated: boolean;
+  name?: string;
+  phone?: string;
+  email?: string;
 };
 
 type PropertyDetailClientProps = {
   property: PropertyDetail;
   similar: SimilarProperty[];
-  initialLiked: boolean;
+  initialSaved: boolean;
+  initialInterest: boolean;
+  viewer: ViewerProfile;
 };
 
 const formatCurrency = (value: number, currency = 'INR') =>
@@ -80,24 +149,56 @@ const formatCurrency = (value: number, currency = 'INR') =>
     style: 'currency',
     currency,
     maximumFractionDigits: 0,
-  }).format(value);
+  }).format(value || 0);
 
-export function PropertyDetailClient({ property, similar, initialLiked }: PropertyDetailClientProps) {
+const formatCompactDate = (value?: string) => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
+
+export function PropertyDetailClient({
+  property,
+  similar,
+  initialSaved,
+  initialInterest,
+  viewer,
+}: PropertyDetailClientProps) {
+  const router = useRouter();
+  const { toast } = useToast();
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isInterestOpen, setIsInterestOpen] = useState(false);
+  const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
+  const [interestRequested, setInterestRequested] = useState(initialInterest);
+  const [interestForm, setInterestForm] = useState({
+    name: viewer.name || '',
+    phone: viewer.phone || '',
+    email: viewer.email || '',
+  });
 
   const galleryImages = useMemo(
-    () => property.media.photos.length ? property.media.photos : [{ url: '/placeholder.svg' }],
-    [property.media.photos]
+    () =>
+      property.media.photos.length > 0
+        ? property.media.photos
+        : [
+            {
+              id: `${property.id}-placeholder`,
+              url: '/placeholder.svg',
+              label: 'Listing image',
+              category: 'exterior',
+              isPrimary: true,
+            },
+          ],
+    [property.id, property.media.photos],
   );
 
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-  };
-
-  const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
-  };
-
+  const activeImage = galleryImages[currentImageIndex] || galleryImages[0];
   const locationLine = [property.location.locality, property.location.area, property.location.city]
     .filter(Boolean)
     .join(', ');
@@ -107,268 +208,683 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
     property.location.latitude !== undefined &&
     property.location.longitude !== undefined &&
     geoapifyKey
-      ? `https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=600&height=320&center=lonlat:${property.location.longitude},${property.location.latitude}&zoom=15&marker=lonlat:${property.location.longitude},${property.location.latitude};color:%23eb6239;size:large&apiKey=${geoapifyKey}`
+      ? `https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=1200&height=620&center=lonlat:${property.location.longitude},${property.location.latitude}&zoom=15&marker=lonlat:${property.location.longitude},${property.location.latitude};color:%23eb6239;size:large&apiKey=${geoapifyKey}`
       : null;
 
-  type LocationFact = { label: string; value: string };
-  const locationFacts: LocationFact[] = ([
-    property.location.locality
-      ? { label: 'Colony / Locality', value: property.location.locality }
-      : null,
-    property.location.area ? { label: 'Area / Zone', value: property.location.area } : null,
-    property.location.sector || property.location.block
+  const displayArea =
+    property.specs.carpetArea || property.specs.plotArea || property.specs.builtUpArea || undefined;
+  const rateDenominator = property.specs.carpetArea || property.specs.plotArea || property.specs.builtUpArea;
+  const ratePerUnit = rateDenominator ? Math.round(property.price / rateDenominator) : null;
+
+  const heroFacts = [
+    property.specs.bedrooms ? { label: 'Bedrooms', value: `${property.specs.bedrooms}` } : null,
+    property.specs.bathrooms ? { label: 'Bathrooms', value: `${property.specs.bathrooms}` } : null,
+    displayArea
       ? {
-          label: 'Sector / Block',
-          value: [property.location.sector, property.location.block].filter(Boolean).join(', '),
+          label: property.dbPropertyType === 'land' ? 'Plot area' : 'Area',
+          value: `${displayArea} ${property.specs.areaUnit || 'sqft'}`,
         }
       : null,
-    property.location.road ? { label: 'Primary Road', value: property.location.road } : null,
+    property.specs.furnishing ? { label: 'Furnishing', value: property.specs.furnishing } : null,
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const specificationFacts = [
+    property.specs.bedrooms ? { label: 'Bedrooms', value: `${property.specs.bedrooms}` } : null,
+    property.specs.bathrooms ? { label: 'Bathrooms', value: `${property.specs.bathrooms}` } : null,
+    property.specs.balconies ? { label: 'Balconies', value: `${property.specs.balconies}` } : null,
+    property.specs.carpetArea ? { label: 'Carpet area', value: `${property.specs.carpetArea} ${property.specs.areaUnit || 'sqft'}` } : null,
+    property.specs.builtUpArea ? { label: 'Built-up area', value: `${property.specs.builtUpArea} ${property.specs.areaUnit || 'sqft'}` } : null,
+    property.specs.plotArea ? { label: 'Plot area', value: `${property.specs.plotArea} ${property.specs.areaUnit || 'sqft'}` } : null,
+    property.specs.floorNo !== undefined
+      ? { label: 'Floor', value: `${property.specs.floorNo}${property.specs.totalFloors ? ` / ${property.specs.totalFloors}` : ''}` }
+      : null,
+    property.specs.totalFloors ? { label: 'Total floors', value: `${property.specs.totalFloors}` } : null,
+    property.specs.furnishing ? { label: 'Furnishing', value: property.specs.furnishing } : null,
+    property.specs.age ? { label: 'Property age', value: property.specs.age } : null,
+    property.specs.facing ? { label: 'Facing', value: property.specs.facing } : null,
+    property.specs.parking ? { label: 'Parking', value: `${property.specs.parking} slot${property.specs.parking > 1 ? 's' : ''}` } : null,
+    property.specs.possessionStatus ? { label: 'Possession', value: property.specs.possessionStatus } : null,
+    property.specs.availableFrom ? { label: 'Available from', value: formatCompactDate(property.specs.availableFrom) || property.specs.availableFrom } : null,
+    property.specs.noOfOpenSides ? { label: 'Open sides', value: `${property.specs.noOfOpenSides}` } : null,
+    property.specs.widthOfRoadFacing ? { label: 'Road width', value: `${property.specs.widthOfRoadFacing} m` } : null,
+    property.specs.anyConstructionDone !== undefined ? { label: 'Construction done', value: property.specs.anyConstructionDone ? 'Yes' : 'No' } : null,
+    property.specs.boundaryWallMade !== undefined ? { label: 'Boundary wall', value: property.specs.boundaryWallMade ? 'Yes' : 'No' } : null,
+    property.specs.isInGatedColony !== undefined ? { label: 'Gated colony', value: property.specs.isInGatedColony ? 'Yes' : 'No' } : null,
+    property.specs.isCornerPlot !== undefined ? { label: 'Corner plot', value: property.specs.isCornerPlot ? 'Yes' : 'No' } : null,
+    property.specs.floorsAllowedForConstruction
+      ? { label: 'Floors allowed', value: `${property.specs.floorsAllowedForConstruction}` }
+      : null,
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const locationFacts = [
+    property.location.address ? { label: 'Address line', value: property.location.address } : null,
+    property.location.area ? { label: 'Area / zone', value: property.location.area } : null,
+    property.location.sector ? { label: 'Sector / block', value: property.location.sector } : null,
+    property.location.block ? { label: 'Sub-block / colony', value: property.location.block } : null,
+    property.location.road ? { label: 'Primary road', value: property.location.road } : null,
     property.location.landmark ? { label: 'Landmark', value: property.location.landmark } : null,
     property.location.pincode ? { label: 'Pincode', value: property.location.pincode } : null,
-    property.location.latitude !== undefined && property.location.longitude !== undefined
-      ? {
-          label: 'Coordinates',
-          value: `${property.location.latitude.toFixed(5)}, ${property.location.longitude.toFixed(5)}`,
-        }
-      : null,
-  ] as (LocationFact | null)[]).filter((item): item is LocationFact => Boolean(item && item.value));
+  ].filter(Boolean) as { label: string; value: string }[];
 
-  const specifications = [
-    { key: 'Bedrooms', value: property.specs?.bedrooms },
-    { key: 'Bathrooms', value: property.specs?.bathrooms },
-    { key: 'Balconies', value: property.specs?.balconies },
-    { key: 'Carpet Area', value: property.specs?.carpetArea ? `${property.specs?.carpetArea} ${property.specs?.areaUnit || 'sqft'}` : undefined },
-    { key: 'Built-up Area', value: property.specs?.builtUpArea ? `${property.specs?.builtUpArea} ${property.specs?.areaUnit || 'sqft'}` : undefined },
-    { key: 'Floor', value: property.specs?.floorNo !== undefined ? `${property.specs?.floorNo} / ${property.specs?.totalFloors ?? '—'}` : undefined },
-    { key: 'Furnishing', value: property.specs?.furnishing },
-    { key: 'Property Age', value: property.specs?.age },
-    { key: 'Facing', value: property.specs?.facing },
-    { key: 'Parking', value: property.specs?.parking !== undefined ? `${property.specs?.parking} slots` : undefined },
-  ].filter((spec) => spec.value);
+  const pricingFacts = [
+    property.pricing.maintenance ? { label: 'Maintenance', value: formatCurrency(property.pricing.maintenance) } : null,
+    property.pricing.deposit ? { label: 'Security deposit', value: formatCurrency(property.pricing.deposit) } : null,
+    property.pricing.bookingAmount ? { label: 'Booking amount', value: formatCurrency(property.pricing.bookingAmount) } : null,
+    ratePerUnit ? { label: `Approx. rate / ${property.specs.areaUnit || 'sqft'}`, value: `₹${ratePerUnit.toLocaleString('en-IN')}` } : null,
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const timelineFacts = [
+    property.publishedAt ? { label: 'Published', value: formatCompactDate(property.publishedAt) } : null,
+    property.updatedAt ? { label: 'Updated', value: formatCompactDate(property.updatedAt) } : null,
+    property.listingId ? { label: 'Listing ref', value: property.listingId } : null,
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const listingRoleLabel =
+    property.listedByRole === 'property-ganj'
+      ? 'Property Ganj curated'
+      : `${property.listedByRole.charAt(0).toUpperCase()}${property.listedByRole.slice(1)} listed`;
+
+  const handleShare = async () => {
+    const sharePayload = {
+      title: property.title,
+      text: `${property.title} · ${locationLine || property.location.city || 'Lucknow'}`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(sharePayload);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({
+          title: 'Link copied',
+          description: 'Property page URL copied to your clipboard.',
+        });
+      }
+    } catch {
+      // no-op
+    }
+  };
+
+  const handleInterestSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+
+    if (!viewer.isAuthenticated) {
+      toast({
+        title: 'Login required',
+        description: 'Please login so Property Ganj can route your interest to the right team.',
+        variant: 'destructive',
+      });
+      router.push('/auth');
+      return;
+    }
+
+    if (!interestForm.name.trim() || !interestForm.phone.trim()) {
+      toast({
+        title: 'Name and phone required',
+        description: 'We need your details to arrange a callback.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsSubmittingInterest(true);
+    try {
+      const response = await fetch(`/api/properties/${property.id}/interest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(interestForm),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to submit interest');
+      }
+
+      setInterestRequested(true);
+      setIsInterestOpen(false);
+      toast({
+        title: 'Interest recorded',
+        description: 'Property Ganj has your request and can route it internally.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Unable to record interest',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingInterest(false);
+    }
+  };
+
+  const canMovePrev = galleryImages.length > 1;
+  const canMoveNext = galleryImages.length > 1;
 
   return (
     <>
-      <section className="relative h-64 md:h-80 w-full bg-muted overflow-hidden">
-        <img
-          src={galleryImages[currentImageIndex]?.url || '/placeholder.svg'}
-          alt={property.title}
-          className="w-full h-full object-cover"
-        />
-        {galleryImages.length > 1 && (
-          <>
-            <button
-              onClick={prevImage}
-              className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/80 rounded-full p-2 shadow-lg hover:shadow-xl backdrop-blur-sm"
-            >
-              <ChevronLeft className="w-6 h-6 text-foreground" />
-            </button>
-            <button
-              onClick={nextImage}
-              className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/80 rounded-full p-2 shadow-lg hover:shadow-xl backdrop-blur-sm"
-            >
-              <ChevronRight className="w-6 h-6 text-foreground" />
-            </button>
-          </>
-        )}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-          {galleryImages.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => setCurrentImageIndex(index)}
-              className={`h-2 rounded-full transition-all ${index === currentImageIndex ? 'bg-primary w-8' : 'bg-white/60 w-2'}`}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="max-w-6xl mx-auto px-4 py-6 md:py-10 grid gap-6 md:gap-8 lg:grid-cols-[2fr_1fr]">
-        <div>
-          <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 border-b border-border pb-4 md:pb-6">
-            <div className="flex-1">
-              <p className="text-xs md:text-sm text-muted-foreground uppercase tracking-widest mb-2">
-                {property.propertyType}
-              </p>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2 md:mb-3">{property.title}</h1>
-              <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground mb-2 md:mb-3">
-                <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4" />
-                <span>{locationLine}</span>
+      <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
+        <section className="overflow-hidden rounded-[34px] border border-[#eadcca] bg-[linear-gradient(135deg,rgba(255,248,241,0.95),rgba(255,255,255,0.98))] shadow-[0_32px_100px_-56px_rgba(15,23,42,0.42)]">
+          <div className="grid gap-6 p-5 md:p-6 lg:grid-cols-[1.3fr,0.7fr] lg:gap-8 lg:p-8">
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-[#1f2a2e] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
+                  {property.purpose === 'rent' ? 'For rent' : 'For sale'}
+                </span>
+                <span className="rounded-full border border-[#eadcca] bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#1f2a2e]">
+                  {property.propertyType}
+                </span>
+                <span className="rounded-full border border-[#f1d4c8] bg-[#fff2eb] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#b55334]">
+                  {listingRoleLabel}
+                </span>
+                {property.propertyGanjSubdivision ? (
+                  <span className="rounded-full border border-[#dce9df] bg-[#eff9f1] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2f6f4f]">
+                    {property.propertyGanjSubdivision}
+                  </span>
+                ) : null}
               </div>
-              <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6">
-                <p className="text-2xl md:text-3xl font-bold text-foreground">{formatCurrency(property.price, property.currency)}</p>
-                {property.specs?.carpetArea && (
-                  <p className="text-xs md:text-sm text-muted-foreground">
-                    ₹{Math.round(property.price / property.specs.carpetArea)} per {property.specs?.areaUnit || 'sqft'}
-                  </p>
-                )}
-              </div>
-            </div>
-            <div className="flex gap-2 flex-shrink-0">
-              <LikeButton propertyId={property.id} initialLiked={initialLiked} />
-              <Button variant="outline" className="border-border" size="sm">
-                <Share2 className="w-4 h-4 md:w-5 md:h-5 text-muted-foreground" />
-              </Button>
-            </div>
-          </div>
 
-          <div className="py-4 md:py-8 border-b border-border">
-            <h2 className="text-lg md:text-xl font-bold text-foreground mb-2 md:mb-3">About this property</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {property.description || 'Detailed description will be available soon.'}
-            </p>
-          </div>
-
-          <div className="py-4 md:py-8 border-b border-border">
-            <h2 className="text-lg md:text-xl font-bold text-foreground mb-3 md:mb-4">Specifications</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-              {specifications.map((spec) => (
-                <div key={spec.key} className="flex justify-between border border-border rounded-xl p-4">
-                  <span className="text-muted-foreground text-sm">{spec.key}</span>
-                  <span className="font-semibold text-foreground text-sm">{spec.value}</span>
+              <div className="space-y-3">
+                <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#9ca3af]">
+                  Listing ref · {property.listingId}
+                </p>
+                <h1 className="max-w-4xl text-3xl font-black tracking-tight text-[#1f2a2e] md:text-[2.7rem] md:leading-[1.04]">
+                  {property.title}
+                </h1>
+                <div className="flex flex-wrap items-center gap-2 text-sm text-[#667085]">
+                  <MapPin className="h-4 w-4 text-[#eb6239]" />
+                  <span>{locationLine || property.location.address || 'Lucknow'}</span>
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {property.amenities.length > 0 && (
-            <div className="py-4 md:py-8 border-b border-border">
-              <h2 className="text-lg md:text-xl font-bold text-foreground mb-3 md:mb-4">Amenities</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3 text-sm">
-                {property.amenities.map((amenity) => (
-                  <div key={amenity} className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-primary"></span>
-                    <span className="text-foreground">{amenity}</span>
-                  </div>
-                ))}
               </div>
-            </div>
-          )}
 
-          {property.media.videoUrl && (
-            <div className="py-8 border-b border-border">
-              <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                <Youtube className="w-5 h-5 text-red-500" /> Virtual Tour
-              </h2>
-              <div className="aspect-video rounded-2xl overflow-hidden border border-border">
-                <iframe
-                  src={property.media.videoUrl}
-                  title="Property video"
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-          )}
-
-          {property.highlights.length > 0 && (
-            <div className="py-8">
-              <h2 className="text-xl font-bold text-foreground mb-4">Highlights</h2>
-              <div className="grid gap-2">
-                {property.highlights.map((highlight) => (
-                  <div key={highlight} className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-primary" />
-                    <span className="text-foreground text-sm">{highlight}</span>
+              <div className="grid gap-4 rounded-[28px] border border-[#eadcca] bg-white/88 p-4 md:grid-cols-[1fr,auto] md:items-end">
+                <div>
+                  <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#9ca3af]">
+                    {property.purpose === 'rent' ? 'Monthly rent' : 'Quoted price'}
+                  </p>
+                  <p className="mt-2 text-3xl font-black tracking-tight text-[#1f2a2e] md:text-4xl">
+                    {formatCurrency(property.price, property.currency)}
+                  </p>
+                  {ratePerUnit ? (
+                    <p className="mt-2 text-sm text-[#667085]">
+                      Approx. ₹{ratePerUnit.toLocaleString('en-IN')} / {property.specs.areaUnit || 'sqft'}
+                    </p>
+                  ) : null}
+                </div>
+                <div className="flex gap-2">
+                  <div className="relative h-11 w-11 rounded-full">
+                    <LikeButton propertyId={property.id} initialLiked={initialSaved} className="static h-11 w-11 rounded-full border border-[#eadcca] bg-white shadow-none" iconClassName="h-5 w-5" />
                   </div>
-                ))}
+                  <button
+                    type="button"
+                    onClick={handleShare}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#eadcca] bg-white text-[#1f2a2e] transition hover:border-[#eb6239] hover:text-[#eb6239]"
+                  >
+                    <Share2 className="h-4 w-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        <aside className="space-y-4 md:space-y-6 mt-6 lg:mt-0">
-          <div className="bg-card border border-border rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg">
-            <p className="text-xs md:text-sm text-muted-foreground mb-2">Contact</p>
-            <h3 className="text-lg md:text-xl font-bold text-foreground mb-3 md:mb-4">{property.contact.name}</h3>
-            <a 
-              href={`tel:${property.contact.phone}`}
-              className="block w-full bg-primary text-primary-foreground hover:bg-primary/90 active:bg-primary/80 mb-2 md:mb-3 text-sm md:text-base text-center py-2 rounded-md font-semibold touch-manipulation"
-            >
-              Call {property.contact.name.split(' ')[0]}
-            </a>
-            <button 
-              onClick={() => {
-                if (property.contact.phone) {
-                  navigator.clipboard.writeText(property.contact.phone);
-                  alert(`Phone number copied: ${property.contact.phone}. We'll call you back soon!`);
-                }
-              }}
-              className="w-full border border-border bg-background hover:bg-accent hover:text-accent-foreground active:bg-accent/80 mb-2 md:mb-3 text-sm md:text-base py-2 rounded-md font-semibold touch-manipulation"
-            >
-              Request Callback
-            </button>
-            <div className="text-xs md:text-sm text-muted-foreground space-y-1 md:space-y-2">
-              <p>Phone: {property.contact.phone}</p>
-              {property.contact.email && <p>Email: {property.contact.email}</p>}
-            </div>
-          </div>
-
-          <div className="bg-card border border-border rounded-xl md:rounded-2xl p-4 md:p-6 shadow-lg">
-            <h3 className="text-base md:text-lg font-bold text-foreground mb-2 md:mb-3">Location</h3>
-            <p className="text-xs md:text-sm text-muted-foreground">
-              {property.location.address || 'Address details shared on request'}
-            </p>
-            {locationFacts.length > 0 && (
-              <dl className="mt-4 space-y-2 text-sm">
-                {locationFacts.map((fact) => (
-                  <div key={fact.label} className="flex justify-between gap-4 border border-border rounded-lg px-3 py-2">
-                    <dt className="text-muted-foreground">{fact.label}</dt>
-                    <dd className="font-semibold text-right">{fact.value}</dd>
-                  </div>
-                ))}
-              </dl>
-            )}
-            {mapPreviewUrl ? (
-              <img
-                src={mapPreviewUrl}
-                alt={`Map preview for ${property.location.locality || 'Lucknow'} property`}
-                className="mt-4 w-full rounded-xl border border-border object-cover"
-                loading="lazy"
-              />
-            ) : (
-              <p className="text-xs text-muted-foreground mt-4">
-                Add precise latitude & longitude to unlock the map preview for this listing.
-              </p>
-            )}
-          </div>
-        </aside>
-      </section>
-
-      {similar.length > 0 && (
-        <section className="bg-accent/20 py-12 px-4">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-2xl font-bold text-foreground mb-6">Similar Listings</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {similar.map((item) => {
-                const isPlaceholder = item.id?.toString().startsWith('placeholder-')
-                const href = isPlaceholder ? `/property/placeholder/${item.id}` : `/property/${item.id}`
-                return (
-                <Link key={item.id} href={href} className="group">
-                  <div className="bg-card rounded-xl overflow-hidden border border-border shadow hover:shadow-lg transition">
-                    <div className="h-40 bg-muted overflow-hidden">
-                      <img
-                        src={item.image || '/placeholder.svg'}
-                        alt={item.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                      />
+              <div className="relative overflow-hidden rounded-[30px] border border-[#eadcca] bg-[#f7f2ec]">
+                <div className="relative aspect-[4/3] overflow-hidden bg-[#f1ebe4]">
+                  <img
+                    src={activeImage?.url || '/placeholder.svg'}
+                    alt={activeImage?.label || property.title}
+                    className="h-full w-full object-cover"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/28 via-transparent to-transparent" />
+                  {activeImage?.label ? (
+                    <div className="absolute bottom-4 left-4 rounded-full bg-black/65 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
+                      {activeImage.label}
                     </div>
-                    <div className="p-4">
-                      <p className="text-sm text-muted-foreground">{item.location}</p>
-                      <h3 className="text-base font-semibold text-foreground mb-1">{item.title}</h3>
-                      <p className="text-sm text-muted-foreground">{item.area}</p>
-                      <p className="text-primary font-bold">{formatCurrency(item.price)}</p>
-                    </div>
+                  ) : null}
+                  {canMovePrev ? (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)}
+                      className="absolute left-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                  ) : null}
+                  {canMoveNext ? (
+                    <button
+                      type="button"
+                      onClick={() => setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length)}
+                      className="absolute right-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                  ) : null}
+                </div>
+                {galleryImages.length > 1 ? (
+                  <div className="flex gap-3 overflow-x-auto px-4 py-4 scrollbar-hide">
+                    {galleryImages.map((image, index) => (
+                      <button
+                        key={image.id}
+                        type="button"
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={cn(
+                          'relative h-20 w-24 flex-shrink-0 overflow-hidden rounded-[18px] border transition',
+                          index === currentImageIndex
+                            ? 'border-[#eb6239] ring-2 ring-[#f9c7b4]'
+                            : 'border-[#eadcca] opacity-80 hover:opacity-100',
+                        )}
+                      >
+                        <img src={image.url} alt={image.label || `Gallery image ${index + 1}`} className="h-full w-full object-cover" />
+                        {image.category ? (
+                          <span className="absolute bottom-1 left-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
+                            {image.category}
+                          </span>
+                        ) : null}
+                      </button>
+                    ))}
                   </div>
-                </Link>
-                )
-              })}
+                ) : null}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5 shadow-[0_22px_60px_-36px_rgba(15,23,42,0.34)]">
+                <div className="flex items-center gap-2 text-sm font-semibold text-[#1f2a2e]">
+                  <ShieldCheck className="h-4 w-4 text-[#eb6239]" />
+                  Managed buyer flow
+                </div>
+                <p className="mt-3 text-sm leading-7 text-[#667085]">
+                  Direct seller contact stays private. Property Ganj captures your request, then the admin can follow up directly or route the property to an agent using the internal hold workflow.
+                </p>
+                <div className="mt-5 space-y-3">
+                  {[
+                    'Send a callback request with your profile details.',
+                    'Property Ganj sees the interest in the admin dashboard.',
+                    'An admin can handle it personally or assign an agent.',
+                  ].map((step) => (
+                    <div key={step} className="flex items-start gap-3 rounded-[20px] bg-[#fff8f3] px-4 py-3">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#eb6239]" />
+                      <p className="text-sm leading-6 text-[#4b5563]">{step}</p>
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => setIsInterestOpen(true)}
+                  className="mt-5 h-auto w-full rounded-[18px] bg-[#eb6239] px-5 py-3 text-sm font-bold text-white shadow-[0_18px_36px_-18px_rgba(235,98,57,0.68)] hover:bg-[#d85a35]"
+                >
+                  <HeartHandshake className="mr-2 h-4 w-4" />
+                  {interestRequested ? 'Interest already recorded' : 'Request Property Ganj callback'}
+                </Button>
+                {interestRequested ? (
+                  <p className="mt-3 text-xs leading-5 text-[#667085]">
+                    Your profile is already marked as interested for this property.
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="rounded-[30px] border border-[#eadcca] bg-[#1f2a2e] p-5 text-white shadow-[0_24px_64px_-40px_rgba(15,23,42,0.58)]">
+                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/55">Quick snapshot</p>
+                <div className="mt-4 grid gap-3">
+                  {heroFacts.map((fact) => (
+                    <div key={fact.label} className="flex items-center justify-between rounded-[18px] border border-white/10 bg-white/6 px-4 py-3">
+                      <span className="text-sm text-white/70">{fact.label}</span>
+                      <span className="text-sm font-bold text-white">{fact.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {property.tags.length > 0 ? (
+                <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#9ca3af]">Search tags</p>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {property.tags.map((tag) => (
+                      <span key={tag} className="rounded-full border border-[#eadcca] bg-[#fff7f1] px-3 py-1.5 text-xs font-semibold text-[#1f2a2e]">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
             </div>
           </div>
         </section>
-      )}
+
+        <section className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr),340px]">
+          <div className="space-y-8">
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-[#fff1ea] p-3 text-[#eb6239]">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight text-[#1f2a2e]">About this listing</h2>
+                  <p className="text-sm text-[#667085]">The complete story behind the property, not just the headline.</p>
+                </div>
+              </div>
+              <p className="mt-5 text-sm leading-8 text-[#4b5563]">
+                {property.description || 'A detailed description will appear here once the listing owner adds the full narrative.'}
+              </p>
+              {property.highlights.length > 0 ? (
+                <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  {property.highlights.map((highlight) => (
+                    <div key={highlight} className="flex items-start gap-3 rounded-[22px] border border-[#eadcca] bg-[#fffaf5] px-4 py-4">
+                      <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#eb6239]" />
+                      <span className="text-sm leading-6 text-[#1f2a2e]">{highlight}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-[#eff8f0] p-3 text-[#2f6f4f]">
+                  <Compass className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight text-[#1f2a2e]">Specifications</h2>
+                  <p className="text-sm text-[#667085]">Everything a serious buyer typically asks for before a site visit.</p>
+                </div>
+              </div>
+              <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {specificationFacts.map((fact) => (
+                  <div key={fact.label} className="rounded-[22px] border border-[#eadcca] bg-[#fffaf5] px-4 py-4">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9ca3af]">{fact.label}</p>
+                    <p className="mt-2 text-base font-bold text-[#1f2a2e]">{fact.value}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {property.amenities.length > 0 ? (
+              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-[#fff1ea] p-3 text-[#eb6239]">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight text-[#1f2a2e]">Amenities</h2>
+                    <p className="text-sm text-[#667085]">Shared facilities and conveniences advertised with the listing.</p>
+                  </div>
+                </div>
+                <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {property.amenities.map((amenity) => (
+                    <div key={amenity} className="flex items-start gap-3 rounded-[22px] border border-[#eadcca] bg-[#fffaf5] px-4 py-4">
+                      <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#eb6239]" />
+                      <span className="text-sm leading-6 text-[#1f2a2e]">{amenity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {property.media.floorplans.length > 0 ? (
+              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-[#eef4ff] p-3 text-[#4460e6]">
+                    <Layers3 className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight text-[#1f2a2e]">Floor plans</h2>
+                    <p className="text-sm text-[#667085]">Layout references for buyers comparing room flow and usable space.</p>
+                  </div>
+                </div>
+                <div className="mt-6 grid gap-4 md:grid-cols-2">
+                  {property.media.floorplans.map((plan) => (
+                    <div key={plan.id} className="overflow-hidden rounded-[24px] border border-[#eadcca] bg-[#fffaf5]">
+                      <div className="relative aspect-[4/3] bg-[#f6f0ea]">
+                        <img src={plan.url} alt={plan.label} className="h-full w-full object-contain p-4" />
+                      </div>
+                      <div className="border-t border-[#eadcca] px-4 py-4">
+                        <p className="text-sm font-bold text-[#1f2a2e]">{plan.label}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {property.media.videoUrl ? (
+              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-[#fff1ea] p-3 text-[#eb6239]">
+                    <PlayCircle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black tracking-tight text-[#1f2a2e]">Virtual tour</h2>
+                    <p className="text-sm text-[#667085]">A quick walkthrough for remote evaluation before a visit.</p>
+                  </div>
+                </div>
+                <div className="mt-6 overflow-hidden rounded-[26px] border border-[#eadcca]">
+                  <div className="aspect-video bg-[#f6f0ea]">
+                    <iframe
+                      src={property.media.videoUrl}
+                      title="Property video"
+                      className="h-full w-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-[#fff1ea] p-3 text-[#eb6239]">
+                  <MapPin className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black tracking-tight text-[#1f2a2e]">Location context</h2>
+                  <p className="text-sm text-[#667085]">Enough micro-location detail to decide whether the property deserves a visit.</p>
+                </div>
+              </div>
+              {locationFacts.length > 0 ? (
+                <div className="mt-6 grid gap-3 md:grid-cols-2">
+                  {locationFacts.map((fact) => (
+                    <div key={fact.label} className="rounded-[22px] border border-[#eadcca] bg-[#fffaf5] px-4 py-4">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9ca3af]">{fact.label}</p>
+                      <p className="mt-2 text-sm leading-7 text-[#1f2a2e]">{fact.value}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {mapPreviewUrl ? (
+                <div className="mt-6 overflow-hidden rounded-[26px] border border-[#eadcca] bg-[#f6f0ea]">
+                  <img
+                    src={mapPreviewUrl}
+                    alt={`Map preview for ${property.title}`}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                </div>
+              ) : (
+                <div className="mt-6 rounded-[24px] border border-dashed border-[#eadcca] bg-[#fffaf5] px-4 py-5 text-sm leading-7 text-[#667085]">
+                  Add precise latitude and longitude to unlock the static map preview for this listing.
+                </div>
+              )}
+            </div>
+          </div>
+
+          <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#9ca3af]">Commercial summary</p>
+              <div className="mt-4 space-y-3">
+                {pricingFacts.length > 0 ? (
+                  pricingFacts.map((fact) => (
+                    <div key={fact.label} className="flex items-center justify-between rounded-[18px] bg-[#fff8f3] px-4 py-3">
+                      <span className="text-sm text-[#667085]">{fact.label}</span>
+                      <span className="text-sm font-bold text-[#1f2a2e]">{fact.value}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[18px] bg-[#fff8f3] px-4 py-4 text-sm leading-6 text-[#667085]">
+                    No additional commercial terms have been shared for this listing yet.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#9ca3af]">Timeline</p>
+              <div className="mt-4 space-y-3">
+                {timelineFacts.map((fact) => (
+                  <div key={fact.label} className="flex items-center justify-between rounded-[18px] border border-[#eadcca] bg-white px-4 py-3">
+                    <span className="text-sm text-[#667085]">{fact.label}</span>
+                    <span className="text-sm font-bold text-[#1f2a2e]">{fact.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-[30px] border border-[#eadcca] bg-[#1f2a2e] p-5 text-white shadow-[0_24px_70px_-48px_rgba(15,23,42,0.42)]">
+              <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/55">Seller access policy</p>
+              <p className="mt-3 text-sm leading-7 text-white/76">
+                Property Ganj keeps the direct builder / owner contact private on the public listing page. Use the callback request button above if you want the team to connect you.
+              </p>
+              <div className="mt-4 flex items-start gap-3 rounded-[20px] border border-white/10 bg-white/6 px-4 py-4">
+                <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#fbbf24]" />
+                <p className="text-sm leading-6 text-white/78">
+                  Listed by <span className="font-bold text-white">{property.listedBy}</span>
+                </p>
+              </div>
+            </div>
+          </aside>
+        </section>
+
+        {similar.length > 0 ? (
+          <section className="mt-10 rounded-[34px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.36)] md:p-8">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#9ca3af]">More inventory</p>
+                <h2 className="mt-2 text-2xl font-black tracking-tight text-[#1f2a2e]">Similar listings</h2>
+                <p className="mt-1 text-sm text-[#667085]">Properties that share the same market context and budget band.</p>
+              </div>
+            </div>
+            <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {similar.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/property/${item.id}`}
+                  className="group overflow-hidden rounded-[28px] border border-[#eadcca] bg-[#fffaf5] transition hover:-translate-y-1 hover:shadow-[0_28px_60px_-42px_rgba(15,23,42,0.34)]"
+                >
+                  <div className="relative h-44 overflow-hidden bg-[#f3ece5]">
+                    <img
+                      src={item.image || '/placeholder.svg'}
+                      alt={item.title}
+                      className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/28 via-transparent to-transparent" />
+                  </div>
+                  <div className="space-y-2 p-4">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] text-[#9ca3af]">
+                      <ImageIcon className="h-3.5 w-3.5" />
+                      <span>{item.propertyType || item.purpose || 'Listing'}</span>
+                    </div>
+                    <h3 className="line-clamp-2 text-lg font-black tracking-tight text-[#1f2a2e]">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-[#667085]">{item.location}</p>
+                    {item.area ? <p className="text-sm font-semibold text-[#1f2a2e]">{item.area}</p> : null}
+                    <div className="flex items-center justify-between pt-2">
+                      <p className="text-lg font-black text-[#eb6239]">{formatCurrency(item.price)}</p>
+                      <ArrowUpRight className="h-4 w-4 text-[#1f2a2e] transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </div>
+
+      <Dialog open={isInterestOpen} onOpenChange={setIsInterestOpen}>
+        <DialogContent className="rounded-[30px] border border-[#eadcca] bg-white p-0 sm:max-w-[560px]">
+          <div className="overflow-hidden rounded-[30px]">
+            <div className="border-b border-[#eadcca] bg-[linear-gradient(135deg,rgba(255,248,241,0.95),rgba(255,255,255,0.98))] px-6 py-6">
+              <DialogHeader>
+                <DialogTitle className="text-2xl font-black tracking-tight text-[#1f2a2e]">
+                  Request a callback from Property Ganj
+                </DialogTitle>
+                <DialogDescription className="mt-2 text-sm leading-7 text-[#667085]">
+                  Your request goes to Property Ganj, not directly to the builder or owner. The team can then follow up or route the property internally to an agent.
+                </DialogDescription>
+              </DialogHeader>
+            </div>
+
+            <form onSubmit={handleInterestSubmit} className="space-y-5 px-6 py-6">
+              <div className="rounded-[24px] border border-[#eadcca] bg-[#fffaf5] px-4 py-4">
+                <p className="text-sm font-semibold text-[#1f2a2e]">{property.title}</p>
+                <p className="mt-1 text-sm text-[#667085]">{locationLine || property.location.address || 'Lucknow'}</p>
+              </div>
+
+              <div className="grid gap-4">
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Your name</label>
+                  <input
+                    type="text"
+                    value={interestForm.name}
+                    onChange={(event) => setInterestForm((prev) => ({ ...prev, name: event.target.value }))}
+                    className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                    placeholder="Full name"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Phone number</label>
+                  <input
+                    type="text"
+                    value={interestForm.phone}
+                    onChange={(event) => setInterestForm((prev) => ({ ...prev, phone: event.target.value }))}
+                    className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                    placeholder="Mobile number"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Email (optional)</label>
+                  <input
+                    type="email"
+                    value={interestForm.email}
+                    onChange={(event) => setInterestForm((prev) => ({ ...prev, email: event.target.value }))}
+                    className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                    placeholder="Email address"
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-[22px] border border-dashed border-[#eadcca] bg-[#fffaf5] px-4 py-4 text-sm leading-7 text-[#667085]">
+                A Property Ganj admin can see this request in the dashboard and assign the property to an agent through the existing hold system if needed.
+              </div>
+
+              <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsInterestOpen(false)}
+                  className="rounded-full border-[#eadcca] bg-white px-5 text-[#1f2a2e]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmittingInterest}
+                  className="rounded-full bg-[#eb6239] px-5 font-bold text-white hover:bg-[#d95b36]"
+                >
+                  {isSubmittingInterest ? (
+                    <>
+                      <Copy className="mr-2 h-4 w-4 animate-pulse" />
+                      Sending…
+                    </>
+                  ) : (
+                    <>
+                      <HeartHandshake className="mr-2 h-4 w-4" />
+                      Submit callback request
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
-
-
-
-

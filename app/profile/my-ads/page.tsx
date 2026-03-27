@@ -38,24 +38,70 @@ export default function MyAdsPage() {
   }, []);
 
   const fetchProperties = async () => {
-    setProperties([]);
-    setLoading(false);
+    try {
+      setLoading(true);
+      const response = await fetch('/api/properties/my-ads');
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to load your listings');
+      }
+      setProperties(data.properties || []);
+    } catch (error) {
+      toast({
+        title: 'Unable to load listings',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handlePublish = async (id: string) => {
-    toast({
-      title: 'Feature Not Available',
-      description: 'This feature requires a backend. Please try again later.',
-      variant: 'destructive',
-    });
+    try {
+      const response = await fetch(`/api/properties/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'published' }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || 'Unable to publish listing');
+
+      toast({
+        title: 'Listing published',
+        description: 'Your listing is now live.',
+      });
+      await fetchProperties();
+    } catch (error) {
+      toast({
+        title: 'Unable to publish listing',
+        description: error instanceof Error ? error.message : 'Please try again later.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDelete = async (id: string) => {
-    toast({
-      title: 'Feature Not Available',
-      description: 'This feature requires a backend. Please try again later.',
-      variant: 'destructive',
-    });
+    if (!confirm('Delete this listing?')) return;
+    try {
+      const response = await fetch(`/api/properties/${id}`, {
+        method: 'DELETE',
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data?.error || 'Unable to delete listing');
+
+      toast({
+        title: 'Listing removed',
+        description: 'The property has been removed from your ads.',
+      });
+      await fetchProperties();
+    } catch (error) {
+      toast({
+        title: 'Unable to delete listing',
+        description: error instanceof Error ? error.message : 'Please try again later.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const formatCurrency = (value: number) => {
@@ -219,4 +265,3 @@ export default function MyAdsPage() {
     </main>
   );
 }
-
