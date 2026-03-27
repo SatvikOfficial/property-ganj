@@ -2,8 +2,8 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-r from-primary to-accent text-primary-foreground py-6 px-4">
-      <div className="max-w-7xl mx-auto">
+    <footer className="bg-gradient-to-r from-primary to-accent text-primary-foreground py-6">
+      <div className="w-full">
         {/* Desktop: 4 columns grid */}
         <div className="hidden md:grid grid-cols-4 gap-8">
           <div>
@@ -100,7 +100,7 @@ export default function Footer() {
           </details>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto pt-3 border-t border-primary/30 text-center text-xs text-primary-foreground/60">
+      <div className="w-full pt-3 border-t border-primary/30 text-center text-xs text-primary-foreground/60">
         <p>&copy; {new Date().getFullYear()} Property Ganj. All rights reserved.</p>
       </div>
     </footer>

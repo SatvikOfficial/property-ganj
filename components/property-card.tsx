@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { Bed, Bath, Ruler, MapPin, Heart } from "lucide-react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -37,10 +38,12 @@ export default function PropertyCard({ property }: PropertyCardProps) {
     <Card className="overflow-hidden hover:shadow-xl transition-shadow duration-300 group bg-card border border-border">
       <Link href={propertyId ? `/property/${propertyId}` : "#"} className="block">
         <div className="relative overflow-hidden bg-muted h-48">
-          <img
+          <Image
             src={imageSrc}
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover group-hover:scale-110 transition-transform duration-300"
           />
           <button
             type="button"

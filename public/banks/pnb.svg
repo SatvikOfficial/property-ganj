@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="72" viewBox="0 0 220 72" role="img" aria-label="PNB">
+  <rect width="220" height="72" rx="16" fill="#ffffff"/>
+  <path d="M24 20h24c8 0 14 7 14 16s-6 16-14 16H24Z" fill="#f4a21d"/>
+  <circle cx="42" cy="36" r="8" fill="#ffffff"/>
+  <text x="78" y="32" fill="#f4a21d" font-family="Arial, sans-serif" font-size="18" font-weight="700">PUNJAB</text>
+  <text x="78" y="50" fill="#102324" font-family="Arial, sans-serif" font-size="14" font-weight="700">NATIONAL BANK</text>
+</svg>

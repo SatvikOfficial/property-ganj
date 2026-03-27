@@ -1,15 +1,12 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import Script from 'next/script'
 import './globals.css'
 
-import { ThemeProvider } from '@/components/theme-provider'
 import StyledComponentsRegistry from '@/components/StyledComponentsRegistry'
+import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/toaster'
 import ClientLayoutWrapper from './ClientLayoutWrapper'
-
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: 'PropertyGanj',
@@ -28,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`font-sans antialiased`}>
+      <body className={`font-sans antialiased w-full overflow-x-hidden`}>
         <StyledComponentsRegistry>
           <ThemeProvider
             attribute="class"
@@ -41,7 +38,13 @@ export default function RootLayout({
           </ThemeProvider>
         </StyledComponentsRegistry>
         <Analytics />
-        <script id="chatway" async={true} src="https://cdn.chatway.app/widget.js?id=9BKWx7BtTYy3"></script>
+        {process.env.NODE_ENV === 'production' ? (
+          <Script
+            id="chatway"
+            src="https://cdn.chatway.app/widget.js?id=9BKWx7BtTYy3"
+            strategy="lazyOnload"
+          />
+        ) : null}
       </body>
     </html>
   )

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="72" viewBox="0 0 220 72" role="img" aria-label="Kotak">
+  <rect width="220" height="72" rx="16" fill="#ffffff"/>
+  <circle cx="40" cy="36" r="20" fill="#ed1c24"/>
+  <circle cx="40" cy="36" r="9" fill="#0f4c8a"/>
+  <text x="76" y="32" fill="#ed1c24" font-family="Arial, sans-serif" font-size="16" font-weight="700">KOTAK</text>
+  <text x="76" y="50" fill="#0f4c8a" font-family="Arial, sans-serif" font-size="14" font-weight="700">MAHINDRA BANK</text>
+</svg>

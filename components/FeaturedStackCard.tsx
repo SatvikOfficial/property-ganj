@@ -2,9 +2,10 @@ import React from 'react';
 import styled from 'styled-components';
 import Link from 'next/link';
 import CustomViewDetailsButton from '@/components/CustomViewDetailsButton';
+import LikeButton from '@/components/LikeButton';
 
 interface FeaturedProject {
-  id: number;
+  id: number | string;
   name: string;
   location: string;
   type: string;
@@ -12,6 +13,7 @@ interface FeaturedProject {
   builder: string;
   image: string;
   badge?: string;
+  isLiked?: boolean;
 }
 
 interface FeaturedStackCardProps {
@@ -24,6 +26,7 @@ const Card: React.FC<FeaturedStackCardProps> = ({ project }) => {
       <div className="card">
         {/* Image */}
         <div className="image-section">
+          <LikeButton propertyId={project.id.toString()} initialLiked={project.isLiked || false} />
           <img
             src={project.image || "/placeholder.svg"}
             alt={project.name}
@@ -38,7 +41,7 @@ const Card: React.FC<FeaturedStackCardProps> = ({ project }) => {
           <p className="text-xs sm:text-sm text-muted-foreground mb-1">{project.type}</p>
           <p className="font-semibold text-foreground text-sm sm:text-base mb-1">{project.price}</p>
           <p className="text-xs sm:text-sm text-muted-foreground mb-2 line-clamp-1">{project.builder}</p>
-          <Link href={`/property/placeholder/featured-${project.id}`}>
+          <Link href={`/property/${project.id.toString().startsWith('placeholder-') ? `placeholder/${project.id}` : project.id}`}>
             <CustomViewDetailsButton />
           </Link>
         </div>

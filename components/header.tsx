@@ -1,504 +1,470 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Menu, X, ChevronDown, User, LogOut } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
+import { useEffect, useState } from "react"
 import Image from "next/image"
-import StyledDropdown from "@/components/StyledDropdown"
+import Link from "next/link"
+import { ChevronDown, ChevronRight, LogOut, Menu, User, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 
-type User = {
-  name: string;
-  email: string;
-};
+import { Button } from "@/components/ui/button"
+import { createClient } from "@/utils/supabase/client"
+
+type UserInfo = {
+  name: string
+  email: string
+  role?: string
+  id?: string
+}
+
+type NavSection = {
+  title: string
+  items: { label: string; href: string; tag?: string }[]
+}
+
+type NavGroup = {
+  title: string
+  href: string
+  description: string
+  sections?: NavSection[]
+}
+
+const navGroups: NavGroup[] = [
+  {
+    title: "Buy",
+    href: "/search?purpose=sale",
+    description: "Premium buying journeys across ready homes, new launches, and plots.",
+    sections: [
+      {
+        title: "Explore Homes",
+        items: [
+          { label: "Ready to move", href: "/search?purpose=sale" },
+          { label: "New projects", href: "/search?purpose=sale&q=New%20Projects" },
+          { label: "Owner listings", href: "/search?purpose=sale" },
+          { label: "Luxury apartments", href: "/search?purpose=sale&propertyType=Apartment" },
+        ],
+      },
+      {
+        title: "Popular Searches",
+        items: [
+          { label: "Flats in Gomti Nagar", href: "/search?q=Gomti%20Nagar&purpose=sale" },
+          { label: "Plots on Sultanpur Road", href: "/search?q=Sultanpur%20Road&purpose=sale" },
+          { label: "Villas in Lucknow", href: "/search?q=Lucknow&purpose=sale&propertyType=Independent%20House/Villa" },
+          { label: "Commercial buy", href: "/search?q=Lucknow&purpose=sale&propertyType=Office%20Space" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Rent",
+    href: "/search?purpose=rent",
+    description: "Well-located rentals, PG, and furnished options for every move.",
+    sections: [
+      {
+        title: "Rental Types",
+        items: [
+          { label: "Flats for rent", href: "/search?purpose=rent&propertyType=Apartment" },
+          { label: "House rentals", href: "/search?purpose=rent&propertyType=Independent%20House/Villa" },
+          { label: "PG stays", href: "/search?purpose=rent&q=PG" },
+          { label: "Commercial rent", href: "/search?purpose=rent&propertyType=Office%20Space" },
+        ],
+      },
+      {
+        title: "Quick Starts",
+        items: [
+          { label: "Furnished homes", href: "/search?q=Lucknow&purpose=rent" },
+          { label: "Near Hazratganj", href: "/search?q=Hazratganj&purpose=rent" },
+          { label: "Student friendly", href: "/search?q=IIM%20Road&purpose=rent" },
+          { label: "Family homes", href: "/search?q=Indira%20Nagar&purpose=rent" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Sell",
+    href: "/list-property",
+    description: "List faster, reach serious buyers, and get supported through the funnel.",
+    sections: [
+      {
+        title: "For Owners & Agents",
+        items: [
+          { label: "Post property", href: "/list-property", tag: "Free" },
+          { label: "Owner dashboard", href: "/profile/my-ads" },
+          { label: "Liked properties", href: "/profile/liked" },
+          { label: "Agent profile", href: "/agent" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Blogs",
+    href: "/blog",
+    description: "Market reads, buyer guides, and locality intelligence from PropertyGanj.",
+    sections: [
+      {
+        title: "Featured Reads",
+        items: [
+          { label: "Circle rates decoded", href: "/blog/1" },
+          { label: "Registration budgeting", href: "/blog/3" },
+          { label: "Metro-led investing", href: "/blog/4" },
+          { label: "Best localities in 2026", href: "/blog/6" },
+        ],
+      },
+    ],
+  },
+  {
+    title: "Home Loans",
+    href: "/home-loans",
+    description: "Bank comparisons, eligibility support, and guided paperwork.",
+  },
+  {
+    title: "About",
+    href: "/about",
+    description: "What PropertyGanj stands for and how the platform is built.",
+  },
+  {
+    title: "Help",
+    href: "/help",
+    description: "Talk to support, browse FAQs, and resolve account or listing issues.",
+  },
+]
 
 export default function Header() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [user, setUser] = useState<User | null>(null)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
+  const [user, setUser] = useState<UserInfo | null>(null)
+  const [supabase] = useState(() => createClient())
+
+  const router = useRouter()
+
+  useEffect(() => {
+    const fetchProfileData = async (userId: string, authUser: any) => {
+      const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", userId).single()
+      setUser({
+        name: authUser.user_metadata?.full_name || authUser.email || "User",
+        email: authUser.email || "",
+        id: userId,
+        role: profile?.role,
+      })
+    }
+
+    supabase.auth.getUser().then(({ data: { user: currentUser } }) => {
+      if (currentUser) {
+        fetchProfileData(currentUser.id, currentUser)
+      } else {
+        setUser(null)
+      }
+    })
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        fetchProfileData(session.user.id, session.user)
+      } else {
+        setUser(null)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase])
 
   const handleLogout = async () => {
-    try {
-      setUser(null)
-      router.push("/")
-    } catch (error) {
-      console.error("Failed to logout", error)
-    }
+    await supabase.auth.signOut()
+    setUser(null)
+    setIsMenuOpen(false)
+    setExpandedGroup(null)
+    router.push("/auth")
+    router.refresh()
   }
 
   return (
-    <header className="bg-gray-100/90 text-foreground sticky top-0 z-[9999] backdrop-blur-sm">
-      <style jsx global>{`
-        .burger {
-          position: relative;
-          width: 30px;
-          height: 20px;
-          background: transparent;
-          cursor: pointer;
-          display: block;
-        }
+    <header className="sticky top-0 z-[9999] border-b border-border/70 bg-gray-100/90 text-foreground backdrop-blur-sm">
+      <div className="w-full">
+        <div className="flex items-center justify-between gap-4 py-3">
+          <Link href="/" className="flex items-center gap-3 transition duration-300 hover:opacity-90">
+            <Image src="/logo.jpg" alt="PropertyGanj Logo" width={42} height={42} className="rounded-lg" />
+            <Image src="/logotext.png" alt="PropertyGanj" width={184} height={36} className="hidden h-8 w-auto md:block" />
+          </Link>
 
-        .burger input {
-          display: none;
-        }
-
-        .burger span {
-          display: block;
-          position: absolute;
-          height: 3px;
-          width: 100%;
-          background: currentColor;
-          border-radius: 3px;
-          opacity: 1;
-          left: 0;
-          transform: rotate(0deg);
-          transition: .25s ease-in-out;
-        }
-
-        .burger span:nth-of-type(1) {
-          top: 0px;
-          transform-origin: left center;
-        }
-
-        .burger span:nth-of-type(2) {
-          top: 50%;
-          transform: translateY(-50%);
-          transform-origin: left center;
-        }
-
-        .burger span:nth-of-type(3) {
-          top: 100%;
-          transform-origin: left center;
-          transform: translateY(-100%);
-        }
-
-        .burger.active span:nth-of-type(1) {
-          transform: rotate(45deg);
-          top: 0px;
-          left: 5px;
-        }
-
-        .burger.active span:nth-of-type(2) {
-          width: 0%;
-          opacity: 0;
-        }
-
-        .burger.active span:nth-of-type(3) {
-          transform: rotate(-45deg);
-          top: 28px;
-          left: 5px;
-        }
-
-        /* Compact mobile menu styling */
-        .mobile-menu {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100vh;
-          background: white;
-          z-index: 9998;
-          padding: 0;
-          overflow-y: auto;
-          transform: translateX(-100%);
-          transition: transform 0.3s ease;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .mobile-menu.open {
-          transform: translateX(0);
-        }
-
-        .mobile-menu-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1rem 1rem 1rem 1.5rem;
-          border-bottom: 1px solid #e5e7eb;
-        }
-
-        .mobile-menu-content {
-          padding: 1rem;
-          flex: 1;
-          overflow-y: auto;
-        }
-      `}</style>
-      {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3 max-w-7xl mx-auto">
-        <Link href="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-          <Image src="/logo.jpg" alt="PropertyGanj Logo" width={40} height={40} className="rounded" />
-          <Image src="/logotext.png" alt="PropertyGanj" width={200} height={40} className="hidden md:block h-8 w-auto" />
-        </Link>
-
-        <div className="flex items-center gap-2 md:gap-6">
-          <div className="hidden md:flex items-center gap-4">
-            <button className="text-foreground text-sm md:text-base hover:text-primary flex items-center gap-1 transition-colors font-medium">
-              Lucknow <ChevronDown className="w-4 h-4" />
+          <div className="hidden items-center gap-3 md:flex">
+            <button className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+              Lucknow
+              <ChevronDown className="h-4 w-4" />
             </button>
             {user ? (
-              <div className="relative group">
-                <button className="text-sm text-foreground hover:text-primary flex items-center gap-1 transition-colors font-medium">
-                  <User className="w-4 h-4 mr-1" />
-                  {user.name} <ChevronDown className="w-4 h-4" />
+              <div className="group relative">
+                <button className="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground transition duration-300 hover:border-primary/30 hover:text-primary">
+                  <User className="h-4 w-4" />
+                  {user.name}
+                  <ChevronDown className="h-4 w-4" />
                 </button>
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50">
-                  <Link href="/profile" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">My Profile</Link>
-                  <Link href="/profile/liked" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">Liked Properties</Link>
-                  <Link href="/profile/my-ads" className="block px-4 py-2 text-sm text-foreground hover:bg-accent hover:text-accent-foreground">My Ads</Link>
-                  <div className="border-t my-2"></div>
-                  <Button
-                    onClick={handleLogout}
-                    className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Logout
-                  </Button>
+                <div className="absolute right-0 top-full hidden pt-2 group-hover:block">
+                  <div className="min-w-[220px] rounded-2xl border border-border bg-white p-2 shadow-lg">
+                    <Link href="/profile" className="block rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-accent">
+                      My Profile
+                    </Link>
+                    <Link href="/profile/liked" className="block rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-accent">
+                      Liked Properties
+                    </Link>
+                    <Link href="/profile/my-ads" className="block rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-accent">
+                      My Ads
+                    </Link>
+                    {user.role === "agent" ? (
+                      <Link href="/agent" className="block rounded-xl px-4 py-3 text-sm font-medium text-primary transition hover:bg-accent">
+                        Agent Dashboard
+                      </Link>
+                    ) : null}
+                    {user.role === "admin" ? (
+                      <Link href="/admin" className="block rounded-xl px-4 py-3 text-sm font-medium text-primary transition hover:bg-accent">
+                        Admin Dashboard
+                      </Link>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-2 rounded-xl px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-50"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Logout
+                    </button>
+                  </div>
                 </div>
               </div>
             ) : (
               <Link href="/auth">
-                <Button
-                  className="
-                    text-white
-                    font-semibold
-                    py-2
-                    h-auto
-                    transition-all
-                    rounded-lg
-                    bg-[#eb6239]
-                    border-b-[4px] border-[#d6522f]
-                    hover:brightness-110 hover:-translate-y-[1px] hover:border-b-[6px]
-                    active:brightness-90 active:translate-y-[2px] active:border-b-[2px]
-                  "
-                >
+                <Button className="h-auto rounded-lg bg-[#eb6239] px-4 py-2 text-sm font-semibold text-white transition-all border-b-[4px] border-[#d6522f] hover:-translate-y-[1px] hover:border-b-[5px] hover:bg-[#ef724d] active:translate-y-[1px] active:border-b-[3px]">
                   Login / Sign Up
                 </Button>
               </Link>
             )}
             <Link href="/list-property">
-              <Button className="bg-primary hover:bg-primary/90 text-primary-foreground text-sm font-semibold px-4 py-1 h-auto transition-all hover:scale-105 button-glow">
-                Post Property{" "}
-                <span className="bg-accent text-accent-foreground px-2 py-0.5 rounded-full text-xs ml-1 font-bold">FREE</span>
+              <Button className="h-auto rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all hover:scale-[1.02] hover:bg-primary/90">
+                Post Property
+                <span className="ml-2 rounded-full bg-accent px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-accent-foreground">
+                  Free
+                </span>
               </Button>
             </Link>
           </div>
-          <div className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
-            <div className={`burger ${isOpen ? 'active' : ''}`} onClick={(e) => {
-              e.stopPropagation(); // Prevent event bubbling to parent onClick
-              setIsOpen(!isOpen);
-            }}>
-              <span />
-              <span />
-              <span />
-            </div>
-          </div>
-        </div>
-      </div>
 
-      {/* Navigation Menu */}
-      <div className="hidden md:flex border-t border-border relative bg-white">
-        <div className="max-w-7xl w-full px-4 py-3 flex items-center justify-start gap-4 md:gap-8 text-sm md:text-base text-foreground">
-          <StyledDropdown
-            title="Buy"
-            sections={[
-              {
-                title: "Popular Choices",
-                items: [
-                  { href: "#", label: "Ready to Move" },
-                  { href: "#", label: "Owner Properties" },
-                  { href: "#", label: "Budget Homes" },
-                  { href: "#", label: "New Projects" }
-                ]
-              },
-              {
-                title: "Property Types",
-                items: [
-                  { href: "#", label: "Flats in Lucknow" },
-                  { href: "#", label: "House for sale in Lucknow" },
-                  { href: "#", label: "Villa in Lucknow" },
-                  { href: "#", label: "Plot in Lucknow" }
-                ]
-              },
-              {
-                title: "Budget",
-                items: [
-                  { href: "#", label: "Under ₹ 50 Lac" },
-                  { href: "#", label: "₹ 50 Lac - ₹ 1 Cr" },
-                  { href: "#", label: "₹ 1 Cr - ₹ 1.5 Cr" },
-                  { href: "#", label: "Above ₹ 1.5 Cr" }
-                ]
-              },
-              {
-                title: "Explore",
-                items: [
-                  { href: "#", label: "Localities in Lucknow" },
-                  { href: "#", label: "Projects in Lucknow" },
-                  { href: "#", label: "Find an Agent" }
-                ]
-              }
-            ]}
-          />
-          <StyledDropdown
-            title="Rent"
-            sections={[
-              {
-                title: "Popular Choices",
-                items: [
-                  { href: "#", label: "Owner Properties" },
-                  { href: "#", label: "Verified Properties" },
-                  { href: "#", label: "Furnished Homes" },
-                  { href: "#", label: "Bachelor Friendly Homes" },
-                  { href: "#", label: "Immediately Available" }
-                ]
-              },
-              {
-                title: "Property Types",
-                items: [
-                  { href: "#", label: "Flat for rent in Lucknow" },
-                  { href: "#", label: "House for rent in Lucknow" },
-                  { href: "#", label: "Villa for rent in Lucknow" },
-                  { href: "#", label: "PG in Lucknow" },
-                  { href: "#", label: "Office Space in Lucknow" },
-                  { href: "#", label: "Commercial Space in Lucknow" },
-                  { href: "#", label: "Coworking Space in Lucknow" },
-                  { href: "#", label: "Coliving Space in Lucknow" },
-                  { href: "#", label: "Student Hostels in Lucknow" },
-                  { href: "#", label: "Luxury PG in Lucknow" }
-                ]
-              },
-              {
-                title: "Budget",
-                items: [
-                  { href: "#", label: "Under ₹ 10,000" },
-                  { href: "#", label: "₹ 10,000 - ₹ 15,000" },
-                  { href: "#", label: "₹ 15,000 - ₹ 25,000" },
-                  { href: "#", label: "Above ₹ 25,000" }
-                ]
-              },
-              {
-                title: "Explore",
-                items: [
-                  { href: "#", label: "Localities" },
-                  { href: "#", label: "Buy Vs Rent" },
-                  { href: "#", label: "Find an Agent" },
-                  { href: "#", label: "Share Requirement" },
-                  { href: "#", label: "Property Services" },
-                  { href: "#", label: "Rent Agreement" }
-                ]
-              }
-            ]}
-          />
-          <StyledDropdown
-            title="Sell"
-            sections={[
-              {
-                title: "For Owner",
-                items: [
-                  { 
-                    href: "/list-property", 
-                    label: "Post Property FREE" 
-                  },
-                  { href: "#", label: "My Dashboard" },
-                  { href: "#", label: "Liked Properties" }
-                ]
-              }
-            ]}
-          />
-          <StyledDropdown
-            title="Blogs"
-            sections={[
-              {
-                title: "Property Ganj Insights",
-                items: [
-                  { href: "/blog/1", label: "Understanding Circle Rates" },
-                  { href: "/blog/2", label: "Vastu Shastra Guidelines" },
-                  { href: "/blog/3", label: "Stamp Duty & Registration" },
-                  { href: "/blog/4", label: "Metro Network Impact" },
-                  { href: "/blog/5", label: "LDA vs RERA" },
-                  { href: "/blog/6", label: "Top Investment Areas" }
-                ]
-              },
-              {
-                title: "Loan & Finance",
-                items: [
-                  { href: "/blog/1", label: "Home Loan Eligibility" },
-                  { href: "/blog/2", label: "Interest Rates & EMI" },
-                  { href: "/blog/3", label: "Top Banks for Home Loans" },
-                  { href: "/blog/4", label: "Home Loan Documents" },
-                  { href: "/blog/5", label: "Pre-EMI vs Full EMI" },
-                  { href: "/blog/6", label: "Tax Benefits on Home Loans" }
-                ]
-              }
-            ]}
-          />
-          <button className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors">
-            Home Loans <ChevronDown className="w-4 h-4" />
-          </button>
-          <Link href="/about" className="whitespace-nowrap hover:text-primary font-medium transition-colors">
-            About
-          </Link>
-          <button className="whitespace-nowrap hover:text-primary flex items-center gap-1 font-medium transition-colors">
-            Help <ChevronDown className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      <div className={`mobile-menu ${isOpen ? 'open' : ''}`}>
-        <div className="mobile-menu-header">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/logo.jpg" alt="PropertyGanj Logo" width={30} height={30} className="rounded" />
-            <Image src="/logotext.png" alt="PropertyGanj" width={150} height={30} className="h-6 w-auto" />
-          </Link>
           <button
-            className="p-2 rounded-full hover:bg-gray-100"
-            onClick={() => setIsOpen(false)}
+            type="button"
+            onClick={() =>
+              setIsMenuOpen((open) => {
+                const next = !open
+                if (!next) setExpandedGroup(null)
+                return next
+              })
+            }
+            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-white text-foreground transition duration-300 hover:border-primary/35 hover:text-primary md:hidden"
+            aria-label="Toggle menu"
           >
-            <X className="w-5 h-5" />
+            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
 
-        <div className="mobile-menu-content">
-          <div className="space-y-6">
-            {/* Navigation Items */}
-            <div className="space-y-3">
-              <StyledDropdown
-                title="Buy"
-                sections={[
-                  {
-                    title: "Popular Choices",
-                    items: [
-                      { href: "#", label: "Ready to Move" },
-                      { href: "#", label: "Owner Properties" },
-                      { href: "#", label: "Budget Homes" },
-                      { href: "#", label: "New Projects" }
-                    ]
-                  },
-                  {
-                    title: "Property Types",
-                    items: [
-                      { href: "#", label: "Flats in Lucknow" },
-                      { href: "#", label: "House for sale in Lucknow" },
-                      { href: "#", label: "Villa in Lucknow" },
-                      { href: "#", label: "Plot in Lucknow" }
-                    ]
-                  },
-                ]}
-              />
-              <StyledDropdown
-                title="Rent"
-                sections={[
-                  {
-                    title: "Popular Choices",
-                    items: [
-                      { href: "#", label: "Owner Properties" },
-                      { href: "#", label: "Verified Properties" },
-                      { href: "#", label: "Furnished Homes" },
-                    ]
-                  },
-                  {
-                    title: "Property Types",
-                    items: [
-                      { href: "#", label: "Flat for rent in Lucknow" },
-                      { href: "#", label: "House for rent in Lucknow" },
-                      { href: "#", label: "PG in Lucknow" },
-                    ]
-                  },
-                ]}
-              />
-              <StyledDropdown
-                title="Sell"
-                sections={[
-                  {
-                    title: "For Owner",
-                    items: [
-                      {
-                        href: "/list-property",
-                        label: "Post Property FREE"
-                      },
-                      { href: "#", label: "My Dashboard" },
-                    ]
-                  }
-                ]}
-              />
-              <div className="pt-2">
-                <StyledDropdown
-                  title="Blogs"
-                  sections={[
-                    {
-                      title: "Property Ganj Insights",
-                      items: [
-                        { href: "/blog/1", label: "Understanding Circle Rates" },
-                        { href: "/blog/2", label: "Vastu Shastra Guidelines" },
-                        { href: "/blog/3", label: "Stamp Duty & Registration" },
-                        { href: "/blog/4", label: "Metro Network Impact" },
-                        { href: "/blog/5", label: "LDA vs RERA" },
-                        { href: "/blog/6", label: "Top Investment Areas" }
-                      ]
-                    },
-                    {
-                      title: "Loan & Finance",
-                      items: [
-                        { href: "/blog/1", label: "Home Loan Eligibility" },
-                        { href: "/blog/2", label: "Interest Rates & EMI" },
-                        { href: "/blog/3", label: "Top Banks for Home Loans" },
-                        { href: "/blog/4", label: "Home Loan Documents" },
-                        { href: "/blog/5", label: "Pre-EMI vs Full EMI" },
-                        { href: "/blog/6", label: "Tax Benefits on Home Loans" }
-                      ]
-                    }
-                  ]}
-                />
-              </div>
-              <button className="block w-full text-left text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
-                Home Loans
-              </button>
-              <Link href="/about" className="block text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
-                About
-              </Link>
-              <button className="block w-full text-left text-foreground hover:text-primary transition-colors py-2 border-b border-gray-100">
-                Help
-              </button>
-            </div>
+        <nav className="hidden border-t border-border bg-white md:block">
+          <div className="flex items-center gap-6 py-3">
+            {navGroups.map((group) => {
+              const hasSections = Boolean(group.sections?.length)
 
-            {/* Auth Section */}
-            <div className="pt-4 border-t border-gray-200">
-              {user ? (
-                <div className="space-y-3">
-                  <Link href="/profile" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-                    My Profile
-                  </Link>
-                  <Link href="/profile/my-ads" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">
-                    My Ads
-                  </Link>
-                  <button
-                    onClick={() => {
-                      handleLogout();
-                      setIsOpen(false);
-                    }}
-                    className="w-full text-center py-3 rounded-lg bg-red-500 text-white hover:bg-red-600 transition-colors"
-                  >
-                    Logout
-                  </button>
+              return (
+                <div key={group.title} className="group relative">
+                  <div className="flex items-center gap-1 py-1.5">
+                    <Link href={group.href} className="text-sm font-medium text-foreground transition duration-300 group-hover:text-primary">
+                      {group.title}
+                    </Link>
+                    {hasSections ? (
+                      <ChevronDown className="h-4 w-4 text-muted-foreground transition duration-300 group-hover:text-primary" />
+                    ) : null}
+                  </div>
+
+                  {hasSections ? (
+                    <div className="pointer-events-none absolute left-0 top-full hidden w-[min(760px,82vw)] pt-3 group-hover:block">
+                      <div className="pointer-events-auto rounded-[28px] border border-border bg-white p-5 shadow-[0_22px_60px_rgba(15,23,42,0.12)]">
+                        <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
+                          <div className="rounded-[24px] bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] p-4">
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">PropertyGanj</p>
+                            <h3 className="mt-2 text-lg font-semibold text-foreground">{group.title}</h3>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">{group.description}</p>
+                            <Link href={group.href} className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary">
+                              Open {group.title}
+                              <ChevronRight className="h-4 w-4" />
+                            </Link>
+                          </div>
+                          <div className={`grid gap-4 ${group.sections && group.sections.length > 1 ? "md:grid-cols-2" : ""}`}>
+                            {group.sections?.map((section) => (
+                              <div key={section.title}>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                                  {section.title}
+                                </p>
+                                <div className="mt-3 space-y-2">
+                                  {section.items.map((item) => (
+                                    <Link
+                                      key={item.label}
+                                      href={item.href}
+                                      className="flex items-center justify-between rounded-2xl border border-transparent px-3 py-2 text-sm font-medium text-foreground transition duration-300 hover:border-primary/15 hover:bg-accent hover:text-primary"
+                                    >
+                                      <span>{item.label}</span>
+                                      {item.tag ? (
+                                        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-primary">
+                                          {item.tag}
+                                        </span>
+                                      ) : null}
+                                    </Link>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              ) : (
-                <div className="space-y-3">
-                  <Link href="/auth" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors">
-                    Login / Sign Up
-                  </Link>
+              )
+            })}
+          </div>
+        </nav>
+      </div>
+
+      {isMenuOpen ? (
+        <div className="border-t border-border bg-white px-4 pb-5 pt-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] md:hidden">
+          <div className="space-y-2">
+            {navGroups.map((group) => {
+              const hasSections = Boolean(group.sections?.length)
+              const expanded = expandedGroup === group.title
+
+              return (
+                <div key={group.title} className="rounded-2xl border border-border bg-white">
+                  <div className="flex items-center justify-between gap-3 px-4 py-3">
+                    <Link
+                      href={group.href}
+                      onClick={() => {
+                        setIsMenuOpen(false)
+                        setExpandedGroup(null)
+                      }}
+                      className="text-sm font-semibold text-foreground"
+                    >
+                      {group.title}
+                    </Link>
+                    {hasSections ? (
+                      <button
+                        type="button"
+                        onClick={() => setExpandedGroup(expanded ? null : group.title)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-accent text-primary"
+                        aria-label={`Toggle ${group.title}`}
+                      >
+                        <ChevronDown className={`h-4 w-4 transition duration-300 ${expanded ? "rotate-180" : ""}`} />
+                      </button>
+                    ) : null}
+                  </div>
+                  {hasSections && expanded ? (
+                    <div className="space-y-4 border-t border-border px-4 py-4">
+                      <p className="text-sm leading-6 text-muted-foreground">{group.description}</p>
+                      {group.sections?.map((section) => (
+                        <div key={section.title}>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                            {section.title}
+                          </p>
+                          <div className="mt-2 space-y-2">
+                            {section.items.map((item) => (
+                              <Link
+                                key={item.label}
+                                href={item.href}
+                                onClick={() => {
+                                  setIsMenuOpen(false)
+                                  setExpandedGroup(null)
+                                }}
+                                className="flex items-center justify-between rounded-2xl bg-accent px-3 py-2 text-sm font-medium text-foreground"
+                              >
+                                <span>{item.label}</span>
+                                {item.tag ? (
+                                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-primary">
+                                    {item.tag}
+                                  </span>
+                                ) : null}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
-              )}
-              <Link href="/list-property" onClick={() => setIsOpen(false)} className="w-full block">
-                <Button className="w-full bg-primary hover:bg-primary/90 py-3">
-                  List Property
-                  <span className="bg-accent text-accent-foreground px-2 py-0.5 rounded-full text-xs ml-2 font-bold">FREE</span>
-                </Button>
-              </Link>
-            </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-4 space-y-3 rounded-[28px] border border-border bg-white p-4">
+            {user ? (
+              <>
+                <Link
+                  href="/profile"
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    setExpandedGroup(null)
+                  }}
+                  className="block rounded-2xl bg-accent px-4 py-3 text-sm font-medium"
+                >
+                  My Profile
+                </Link>
+                <Link
+                  href="/profile/liked"
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    setExpandedGroup(null)
+                  }}
+                  className="block rounded-2xl bg-accent px-4 py-3 text-sm font-medium"
+                >
+                  Liked Properties
+                </Link>
+                <Link
+                  href="/profile/my-ads"
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    setExpandedGroup(null)
+                  }}
+                  className="block rounded-2xl bg-accent px-4 py-3 text-sm font-medium"
+                >
+                  My Ads
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/auth"
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    setExpandedGroup(null)
+                  }}
+                  className="block rounded-full bg-[#eb6239] px-4 py-3 text-center text-sm font-semibold text-white"
+                >
+                  Login / Sign Up
+                </Link>
+                <Link
+                  href="/list-property"
+                  onClick={() => {
+                    setIsMenuOpen(false)
+                    setExpandedGroup(null)
+                  }}
+                  className="block rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white"
+                >
+                  Post Property Free
+                </Link>
+              </>
+            )}
           </div>
         </div>
-      </div>
+      ) : null}
     </header>
   )
 }

@@ -392,62 +392,111 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
     event.preventDefault();
 
     if (!form.title.trim()) {
-      toast({
-        title: 'Title required',
-        description: 'Give your property a catchy name.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Title required', description: 'Give your property a catchy name.', variant: 'destructive' });
       return;
     }
 
     if (!form.price || Number.isNaN(Number(form.price))) {
-      toast({
-        title: 'Price required',
-        description: 'Enter an indicative selling price.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!hasAtLeastOnePhoto) {
-      toast({
-        title: 'Add at least one photo',
-        description: 'Buyers engage better with visuals.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    // Check if user is logged in
-    if (!user) {
-      toast({
-        title: "Feature Not Available",
-        description: "This feature requires a backend. Please try again later.",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
+      toast({ title: 'Price required', description: 'Enter an indicative selling price.', variant: 'destructive' });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Simulate API call success
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-
-      toast({
-        title: 'Listing published',
-        description: 'Your property is live now (frontend simulation).',
+      // Collect all photo URLs
+      const allPhotos: string[] = [];
+      Object.values(photos).forEach(categoryPhotos => {
+        categoryPhotos.forEach(photo => {
+          if (photo.url && !photo.url.startsWith('blob:')) {
+            allPhotos.push(photo.url);
+          }
+        });
       });
 
-      // Redirect to a placeholder page or home
-      router.push('/');
+      // If photos are blob URLs (local), use placeholder images
+      const photoUrls = allPhotos.length > 0 ? allPhotos : ['/modern-apartment.jpg'];
+
+      const isRent = form.purpose === 'rent';
+      const priceValue = Number(form.price);
+
+      // Format description to include extra payload data since columns don't exist
+      let finalDescription = form.description.trim() || '';
+      
+      const extras = [];
+      if (amenities.length > 0) extras.push(`Amenities: ${amenities.join(', ')}`);
+      if (highlights.filter(h => h.trim()).length > 0) extras.push(`Highlights: ${highlights.filter(h => h.trim()).join(' | ')}`);
+      if (tags.length > 0) extras.push(`Tags: ${tags.join(', ')}`);
+      
+      const contactInfo = [];
+      if (contact.name) contactInfo.push(`Name: ${contact.name}`);
+      if (contact.phone) contactInfo.push(`Phone: ${contact.phone}`);
+      if (contact.email) contactInfo.push(`Email: ${contact.email}`);
+      
+      if (extras.length > 0) {
+        finalDescription += `\n\n--- Features ---\n${extras.join('\n')}`;
+      }
+      if (contactInfo.length > 0) {
+        finalDescription += `\n\n--- Contact Info ---\n${contactInfo.join('\n')}`;
+      }
+      
+      let dbPropType = form.propertyType.toLowerCase();
+      if (dbPropType.includes('plot') || dbPropType.includes('land')) dbPropType = 'land';
+      else if (dbPropType.includes('house') || dbPropType.includes('villa')) dbPropType = 'house';
+      else dbPropType = 'apartment';
+
+      const propertyPayload = {
+        title: form.title.trim(),
+        description: finalDescription || null,
+        property_type: dbPropType,
+        price: isRent ? null : priceValue,
+        rent: isRent ? priceValue : null,
+        for_sale: !isRent,
+        for_rent: isRent,
+        city: form.location.city || 'Lucknow',
+        locality: form.location.locality || null,
+        address_line1: form.location.address || null,
+        formatted_address: [form.location.locality, form.location.city].filter(Boolean).join(', '),
+        lat: form.location.latitude ? parseFloat(form.location.latitude) : null,
+        lng: form.location.longitude ? parseFloat(form.location.longitude) : null,
+        bedrooms: form.specs.bedrooms ? parseInt(form.specs.bedrooms) : null,
+        bathrooms: form.specs.bathrooms ? parseInt(form.specs.bathrooms) : null,
+        parking: form.specs.parking ? parseInt(form.specs.parking) : null,
+        carpet_area_sqft: form.specs.carpetArea ? parseInt(form.specs.carpetArea) : null,
+        built_up_area_sqft: form.specs.builtUpArea ? parseInt(form.specs.builtUpArea) : null,
+        furnishing: form.specs.furnishedStatus || form.specs.furnishing || null,
+        status: 'published',
+        provider: photoUrls[0], // Store primary image in provider column
+      };
+
+      const response = await fetch('/api/properties', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(propertyPayload),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          toast({ title: 'Login Required', description: 'Please login to list a property.', variant: 'destructive' });
+          router.push('/auth');
+          return;
+        }
+        throw new Error(data?.error || 'Unable to create property');
+      }
+
+      toast({ title: 'Listing published!', description: 'Your property is now live.' });
+
+      if (data?.property?.id) {
+        router.push(`/property/${data.property.id}`);
+      } else {
+        router.push('/');
+      }
       router.refresh();
     } catch (error) {
       toast({
         title: 'Unable to post property',
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
+        description: error instanceof Error ? error.message : 'Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -1008,4 +1057,3 @@ export default function ListPropertyForm({ user }: ListPropertyFormProps) {
     </form>
   );
 }
-

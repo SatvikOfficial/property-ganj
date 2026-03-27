@@ -369,3 +369,6 @@ export function PropertyDetailClient({ property, similar, initialLiked }: Proper
   );
 }
 
+
+
+

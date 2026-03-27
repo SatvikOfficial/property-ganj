@@ -1,6 +1,6 @@
+"use client";
+
 import { useEffect, useRef } from "react";
-import { Phone, MessageCircle, Mail } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 const StickyContact = () => {
   // New: icons above chatway, styled like the provided image

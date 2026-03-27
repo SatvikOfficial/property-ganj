@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Header from '@/components/header';
 import LikeButton from '@/components/LikeButton';
-import { Heart } from 'lucide-react';
+import { Heart, Home, ArrowRight } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 const formatCurrency = (value?: number) => {
   if (!value) return '₹ —';
@@ -21,9 +22,39 @@ export default function LikedPropertiesPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLikedProperties([]);
-    setLoading(false);
-    setError(null);
+    const fetchLikes = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setError("Please log in to view liked properties.");
+          setLoading(false);
+          return;
+        }
+
+        const { data: likes, error: likesErr } = await supabase.from('likes').select('property_id').eq('user_id', user.id);
+        if (likesErr) throw likesErr;
+
+        if (!likes || likes.length === 0) {
+          setLikedProperties([]);
+          setLoading(false);
+          return;
+        }
+
+        const ids = likes.map(l => l.property_id);
+        const { data: props, error: propsErr } = await supabase.from('properties').select('*').in('id', ids);
+        
+        if (propsErr) throw propsErr;
+
+        setLikedProperties(props || []);
+      } catch (err: any) {
+        setError(err.message || 'Failed to fetch liked properties');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLikes();
   }, []);
 
   return (
@@ -49,14 +80,22 @@ export default function LikedPropertiesPage() {
         )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {likedProperties.map((property) => {
-            const area = property.specs?.carpetArea || property.specs?.builtUpArea;
-            const bedrooms = property.specs?.bedrooms ? `${property.specs.bedrooms} BHK` : property.propertyType;
-            const location = [property.location?.locality, property.location?.city].filter(Boolean).join(', ');
-            const image = property.media?.photos?.[0]?.url || '/placeholder.svg';
+            const area = property.specs?.carpetArea || property.carpet_area_sqft || property.specs?.builtUpArea || property.built_up_area_sqft;
+            const bedrooms = property.bedrooms || property.specs?.bedrooms;
+            const propertyTypeStr = property.propertyType || property.property_type || 'Property';
+            const bedroomsStr = bedrooms ? `${bedrooms} BHK ${propertyTypeStr}` : propertyTypeStr;
+            const location = [property.locality || property.location?.locality, property.city || property.location?.city].filter(Boolean).join(', ');
+            
+            const fallbackImages = ["/modern-apartment.jpg", "/2bhk-flat.jpg", "/luxury-apartment-living-room.png", "/residential-property.jpg", "/residential-plots-green.jpg"];
+            const idHash = property._id?.toString?.() ?? property.id ?? '';
+            let hashNum = 0;
+            for (let i = 0; i < idHash.length; i++) hashNum += idHash.charCodeAt(i);
+            const defaultImg = fallbackImages[hashNum % fallbackImages.length];
+            const image = property.media?.photos?.[0]?.url || property.images?.[0] || defaultImg;
 
             return (
               <div
-                key={property._id}
+                key={property.id}
                 className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-border"
               >
                 <div className="relative w-full h-48 bg-muted rounded-t-lg overflow-hidden">
@@ -66,17 +105,17 @@ export default function LikedPropertiesPage() {
                     className="w-full h-full object-cover hover:scale-105 transition-transform"
                   />
                   <div className="absolute top-2 right-2">
-                    <LikeButton propertyId={property._id} initialLiked={true} />
+                    <LikeButton propertyId={property.id} initialLiked={true} />
                   </div>
                 </div>
                 <div className="p-4">
-                  <Link href={`/property/${property._id}`}>
+                  <Link href={`/property/${property.id}`}>
                     <h3 className="font-bold text-foreground hover:text-primary mb-1">{property.title}</h3>
                   </Link>
                   <p className="text-sm text-muted-foreground mb-3">{location}</p>
                   <div className="flex justify-between items-center">
                     <p className="text-lg font-bold text-primary">{formatCurrency(property.price)}</p>
-                    <p className="text-sm text-muted-foreground">{bedrooms}</p>
+                    <p className="text-sm text-muted-foreground">{bedroomsStr}</p>
                   </div>
                 </div>
               </div>

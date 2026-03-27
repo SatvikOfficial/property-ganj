@@ -1,18 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ChangeEvent, type FormEvent } from 'react';
 import {
+  ArrowLeft,
   Eye,
   EyeOff,
-  User,
-  Mail,
   Lock,
-  ArrowLeft,
+  Mail,
+  Phone,
+  User,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useToast } from '@/hooks/use-toast';
+import { createClient } from '@/utils/supabase/client';
 
 const initialFormState = {
   name: '',
@@ -20,12 +22,25 @@ const initialFormState = {
   phone: '',
   password: '',
   confirmPassword: '',
-  identifier: '',
 };
+
+function getAuthErrorMessage(error: unknown) {
+  if (!(error instanceof Error)) {
+    return 'Please try again.';
+  }
+
+  if (error.message.toLowerCase().includes('email not confirmed')) {
+    return 'Please verify your email before signing in.';
+  }
+
+  return error.message;
+}
 
 export default function AuthPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const supabase = createClient();
+
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -34,41 +49,39 @@ export default function AuthPage() {
 
   const resetForm = () => {
     setFormData(initialFormState);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
   };
 
   const toggleMode = () => {
-    setIsLogin(!isLogin);
+    setIsLogin((current) => !current);
     resetForm();
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    setFormData((previous) => ({ ...previous, [name]: value }));
   };
 
-  const autoLogin = async (identifierOverride?: string, passwordOverride?: string) => {
-    // Simulate successful login
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    toast({
-      title: `Welcome back (Simulation)`,
-      description: 'Redirecting you to the home page...',
-    });
-    router.push('/');
-    router.refresh();
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const email = formData.email.trim().toLowerCase();
 
       if (isLogin) {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password: formData.password,
+        });
+
+        if (error) {
+          throw error;
+        }
+
         toast({
-          title: `Welcome back (Simulation)`,
+          title: 'Welcome back',
           description: 'Redirecting you to the home page...',
         });
         router.push('/');
@@ -80,18 +93,72 @@ export default function AuthPage() {
         throw new Error('Passwords do not match');
       }
 
-      toast({
-        title: 'Account created (Simulation)',
-        description: 'Redirecting you to the home page...',
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password: formData.password,
+        options: {
+          emailRedirectTo:
+            typeof window !== 'undefined'
+              ? `${window.location.origin}/auth`
+              : undefined,
+          data: {
+            full_name: formData.name.trim(),
+            phone: formData.phone.trim() || null,
+          },
+        },
       });
 
-      router.push('/');
-      router.refresh();
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
+        await supabase.from('profiles').upsert(
+          {
+            user_id: data.user.id,
+            full_name: formData.name.trim(),
+            email,
+            phone: formData.phone.trim() || null,
+            role: 'user',
+          },
+          { onConflict: 'user_id' }
+        );
+      }
+
+      if (data.session) {
+        toast({
+          title: 'Account created',
+          description: 'Your account is ready.',
+        });
+        router.push('/');
+        router.refresh();
+        return;
+      }
+
+      // If no session, email confirmation is required but SMTP may not be configured
+      // Auto-signin the user to allow immediate access
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password: formData.password,
+      });
+
+      if (signInError) {
+        throw new Error('Account created but unable to sign in. Please contact support.');
+      }
+
+      if (signInData.session) {
+        toast({
+          title: 'Account created',
+          description: 'Your account is ready.',
+        });
+        router.push('/');
+        router.refresh();
+        return;
+      }
     } catch (error) {
       toast({
-        title: 'Something went wrong',
-        description:
-          error instanceof Error ? error.message : 'Please try again.',
+        title: isLogin ? 'Unable to sign in' : 'Unable to create account',
+        description: getAuthErrorMessage(error),
         variant: 'destructive',
       });
     } finally {
@@ -100,14 +167,16 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden">
-      <div className="absolute inset-0 -z-10">
+    <div className="relative flex min-h-screen flex-col overflow-hidden">
+      <div className="absolute inset-0 -z-10 bg-[#f6f5f1]">
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="w-full h-full object-cover"
+          preload="none"
+          poster="/dark.mp4"
+          className="h-full w-full object-cover opacity-80"
         >
           <source src="/dark.mp4" type="video/mp4" />
         </video>
@@ -116,14 +185,14 @@ export default function AuthPage() {
 
       <Link
         href="/"
-        className="absolute top-6 left-6 flex items-center text-[#eb6239] hover:text-[#d6522f] hover:underline z-10 font-medium"
+        className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-[#eb6239] backdrop-blur-sm transition-all hover:bg-white/20 hover:text-[#d65229]"
       >
-        <ArrowLeft className="h-4 w-4 mr-2" /> Back to Home
+        <ArrowLeft className="h-4 w-4" /> Back to Home
       </Link>
 
-      <div className="flex-1 flex items-center justify-center p-4">
+      <div className="flex flex-1 items-center justify-center p-4">
         <div
-          className="flex flex-col items-center text-center p-8 rounded-2xl shadow-2xl backdrop-blur-lg"
+          className="flex flex-col items-center rounded-2xl p-8 text-center shadow-2xl backdrop-blur-lg"
           style={{
             backgroundColor: '#f6f5f1',
             border: '2px solid #264143',
@@ -131,8 +200,13 @@ export default function AuthPage() {
             borderRadius: '20px',
           }}
         >
-          <p className="text-[#264143] font-extrabold text-2xl mb-6">
+          <p className="mb-2 text-2xl font-extrabold text-[#264143]">
             {isLogin ? 'SIGN IN' : 'SIGN UP'}
+          </p>
+          <p className="mb-6 max-w-[290px] text-sm text-[#264143]/75">
+            {isLogin
+              ? 'Use the verified email you registered with.'
+              : 'Create your account to get started.'}
           </p>
 
           <form
@@ -141,7 +215,7 @@ export default function AuthPage() {
           >
             {!isLogin && (
               <div className="flex flex-col text-left">
-                <label className="font-semibold text-[#264143] mb-1">
+                <label className="mb-1 font-semibold text-[#264143]">
                   Name
                 </label>
                 <div className="relative">
@@ -156,80 +230,58 @@ export default function AuthPage() {
                     onChange={handleChange}
                     placeholder="Enter your full name"
                     required
-                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
-                  />
-                </div>
-              </div>
-            )}
-
-            {isLogin ? (
-              <div className="flex flex-col text-left">
-                <label className="font-semibold text-[#264143] mb-1">
-                  Email or Phone
-                </label>
-                <div className="relative">
-                  <Mail
-                    className="absolute left-3 top-3.5 text-[#264143]"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    name="identifier"
-                    value={formData.identifier}
-                    onChange={handleChange}
-                    placeholder="you@example.com or 9876543210"
-                    required
-                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col text-left">
-                <label className="font-semibold text-[#264143] mb-1">
-                  Email <span className="text-xs text-muted-foreground">(optional)</span>
-                </label>
-                <div className="relative">
-                  <Mail
-                    className="absolute left-3 top-3.5 text-[#264143]"
-                    size={18}
-                  />
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="you@example.com"
-                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
-                  />
-                </div>
-              </div>
-            )}
-
-            {!isLogin && (
-              <div className="flex flex-col text-left">
-                <label className="font-semibold text-[#264143] mb-1">
-                  Phone Number
-                </label>
-                <div className="relative">
-                  <div className="absolute left-3 top-3.5 text-[#264143] flex items-center">
-                    <span className="text-sm font-bold mr-1">+91</span>
-                    <div className="w-px h-5 bg-[#264143]" />
-                  </div>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    placeholder="9876543210"
-                    required
-                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-12 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
+                    className="w-[290px] rounded-md border-2 border-[#264143] p-3 pl-10 outline-none shadow-[3px_4px_0px_1px_#eec78e] transition-all focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e]"
                   />
                 </div>
               </div>
             )}
 
             <div className="flex flex-col text-left">
-              <label className="font-semibold text-[#264143] mb-1">
+              <label className="mb-1 font-semibold text-[#264143]">
+                Email
+              </label>
+              <div className="relative">
+                <Mail
+                  className="absolute left-3 top-3.5 text-[#264143]"
+                  size={18}
+                />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  placeholder="you@example.com"
+                  required
+                  className="w-[290px] rounded-md border-2 border-[#264143] p-3 pl-10 outline-none shadow-[3px_4px_0px_1px_#eec78e] transition-all focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e]"
+                />
+              </div>
+            </div>
+
+            {!isLogin && (
+              <div className="flex flex-col text-left">
+                <label className="mb-1 font-semibold text-[#264143]">
+                  Phone Number{' '}
+                  <span className="text-xs text-[#264143]/60">(optional)</span>
+                </label>
+                <div className="relative">
+                  <Phone
+                    className="absolute left-3 top-3.5 text-[#264143]"
+                    size={18}
+                  />
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder="9876543210"
+                    className="w-[290px] rounded-md border-2 border-[#264143] p-3 pl-10 outline-none shadow-[3px_4px_0px_1px_#eec78e] transition-all focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e]"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex flex-col text-left">
+              <label className="mb-1 font-semibold text-[#264143]">
                 Password
               </label>
               <div className="relative">
@@ -244,11 +296,11 @@ export default function AuthPage() {
                   onChange={handleChange}
                   placeholder="Enter your password"
                   required
-                  className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 pr-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
+                  className="w-[290px] rounded-md border-2 border-[#264143] p-3 pl-10 pr-10 outline-none shadow-[3px_4px_0px_1px_#eec78e] transition-all focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e]"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword((value) => !value)}
                   className="absolute right-3 top-3 text-[#264143] hover:text-[#eb6239]"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -258,7 +310,7 @@ export default function AuthPage() {
 
             {!isLogin && (
               <div className="flex flex-col text-left">
-                <label className="font-semibold text-[#264143] mb-1">
+                <label className="mb-1 font-semibold text-[#264143]">
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -273,14 +325,20 @@ export default function AuthPage() {
                     onChange={handleChange}
                     placeholder="Confirm your password"
                     required
-                    className="outline-none border-2 border-[#264143] shadow-[3px_4px_0px_1px_#eec78e] w-[290px] p-3 pl-10 pr-10 rounded-md focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e] transition-all"
+                    className="w-[290px] rounded-md border-2 border-[#264143] p-3 pl-10 pr-10 outline-none shadow-[3px_4px_0px_1px_#eec78e] transition-all focus:translate-y-[4px] focus:shadow-[1px_2px_0px_0px_#eec78e]"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    onClick={() =>
+                      setShowConfirmPassword((value) => !value)
+                    }
                     className="absolute right-3 top-3 text-[#264143] hover:text-[#eb6239]"
                   >
-                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showConfirmPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
                   </button>
                 </div>
               </div>
@@ -289,17 +347,21 @@ export default function AuthPage() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className="bg-[#eb6239] text-white font-extrabold py-3 w-[290px] rounded-lg shadow-[3px_3px_0px_0px_#eec78e] hover:opacity-90 transition-all active:translate-y-[3px] disabled:opacity-60"
+              className="w-[290px] rounded-lg bg-[#eb6239] py-3 font-extrabold text-white shadow-[3px_3px_0px_0px_#eec78e] transition-all hover:opacity-90 active:translate-y-[3px] disabled:opacity-60"
             >
-              {isSubmitting ? 'Please wait...' : isLogin ? 'SIGN IN' : 'SIGN UP'}
+              {isSubmitting
+                ? 'Please wait...'
+                : isLogin
+                  ? 'SIGN IN'
+                  : 'SIGN UP'}
             </button>
 
-            <p className="text-sm mt-3 text-[#264143] font-medium">
+            <p className="mt-3 text-sm font-medium text-[#264143]">
               {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
               <button
                 type="button"
                 onClick={toggleMode}
-                className="text-[#25abc2] font-bold hover:underline"
+                className="font-bold text-[#25abc2] hover:underline"
               >
                 {isLogin ? 'Sign Up' : 'Sign In'}
               </button>

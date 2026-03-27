@@ -1,327 +1,196 @@
-"use client";
+import Image from "next/image"
+import Link from "next/link"
+import { ArrowRight, Building2, HeartHandshake, MapPinned, ShieldCheck, Sparkles, TrendingUp } from "lucide-react"
 
-import Header from '@/components/header';
-import Link from 'next/link';
-import { Building2, Search, Users, Shield, TrendingUp, Heart, MapPin, Phone, Mail } from 'lucide-react';
+import Header from "@/components/header"
+
+const values = [
+  {
+    icon: ShieldCheck,
+    title: "Trust before traffic",
+    copy: "We would rather present fewer, cleaner decisions than inflate the experience with noise.",
+  },
+  {
+    icon: MapPinned,
+    title: "Locality-first thinking",
+    copy: "Search is sharper when it reflects how people actually live across Lucknow, not just how forms are structured.",
+  },
+  {
+    icon: HeartHandshake,
+    title: "Human support",
+    copy: "Support matters most when the decision becomes expensive, emotional, or time-sensitive.",
+  },
+]
+
+const platformPillars = [
+  "Verified listings and clearer property presentation",
+  "Market and locality guidance that supports decisions",
+  "Search flows built for buyers, renters, and sellers",
+  "Loan support that reduces friction after shortlisting",
+]
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-background">
+    <main className="min-h-screen bg-[linear-gradient(180deg,#fbf8f3_0%,#f8fafc_28%,#fff6ee_100%)]">
       <Header />
-      
-      {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary/10 via-accent/20 to-background py-16 md:py-24 px-4">
-        <div className="max-w-6xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-foreground mb-6">
-            About <span className="text-primary">PropertyGanj</span>
-          </h1>
-          <p className="text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-            Your trusted partner in finding the perfect property in Lucknow. We connect buyers, renters, 
-            and property owners to make real estate transactions seamless, transparent, and stress-free.
-          </p>
+
+      <section className="px-4 pb-8 pt-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl overflow-hidden rounded-[34px] border border-[#eddccd] bg-white shadow-[0_24px_80px_rgba(16,35,36,0.08)]">
+          <div className="grid lg:grid-cols-[minmax(0,1.08fr)_minmax(320px,0.92fr)]">
+            <div className="relative overflow-hidden bg-[linear-gradient(135deg,#fff9f2_0%,#ffffff_58%,#eef6ff_100%)] px-6 py-8 text-foreground sm:px-8 sm:py-10">
+              <Image
+                src="/apartment-complex-lucknow.jpg"
+                alt="PropertyGanj city living"
+                fill
+                sizes="(max-width: 1280px) 100vw, 60vw"
+                className="object-cover opacity-24"
+              />
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.96)_0%,rgba(255,255,255,0.9)_40%,rgba(248,250,252,0.72)_100%)]" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(235,98,57,0.12),transparent_30%),radial-gradient(circle_at_82%_18%,rgba(82,168,255,0.16),transparent_24%)]" />
+
+              <div className="relative z-10 max-w-2xl">
+                <span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/85 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary shadow-sm">
+                  <Sparkles className="h-3.5 w-3.5 text-primary" />
+                  About PropertyGanj
+                </span>
+                <h1 className="mt-4 text-4xl font-semibold leading-tight sm:text-5xl">
+                  A premium real-estate experience shaped around clarity, local knowledge, and trust.
+                </h1>
+                <p className="mt-4 max-w-xl text-base leading-7 text-muted-foreground">
+                  PropertyGanj is built for people who want better decisions, not just more listings. We bring search, support, editorial insight, and finance guidance into one refined platform for Lucknow.
+                </p>
+
+                <div className="mt-8 grid gap-3 sm:grid-cols-3">
+                  {[
+                    { label: "Search focus", value: "Lucknow-first" },
+                    { label: "Property view", value: "Premium + practical" },
+                    { label: "Support style", value: "Concierge-led" },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-[22px] border border-[#f1dfcf] bg-white/85 px-4 py-4 shadow-[0_10px_24px_rgba(16,35,36,0.05)] backdrop-blur">
+                      <p className="text-lg font-semibold text-primary">{item.value}</p>
+                      <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">{item.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-[linear-gradient(180deg,#fff9f2_0%,#ffffff_100%)] p-6 sm:p-8">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">What guides the platform</p>
+              <h2 className="mt-3 text-3xl font-semibold text-foreground">We optimize for confidence at the moment a user needs to act.</h2>
+              <div className="mt-6 space-y-4">
+                {values.map(({ icon: Icon, title, copy }) => (
+                  <div key={title} className="rounded-[24px] border border-[#f1dfcf] bg-white p-5 shadow-[0_10px_28px_rgba(16,35,36,0.04)]">
+                    <div className="flex items-start gap-4">
+                      <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <div>
+                        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
+                        <p className="mt-2 text-sm leading-6 text-muted-foreground">{copy}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Mission Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+      <section className="px-4 pb-10 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[minmax(320px,0.92fr)_minmax(0,1.08fr)]">
+          <div className="rounded-[30px] border border-[#eddccd] bg-white p-6 shadow-[0_16px_48px_rgba(16,35,36,0.06)] sm:p-8">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Our role in the journey</p>
+            <h2 className="mt-3 text-3xl font-semibold text-foreground">From discovery to decision, the platform is designed to reduce uncertainty.</h2>
+            <div className="mt-6 space-y-3">
+              {platformPillars.map((pillar) => (
+                <div key={pillar} className="rounded-[22px] border border-[#f1dfcf] bg-[#fffaf4] px-4 py-4 text-sm leading-6 text-muted-foreground">
+                  {pillar}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-6">
+            <div className="overflow-hidden rounded-[30px] border border-[#eddccd] bg-white shadow-[0_16px_48px_rgba(16,35,36,0.06)]">
+              <div className="grid md:grid-cols-[240px_minmax(0,1fr)]">
+                <div className="relative min-h-[220px]">
+                  <Image
+                    src="/modern-apartment.jpg"
+                    alt="Modern apartment interior"
+                    fill
+                    sizes="240px"
+                    className="object-cover"
+                  />
+                </div>
+                <div className="p-6 sm:p-8">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Our perspective</p>
+                  <h2 className="mt-3 text-2xl font-semibold text-foreground">Real estate platforms feel better when they are honest about what matters.</h2>
+                  <p className="mt-4 text-base leading-7 text-muted-foreground">
+                    People do not need louder banners. They need sharper search, stronger presentation, better support, and clearer context around price, locality, and risk. That is the direction PropertyGanj is built around.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-5 md:grid-cols-3">
+              {[
+                {
+                  icon: Building2,
+                  title: "Listings",
+                  copy: "Better structured and easier to compare.",
+                },
+                {
+                  icon: TrendingUp,
+                  title: "Insights",
+                  copy: "Editorial context that sharpens decisions.",
+                },
+                {
+                  icon: HeartHandshake,
+                  title: "Support",
+                  copy: "Human help when the stakes get real.",
+                },
+              ].map(({ icon: Icon, title, copy }) => (
+                <div key={title} className="rounded-[28px] border border-[#eddccd] bg-[linear-gradient(135deg,#fff7ef_0%,#ffffff_100%)] p-6 shadow-[0_12px_36px_rgba(16,35,36,0.05)]">
+                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-4 text-xl font-semibold text-foreground">{title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{copy}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="mx-auto mt-8 max-w-7xl rounded-[30px] border border-[#eddccd] bg-[linear-gradient(135deg,#fff8ef_0%,#ffffff_58%,#eef7ff_100%)] p-6 text-foreground sm:p-8">
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">Our Mission</h2>
-              <p className="text-lg text-muted-foreground leading-relaxed mb-4">
-                To revolutionize the real estate experience by providing a platform that is user-friendly, 
-                transparent, and efficient. We believe everyone deserves to find their dream property with ease.
-              </p>
-              <p className="text-lg text-muted-foreground leading-relaxed">
-                We're committed to making property search and transactions accessible to everyone, 
-                whether you're buying your first home, investing in real estate, or looking for the perfect rental.
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Build with us</p>
+              <h2 className="mt-2 text-3xl font-semibold">Whether you are buying, renting, or listing, the goal is the same: clearer momentum.</h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                Explore the platform, read the journal, or speak to support when you need help turning interest into the right move.
               </p>
             </div>
-            <div className="bg-card p-8 rounded-2xl border border-border shadow-lg">
-              <div className="space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <Heart className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground mb-2">Customer First</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Your satisfaction is our top priority. We're here to make your property journey smooth and enjoyable.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <Shield className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground mb-2">Trust & Transparency</h3>
-                    <p className="text-sm text-muted-foreground">
-                      All listings are verified to ensure authenticity. No hidden fees, no surprises.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="bg-primary/10 p-3 rounded-lg">
-                    <TrendingUp className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-foreground mb-2">Innovation</h3>
-                    <p className="text-sm text-muted-foreground">
-                      We leverage cutting-edge technology to provide the best property search experience.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* What We Offer */}
-      <section className="bg-accent/20 py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-12 text-center">What We Offer</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="bg-card p-6 rounded-xl border border-border hover:shadow-lg transition-shadow">
-              <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Search className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-bold text-foreground mb-2 text-lg">Advanced Search</h3>
-              <p className="text-muted-foreground text-sm">
-                Powerful filters help you find exactly what you're looking for - by location, price, size, and more.
-              </p>
-            </div>
-            <div className="bg-card p-6 rounded-xl border border-border hover:shadow-lg transition-shadow">
-              <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Building2 className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-bold text-foreground mb-2 text-lg">Verified Listings</h3>
-              <p className="text-muted-foreground text-sm">
-                All properties are verified to ensure authenticity and accuracy. Browse with confidence.
-              </p>
-            </div>
-            <div className="bg-card p-6 rounded-xl border border-border hover:shadow-lg transition-shadow">
-              <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Users className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-bold text-foreground mb-2 text-lg">Direct Contact</h3>
-              <p className="text-muted-foreground text-sm">
-                Connect directly with property owners, agents, and builders without intermediaries.
-              </p>
-            </div>
-            <div className="bg-card p-6 rounded-xl border border-border hover:shadow-lg transition-shadow">
-              <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <MapPin className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-bold text-foreground mb-2 text-lg">Location Insights</h3>
-              <p className="text-muted-foreground text-sm">
-                Get detailed information about neighborhoods, amenities, and local attractions.
-              </p>
-            </div>
-            <div className="bg-card p-6 rounded-xl border border-border hover:shadow-lg transition-shadow">
-              <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-bold text-foreground mb-2 text-lg">Free Listings</h3>
-              <p className="text-muted-foreground text-sm">
-                List your property for free and reach thousands of potential buyers and renters.
-              </p>
-            </div>
-            <div className="bg-card p-6 rounded-xl border border-border hover:shadow-lg transition-shadow">
-              <div className="bg-primary/10 w-12 h-12 rounded-lg flex items-center justify-center mb-4">
-                <TrendingUp className="w-6 h-6 text-primary" />
-              </div>
-              <h3 className="font-bold text-foreground mb-2 text-lg">Market Insights</h3>
-              <p className="text-muted-foreground text-sm">
-                Stay informed with property trends, price insights, and market analysis.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Choose Us */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-12 text-center">Why Choose PropertyGanj?</h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-gradient-to-br from-primary/5 to-accent/10 p-8 rounded-2xl border border-primary/20">
-              <h3 className="font-bold text-foreground text-xl mb-4">For Buyers & Renters</h3>
-              <ul className="space-y-3 text-muted-foreground">
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>Comprehensive property listings with detailed information</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>Advanced search filters to find your perfect match</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>Direct contact with property owners and agents</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>Save your favorite properties for later</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>Get notified about new listings matching your criteria</span>
-                </li>
-              </ul>
-            </div>
-            <div className="bg-gradient-to-br from-accent/10 to-primary/5 p-8 rounded-2xl border border-accent/20">
-              <h3 className="font-bold text-foreground text-xl mb-4">For Property Owners</h3>
-              <ul className="space-y-3 text-muted-foreground">
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>List your property for free - no hidden charges</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>Reach thousands of potential buyers and renters</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>Manage your listings easily from your dashboard</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>Get inquiries directly from interested parties</span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <span className="text-primary font-bold">✓</span>
-                  <span>Track views and engagement on your listings</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Blog Insights Section */}
-      <section className="bg-accent/20 py-16 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">Property Ganj Insights</h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
-              Stay updated with our latest articles on property trends, investment tips, and market analysis in Lucknow
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            <Link href="/blog/1" className="block group">
-              <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-40 bg-gradient-to-r from-primary to-accent"></div>
-                <div className="p-6">
-                  <h3 className="font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">Understanding Circle Rates in Lucknow: A Complete Guide</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 group-hover:text-foreground transition-colors">Learn how circle rates affect property prices in Lucknow and how they impact your property investment decisions.</p>
-                  <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Nov 15, 2025</span>
-                    <span>5 min read</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            <Link href="/blog/3" className="block group">
-              <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-40 bg-gradient-to-r from-secondary to-accent"></div>
-                <div className="p-6">
-                  <h3 className="font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">Stamp Duty and Registration Charges in Lucknow: What You Need to Know</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 group-hover:text-foreground transition-colors">Complete guide to stamp duty and registration charges for property transactions in Lucknow.</p>
-                  <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Nov 10, 2025</span>
-                    <span>6 min read</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            <Link href="/blog/6" className="block group">
-              <div className="bg-card rounded-xl border border-border overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="h-40 bg-gradient-to-r from-accent to-primary"></div>
-                <div className="p-6">
-                  <h3 className="font-bold text-foreground mb-2 line-clamp-2 group-hover:text-primary transition-colors">Top Localities for Property Investment in Lucknow 2025</h3>
-                  <p className="text-sm text-muted-foreground mb-4 line-clamp-2 group-hover:text-foreground transition-colors">Explore the best localities in Lucknow for real estate investment this year.</p>
-                  <div className="flex justify-between items-center text-xs text-muted-foreground">
-                    <span>Nov 2, 2025</span>
-                    <span>8 min read</span>
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </div>
-
-          <div className="text-center mt-8">
-            <Link
-              href="/blog"
-              className="inline-flex items-center gap-2 text-primary font-semibold hover:underline"
-            >
-              View All Articles
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="bg-primary text-primary-foreground py-16 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Find Your Dream Property?</h2>
-          <p className="text-lg mb-8 opacity-90">
-            Start your property search today or list your property for free
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/search" 
-              className="bg-background text-foreground px-8 py-3 rounded-full font-semibold hover:bg-accent transition-colors"
-            >
-              Browse Properties
-            </Link>
-            <Link 
-              href="/list-property" 
-              className="bg-accent text-accent-foreground px-8 py-3 rounded-full font-semibold hover:bg-accent/80 transition-colors"
-            >
-              List Your Property
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Contact Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-12 text-center">Get in Touch</h2>
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-card p-8 rounded-xl border border-border">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Mail className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground">Email Us</h3>
-                  <p className="text-muted-foreground text-sm">support@propertyganj.com</p>
-                </div>
-              </div>
-            </div>
-            <div className="bg-card p-8 rounded-xl border border-border">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="bg-primary/10 p-3 rounded-lg">
-                  <Phone className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground">Call Us</h3>
-                  <p className="text-muted-foreground text-sm">+91 1800-XXX-XXXX</p>
-                </div>
-              </div>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/search?q=Lucknow"
+                className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition duration-300 hover:-translate-y-0.5 hover:bg-primary/90"
+              >
+                Explore listings
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+              <Link
+                href="/help"
+                className="inline-flex items-center justify-center rounded-full border border-border bg-white px-5 py-3 text-sm font-semibold text-foreground transition duration-300 hover:border-primary/30 hover:text-primary"
+              >
+                Contact support
+              </Link>
             </div>
           </div>
         </div>
       </section>
     </main>
-  );
+  )
 }

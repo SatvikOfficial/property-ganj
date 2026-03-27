@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="72" viewBox="0 0 220 72" role="img" aria-label="LIC Housing Finance">
+  <rect width="220" height="72" rx="16" fill="#ffffff"/>
+  <rect x="18" y="14" width="48" height="44" rx="10" fill="#0f4c8a"/>
+  <rect x="22" y="18" width="40" height="36" rx="8" fill="#f3c435"/>
+  <path d="M34 27h16v18H34z" fill="#ffffff"/>
+  <text x="82" y="31" fill="#0f4c8a" font-family="Arial, sans-serif" font-size="18" font-weight="700">LIC</text>
+  <text x="82" y="49" fill="#102324" font-family="Arial, sans-serif" font-size="14" font-weight="700">HOUSING FINANCE</text>
+</svg>

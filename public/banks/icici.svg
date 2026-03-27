@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="72" viewBox="0 0 220 72" role="img" aria-label="ICICI">
+  <rect width="220" height="72" rx="16" fill="#ffffff"/>
+  <path d="M34 15c10 0 18 9 18 21s-8 21-18 21c-7 0-13-4-16-10 4 2 9 3 14 3 10 0 18-7 18-17 0-8-5-15-12-18 2 0 4 0 6 0z" fill="#f28b20"/>
+  <circle cx="34" cy="36" r="8" fill="#8a2141"/>
+  <text x="76" y="34" fill="#8a2141" font-family="Arial, sans-serif" font-size="18" font-weight="700">ICICI</text>
+  <text x="76" y="52" fill="#102324" font-family="Arial, sans-serif" font-size="14" font-weight="700">BANK</text>
+</svg>
