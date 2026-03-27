@@ -11,7 +11,7 @@ PropertyGanj is a Next.js real estate marketplace focused on property discovery,
 - Supabase Auth, Database, and Storage
 - Vercel Analytics
 
-## Core Features
+## Core Features 
 
 - Landing page with featured projects, owner listings, agent listings, and locality sections
 - Email/password auth with server-side registration recovery flow
