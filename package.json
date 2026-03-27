@@ -4,12 +4,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "/opt/homebrew/opt/node@22/bin/node ./node_modules/next/dist/bin/next build --webpack",
-    "build:turbo": "/opt/homebrew/opt/node@22/bin/node ./node_modules/next/dist/bin/next build --turbo",
-    "dev": "/opt/homebrew/opt/node@22/bin/node ./node_modules/next/dist/bin/next dev --webpack -p 8080 -H 127.0.0.1",
-    "dev:turbo": "/opt/homebrew/opt/node@22/bin/node ./node_modules/next/dist/bin/next dev --turbo -p 8080 -H 127.0.0.1",
+    "build": "next build --webpack",
+    "build:turbo": "next build --turbo",
+    "dev": "next dev --webpack -p 8080 -H 127.0.0.1",
+    "dev:turbo": "next dev --turbo -p 8080 -H 127.0.0.1",
     "lint": "eslint .",
-    "start": "/opt/homebrew/opt/node@22/bin/node ./node_modules/next/dist/bin/next start -p 5000 -H 0.0.0.0",
+    "start": "next start -p 5000 -H 0.0.0.0",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
   },
