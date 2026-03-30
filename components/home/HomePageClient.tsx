@@ -452,26 +452,7 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================ */}
-      {/* SECTION 1: Listed by Agents */}
-      {/* ============================================================ */}
-      <section className="bg-gradient-to-br from-background via-blue-50/30 to-background py-8 md:py-14 border-t border-border/30">
-        <div className="w-full">
-          <SectionHeader
-            icon={<Users className="w-5 h-5 text-blue-600" />}
-            title="Listed by Agents"
-            subtitle="Verified agent-listed properties"
-            href="/search?ownerType=agent"
-            gradient="bg-blue-100"
-          />
-          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide px-0 snap-x snap-mandatory">
-            {agentFeed.length === 0 && <div className="min-w-full">{renderEmptyState("agent listings")}</div>}
-            {agentFeed.map((property, index) => renderPropertyCard(property, index))}
-          </div>
-        </div>
-      </section>
-
-      {/* ============================================================ */}
-      {/* SECTION 2: Listed by Property Ganj */}
+      {/* SECTION 1: Listed by Property Ganj */}
       {/* ============================================================ */}
       <section className="relative py-8 md:py-14 overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-[#264143]/5 via-primary/5 to-[#264143]/5" />
@@ -546,6 +527,25 @@ export default function HomePage() {
               </p>
             </div>
           )}
+        </div>
+      </section>
+
+      {/* ============================================================ */}
+      {/* SECTION 2: Listed by Agents */}
+      {/* ============================================================ */}
+      <section className="bg-gradient-to-br from-background via-blue-50/30 to-background py-8 md:py-14 border-t border-border/30">
+        <div className="w-full">
+          <SectionHeader
+            icon={<Users className="w-5 h-5 text-blue-600" />}
+            title="Listed by Agents"
+            subtitle="Verified agent-listed properties"
+            href="/search?ownerType=agent"
+            gradient="bg-blue-100"
+          />
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide px-0 snap-x snap-mandatory">
+            {agentFeed.length === 0 && <div className="min-w-full">{renderEmptyState("agent listings")}</div>}
+            {agentFeed.map((property, index) => renderPropertyCard(property, index))}
+          </div>
         </div>
       </section>
 

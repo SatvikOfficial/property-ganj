@@ -264,7 +264,7 @@ export default function Header() {
         </div>
 
         <nav className="hidden border-t border-border bg-white md:block">
-          <div className="flex items-center gap-6 py-3">
+          <div className="flex items-center gap-x-7 py-3 pl-6 md:gap-x-8 md:pl-8 lg:gap-x-10 lg:pl-10">
             {navGroups.map((group) => {
               const hasSections = Boolean(group.sections?.length)
 
@@ -329,8 +329,8 @@ export default function Header() {
       </div>
 
       {isMenuOpen ? (
-        <div className="border-t border-border bg-white px-4 pb-5 pt-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] md:hidden">
-          <div className="space-y-2">
+        <div className="border-t border-border bg-white pb-5 pl-6 pr-4 pt-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] md:hidden">
+          <div className="space-y-3">
             {navGroups.map((group) => {
               const hasSections = Boolean(group.sections?.length)
               const expanded = expandedGroup === group.title

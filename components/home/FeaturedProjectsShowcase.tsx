@@ -124,28 +124,38 @@ export default function FeaturedProjectsShowcase({
             <Link
               key={project.id}
               href={getPropertyHref(project.id)}
-              className="group grid min-h-[108px] grid-cols-[92px_minmax(0,1fr)] gap-3 rounded-[24px] border border-[#f0dfcd] bg-white/90 p-3 transition duration-500 hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_16px_40px_rgba(16,35,36,0.08)] sm:min-h-[116px]"
+              className="group relative min-h-[160px] flex-1 overflow-hidden rounded-[28px] border border-[#f3d4b5] bg-[#102324] transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(16,35,36,0.12)] sm:min-h-[172px]"
             >
-              <div className="relative overflow-hidden rounded-[18px] bg-muted">
-                <Image
-                  src={project.image || "/placeholder.svg"}
-                  alt={project.name}
-                  fill
-                  sizes="120px"
-                  className="object-cover transition-transform duration-700 group-hover:scale-105"
-                />
+              <Image
+                src={project.image || "/placeholder.svg"}
+                alt={project.name}
+                fill
+                sizes="(max-width: 768px) 100vw, 40vw"
+                className="object-cover transition-transform duration-1000 group-hover:scale-105"
+              />
+              {/* Gradient Overlay for Text Readability */}
+              <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(16,35,36,0)_20%,rgba(16,35,36,0.65)_55%,rgba(16,35,36,0.95)_100%)]" />
+              
+              {/* Top Badge */}
+              <div className="absolute left-3.5 top-3.5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-white/75 backdrop-blur">
+                Featured project
               </div>
-              <div className="flex min-w-0 flex-col justify-between">
+
+              {/* Bottom Content */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.22em] text-primary/70">Featured project</p>
-                  <h3 className="mt-1 line-clamp-2 text-sm font-semibold text-foreground sm:text-base">{project.name}</h3>
-                  <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">{project.location}</p>
+                  <h3 className="line-clamp-1 text-base font-semibold text-white sm:text-lg">
+                    {project.name}
+                  </h3>
+                  <p className="mt-0.5 line-clamp-1 text-[11px] text-white/65">
+                    {project.location}
+                  </p>
                 </div>
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm font-semibold text-foreground">{project.price}</p>
-                  <span className="inline-flex items-center gap-1 text-sm font-medium text-primary">
+                <div className="mt-3 flex items-center justify-between gap-3 pt-1">
+                  <p className="text-sm font-semibold text-[#ffd7b4]">{project.price}</p>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-white/20">
                     View
-                    <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                    <ArrowUpRight className="h-3.5 w-3.5 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                   </span>
                 </div>
               </div>

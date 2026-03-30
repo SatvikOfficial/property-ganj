@@ -1,200 +1,237 @@
-import Link from "next/link"
-import { ArrowRight, HelpCircle, Mail, MessageCircle, Phone, ShieldCheck, Sparkles } from "lucide-react"
+"use client"
 
+import { useState } from "react"
 import Header from "@/components/header"
-import StickyContact from "@/components/ui/stickysocials"
-
-const helpTopics = [
-  {
-    title: "Listing support",
-    copy: "Help with posting a property, editing details, or understanding which listing flow fits your case.",
-  },
-  {
-    title: "Account access",
-    copy: "Support for login, verification, OTP issues, and profile-level troubleshooting.",
-  },
-  {
-    title: "Buying guidance",
-    copy: "Need help comparing projects, validating a shortlist, or connecting with the right team.",
-  },
-]
+import { ChevronDown, Mail, Phone, MessageSquare, HelpCircle, Home, Heart, CreditCard, ShieldCheck } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import Link from "next/link"
 
 const faqs = [
   {
-    question: "How fast does PropertyGanj support reply?",
-    answer: "Most first responses are targeted within one business day. Faster touchpoints usually happen on WhatsApp and call support during working hours.",
+    icon: Home,
+    question: "How can I search for properties?",
+    answer:
+      "Use the search bar on the homepage to enter your preferred location, property type, and budget. You can further refine results using filters like BHK, area, and purpose (buy/rent) on the search results page.",
   },
   {
-    question: "Can I get help before posting or buying?",
-    answer: "Yes. The help desk is not only for troubleshooting. You can reach out for guidance before listing a property, before visiting a project, or before moving to financing.",
+    icon: Phone,
+    question: "How do I contact property owners?",
+    answer:
+      "On any property listing page, click the 'Contact Owner' or 'Request Callback' button. You'll need to be logged in. The owner will receive your inquiry and get in touch with you directly.",
   },
   {
-    question: "Where should I go for home-loan questions?",
-    answer: "If your query is about lender fit, paperwork readiness, or sanction support, the home-loans page is the best start. If you need a person, use the support links here.",
+    icon: Heart,
+    question: "How does the Shortlist (❤️) feature work?",
+    answer:
+      "Click the ❤️ heart icon on any property card to save it to your Liked Properties list. You can view all your saved properties under Profile → Liked Properties. Your shortlist is saved even if you close the browser.",
   },
   {
-    question: "What if I am not sure which category my requirement belongs to?",
-    answer: "Start with WhatsApp or email and describe the outcome you want. The team can route the request without forcing you to figure out the internal category first.",
+    icon: CreditCard,
+    question: "How can I apply for a home loan?",
+    answer:
+      "Visit our Home Loans page from the navigation menu. We have partnerships with 10+ leading banks including SBI, HDFC, and ICICI. Click 'Apply for Loan' or 'Get Expert Assistance' and our team will guide you through the process.",
+  },
+  {
+    icon: ShieldCheck,
+    question: "Are the properties on Property Ganj verified?",
+    answer:
+      "We take listing authenticity seriously. Properties marked with a 'Verified' badge have been reviewed by our team. We recommend using our in-app contact system and never transferring money without a site visit and legal verification.",
+  },
+  {
+    icon: Home,
+    question: "How do I list my property for free?",
+    answer:
+      "Click 'Post Property FREE' in the navigation bar or visit /list-property. Fill in your property details, add photos, and submit. Your listing will be live within 24 hours after a basic review.",
   },
 ]
 
-export default function HelpPage() {
+function FAQItem({ faq, index }: { faq: typeof faqs[0]; index: number }) {
+  const [open, setOpen] = useState(false)
+  const Icon = faq.icon
+
   return (
-    <main className="min-h-screen bg-[linear-gradient(180deg,#fbf8f3_0%,#f8fafc_28%,#fff6ee_100%)]">
+    <div className="border border-border rounded-xl overflow-hidden bg-card transition-all duration-200 hover:shadow-sm">
+      <button
+        className="w-full flex items-center justify-between p-5 text-left gap-4"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+            <Icon className="w-4 h-4 text-primary" />
+          </div>
+          <span className="font-semibold text-foreground text-sm md:text-base">{faq.question}</span>
+        </div>
+        <ChevronDown
+          className={`w-5 h-5 text-muted-foreground flex-shrink-0 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      <div
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${
+          open ? "max-h-64 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <p className="px-5 pb-5 text-muted-foreground text-sm md:text-base leading-relaxed pl-16">
+          {faq.answer}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+export default function HelpPage() {
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" })
+  const [submitted, setSubmitted] = useState(false)
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitted(true)
+    setTimeout(() => setSubmitted(false), 4000)
+    setFormData({ name: "", email: "", message: "" })
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
       <Header />
-      <StickyContact />
 
-      <section className="px-4 pb-8 pt-8 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-7xl overflow-hidden rounded-[34px] border border-[#eddccd] bg-white shadow-[0_24px_80px_rgba(16,35,36,0.08)]">
-          <div className="grid lg:grid-cols-[minmax(0,1.06fr)_minmax(320px,0.94fr)]">
-            <div className="relative overflow-hidden bg-[#102324] px-6 py-8 text-white sm:px-8 sm:py-10">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,211,173,0.2),transparent_28%),radial-gradient(circle_at_80%_16%,rgba(82,168,255,0.2),transparent_22%),linear-gradient(135deg,#102324_0%,#17383f_100%)]" />
-              <div className="relative z-10 max-w-2xl">
-                <span className="inline-flex items-center gap-2 rounded-full border border-white/14 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/82">
-                  <Sparkles className="h-3.5 w-3.5 text-[#ffd2ad]" />
-                  Help & support
-                </span>
-                <h1 className="mt-4 text-4xl font-semibold leading-tight sm:text-5xl">
-                  Real support for the moments where a property journey gets stuck.
-                </h1>
-                <p className="mt-4 max-w-xl text-base leading-7 text-white/70">
-                  Reach PropertyGanj for listings, account access, buying guidance, financing questions, and the decisions that need a human answer.
-                </p>
+      {/* Hero */}
+      <section className="bg-[#264143] text-white py-16 px-4">
+        <div className="max-w-3xl mx-auto text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-6">
+            <HelpCircle className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Help & Support</h1>
+          <p className="text-lg text-gray-200 max-w-xl mx-auto">
+            Find answers to common questions or get in touch with our support team. We&apos;re here to help.
+          </p>
+        </div>
+      </section>
 
-                <div className="mt-8 grid gap-3 sm:grid-cols-3">
-                  {helpTopics.map((topic) => (
-                    <div key={topic.title} className="rounded-[24px] border border-white/10 bg-white/10 px-4 py-4 backdrop-blur">
-                      <h2 className="text-base font-semibold text-white">{topic.title}</h2>
-                      <p className="mt-2 text-sm leading-6 text-white/68">{topic.copy}</p>
-                    </div>
-                  ))}
+      {/* FAQ Section */}
+      <section className="py-16 px-4 max-w-3xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground">Frequently Asked Questions</h2>
+          <div className="w-16 h-1 bg-primary mx-auto mt-3 rounded-full" />
+        </div>
+        <div className="space-y-3">
+          {faqs.map((faq, i) => (
+            <FAQItem key={i} faq={faq} index={i} />
+          ))}
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section className="py-16 px-4 bg-gray-50">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground">Still need help?</h2>
+            <p className="text-muted-foreground mt-2">Reach out to our team and we&apos;ll get back to you within 24 hours.</p>
+            <div className="w-16 h-1 bg-primary mx-auto mt-3 rounded-full" />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 items-start">
+            {/* Contact Info */}
+            <div className="space-y-6">
+              <div className="bg-white rounded-xl p-6 border border-border flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Mail className="w-5 h-5 text-primary" />
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-[linear-gradient(180deg,#fff9f2_0%,#ffffff_100%)] p-6 sm:p-8">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Fast contact paths</p>
-              <div className="mt-5 space-y-4">
-                {[
-                  {
-                    icon: MessageCircle,
-                    title: "WhatsApp support",
-                    copy: "Quick clarifications, listing help, and follow-up assistance.",
-                    href: "https://wa.me/919335909050",
-                    label: "Chat on WhatsApp",
-                  },
-                  {
-                    icon: Phone,
-                    title: "Call support",
-                    copy: "Best when the requirement is urgent or needs a guided explanation.",
-                    href: "tel:+919335909050",
-                    label: "+91 93359 09050",
-                  },
-                  {
-                    icon: Mail,
-                    title: "Email us",
-                    copy: "Use email for detailed requirements, screenshots, or documentation queries.",
-                    href: "mailto:propertyganj@outlook.com",
-                    label: "propertyganj@outlook.com",
-                  },
-                ].map(({ icon: Icon, title, copy, href, label }) => (
-                  <a
-                    key={title}
-                    href={href}
-                    target={href.startsWith("http") ? "_blank" : undefined}
-                    rel={href.startsWith("http") ? "noreferrer" : undefined}
-                    className="group block rounded-[26px] border border-[#f1dfcf] bg-white p-5 shadow-[0_10px_28px_rgba(16,35,36,0.04)] transition duration-300 hover:-translate-y-0.5 hover:border-primary/35"
-                  >
-                    <div className="flex items-start gap-4">
-                      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                        <Icon className="h-5 w-5" />
-                      </span>
-                      <div>
-                        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-                        <p className="mt-2 text-sm leading-6 text-muted-foreground">{copy}</p>
-                        <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-primary">
-                          {label}
-                          <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                        </span>
-                      </div>
-                    </div>
+                <div>
+                  <p className="font-semibold text-foreground">Email Support</p>
+                  <a href="mailto:support@propertyganj.com" className="text-primary hover:underline text-sm">
+                    support@propertyganj.com
                   </a>
-                ))}
+                  <p className="text-xs text-muted-foreground mt-1">Response within 24 hours</p>
+                </div>
               </div>
+
+              <div className="bg-white rounded-xl p-6 border border-border flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Phone className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Phone Support</p>
+                  <a href="tel:+919876543210" className="text-primary hover:underline text-sm">
+                    +91 98765 43210
+                  </a>
+                  <p className="text-xs text-muted-foreground mt-1">Mon – Sat, 10AM – 7PM</p>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl p-6 border border-border flex items-start gap-4">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <MessageSquare className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-foreground">Home Loan Queries</p>
+                  <Link href="/home-loans" className="text-primary hover:underline text-sm">
+                    Visit our Home Loans page →
+                  </Link>
+                  <p className="text-xs text-muted-foreground mt-1">Expert loan assistance available</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contact Form */}
+            <div className="bg-white rounded-xl p-6 border border-border shadow-sm">
+              <h3 className="font-bold text-lg text-foreground mb-5 flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-primary" />
+                Send a Message
+              </h3>
+              {submitted ? (
+                <div className="text-center py-8">
+                  <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ShieldCheck className="w-7 h-7 text-green-600" />
+                  </div>
+                  <p className="font-semibold text-foreground">Message sent!</p>
+                  <p className="text-sm text-muted-foreground mt-1">We&apos;ll get back to you within 24 hours.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Your Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData((p) => ({ ...p, name: e.target.value }))}
+                      placeholder="Enter your name"
+                      className="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      value={formData.email}
+                      onChange={(e) => setFormData((p) => ({ ...p, email: e.target.value }))}
+                      placeholder="you@example.com"
+                      className="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-foreground mb-1">Your Message</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={formData.message}
+                      onChange={(e) => setFormData((p) => ({ ...p, message: e.target.value }))}
+                      placeholder="Describe your issue or question..."
+                      className="w-full border border-border rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition resize-none"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white font-semibold py-2.5">
+                    Send Message
+                  </Button>
+                </form>
+              )}
             </div>
           </div>
         </div>
       </section>
-
-      <section className="px-4 pb-10 sm:px-6 lg:px-8">
-        <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(320px,1.05fr)]">
-          <div className="rounded-[30px] border border-[#eddccd] bg-white p-6 shadow-[0_16px_48px_rgba(16,35,36,0.06)] sm:p-8">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Frequently asked</p>
-            <h2 className="mt-2 text-3xl font-semibold text-foreground">Questions buyers and listers ask us most</h2>
-            <div className="mt-6 space-y-4">
-              {faqs.map((faq) => (
-                <div key={faq.question} className="rounded-[24px] border border-[#f1dfcf] bg-[#fffaf4] p-5">
-                  <h3 className="text-lg font-semibold text-foreground">{faq.question}</h3>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{faq.answer}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-6">
-            <div className="rounded-[30px] border border-[#eddccd] bg-[linear-gradient(135deg,#102324_0%,#17383f_100%)] p-6 text-white sm:p-8">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-white/12 text-[#ffd7b4]">
-                  <HelpCircle className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#f6c7a3]">Need a person</p>
-                  <h2 className="text-2xl font-semibold">Start with the outcome you want.</h2>
-                </div>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-white/70">
-                You do not need the perfect support category. Tell us whether you are trying to buy, rent, list, verify, or finance and we will guide the next step.
-              </p>
-              <Link
-                href="/home-loans"
-                className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition duration-300 hover:-translate-y-0.5 hover:bg-primary/90"
-              >
-                Visit home loans
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </div>
-
-            <div className="rounded-[30px] border border-[#eddccd] bg-white p-6 shadow-[0_16px_48px_rgba(16,35,36,0.06)] sm:p-8">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
-                  <ShieldCheck className="h-5 w-5" />
-                </span>
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">Trust layer</p>
-                  <h2 className="text-2xl font-semibold text-foreground">Support built for real estate friction, not generic tickets.</h2>
-                </div>
-              </div>
-              <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                PropertyGanj support is tuned for listing edits, project discovery, account verification, and finance coordination, so the conversation stays practical.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Link
-                  href="/blog"
-                  className="inline-flex items-center justify-center rounded-full border border-[#eadcca] bg-[#fffaf4] px-4 py-2.5 text-sm font-semibold text-foreground transition duration-300 hover:border-primary/35 hover:text-primary"
-                >
-                  Read the journal
-                </Link>
-                <Link
-                  href="/search?q=Lucknow"
-                  className="inline-flex items-center justify-center rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition duration-300 hover:-translate-y-0.5 hover:bg-primary/90"
-                >
-                  Browse properties
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    </main>
+    </div>
   )
 }

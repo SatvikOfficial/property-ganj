@@ -8,6 +8,7 @@ const StickyContact = () => {
   const waRef = useRef<HTMLButtonElement>(null);
   const phoneRef = useRef<HTMLButtonElement>(null);
   const mailRef = useRef<HTMLButtonElement>(null);
+  const chatwayRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let timeout: NodeJS.Timeout;
@@ -35,6 +36,7 @@ const StickyContact = () => {
         stylizedSpin(waRef.current, '#25D366');
         setTimeout(() => stylizedSpin(phoneRef.current!, '#6739B7'), 300);
         setTimeout(() => stylizedSpin(mailRef.current!, '#EA4335'), 600);
+        setTimeout(() => stylizedSpin(chatwayRef.current!, '#F69D01'), 900);
       }
       timeout = setTimeout(loop, 10000);
     }
@@ -44,16 +46,16 @@ const StickyContact = () => {
 
   return (
     <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-2 items-end animate-slide-up md:bottom-[90px] md:right-6 md:gap-3">
-      {/* Custom icon row above chatway */}
+      {/* Social Icons Group - matches top 3 icons in user image */}
       <div className="flex flex-col gap-2 mb-1 items-end md:gap-3 md:mb-2">
         {/* WhatsApp Icon */}
-        <div className="rounded-full shadow-xl transition-all duration-200 group w-10 h-10 md:w-14 md:h-14" style={{ background: 'linear-gradient(135deg,#ffd166,#ef476f)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="rounded-full shadow-xl transition-all duration-200 group w-10 h-10 md:w-14 md:h-14" style={{ background: 'linear-gradient(135deg, #ffaf5d, #ff6a88)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <button
             ref={waRef}
             aria-label="WhatsApp"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', transition: 'transform 0.18s, box-shadow 0.18s' }}
             onClick={() => window.open("https://wa.me/919335909050", "_blank")}
-            className="group hover:scale-110 hover:shadow-2xl focus:outline-none w-10 h-10 md:w-14 md:h-14"
+            className="group hover:scale-110 focus:outline-none w-10 h-10 md:w-14 md:h-14"
             onMouseEnter={e => e.currentTarget.style.background = '#25D366'}
             onMouseLeave={e => e.currentTarget.style.background = ''}
           >
@@ -63,13 +65,13 @@ const StickyContact = () => {
           </button>
         </div>
         {/* Phone Icon */}
-        <div className="rounded-full shadow-xl transition-all duration-200 group w-10 h-10 md:w-14 md:h-14" style={{ background: 'linear-gradient(135deg,#ffd166,#ef476f)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="rounded-full shadow-xl transition-all duration-200 group w-10 h-10 md:w-14 md:h-14" style={{ background: 'linear-gradient(135deg, #ffaf5d, #ff6a88)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <button
             ref={phoneRef}
             aria-label="Call"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', transition: 'transform 0.18s, box-shadow 0.18s' }}
             onClick={() => window.open("tel:+919335909050")}
-            className="group hover:scale-110 hover:shadow-2xl focus:outline-none w-10 h-10 md:w-14 md:h-14"
+            className="group hover:scale-110 focus:outline-none w-10 h-10 md:w-14 md:h-14"
             onMouseEnter={e => e.currentTarget.style.background = '#6739B7'}
             onMouseLeave={e => e.currentTarget.style.background = ''}
           >
@@ -79,13 +81,13 @@ const StickyContact = () => {
           </button>
         </div>
         {/* Mail Icon */}
-        <div className="rounded-full shadow-xl transition-all duration-200 group w-10 h-10 md:w-14 md:h-14" style={{ background: 'linear-gradient(135deg,#ffd166,#ef476f)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="rounded-full shadow-xl transition-all duration-200 group w-10 h-10 md:w-14 md:h-14" style={{ background: 'linear-gradient(135deg, #ffaf5d, #ff6a88)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <button
             ref={mailRef}
             aria-label="Mail"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', transition: 'transform 0.18s, box-shadow 0.18s' }}
             onClick={() => window.open("mailto:propertyganj@outlook.com")}
-            className="group hover:scale-110 hover:shadow-2xl focus:outline-none w-10 h-10 md:w-14 md:h-14"
+            className="group hover:scale-110 focus:outline-none w-10 h-10 md:w-14 md:h-14"
             onMouseEnter={e => e.currentTarget.style.background = '#EA4335'}
             onMouseLeave={e => e.currentTarget.style.background = ''}
           >

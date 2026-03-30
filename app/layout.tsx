@@ -38,13 +38,11 @@ export default function RootLayout({
           </ThemeProvider>
         </StyledComponentsRegistry>
         <Analytics />
-        {process.env.NODE_ENV === 'production' ? (
-          <Script
-            id="chatway"
-            src="https://cdn.chatway.app/widget.js?id=9BKWx7BtTYy3"
-            strategy="lazyOnload"
-          />
-        ) : null}
+        <Script
+          id="chatway"
+          src="https://cdn.chatway.app/widget.js?id=9BKWx7BtTYy3"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   )

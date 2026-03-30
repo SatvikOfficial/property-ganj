@@ -257,7 +257,7 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
   }
 
   const renderPropertyDropdown = () => (
-    <div className="absolute top-full md:top-12 left-0 w-full md:w-[320px] rounded-2xl border border-border bg-white shadow-xl p-4 z-[9999] mt-2 md:mt-0 max-h-[80vh] overflow-y-auto">
+    <div className="absolute top-full md:top-12 left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 w-[calc(100vw-2rem)] sm:w-[320px] rounded-2xl border border-border bg-white shadow-xl p-4 z-[9999] mt-2 md:mt-0 max-h-[80vh] overflow-y-auto custom-scrollbar">
       {propertyTypeGroups.map((group) => (
         <div key={group.title} className="mb-4">
           <div className="flex items-center justify-between mb-2">
@@ -305,18 +305,22 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
 
   const renderBudgetDropdown = () => {
     const { min, max } = getBudgetRanges(normalizedFilter)
+    
+    // Validation: Max should be greater than Min if both are selected
+    const isInvalid = selectedMinBudget !== null && selectedMaxBudget !== null && selectedMaxBudget < selectedMinBudget
+
     return (
-      <div className="absolute top-full md:top-12 left-0 w-full md:w-[360px] rounded-2xl border border-border bg-white shadow-xl p-4 z-[9999] mt-2 md:mt-0 max-h-[80vh] overflow-y-auto">
+      <div className="absolute top-full md:top-12 left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 w-[calc(100vw-2rem)] sm:w-[360px] rounded-2xl border border-border bg-white shadow-xl p-4 z-[9999] mt-2 md:mt-0 max-h-[80vh] overflow-y-auto">
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Min Price</p>
-            <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+            <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
               {min.map((value) => (
                 <button
                   key={`min-${value}`}
                   type="button"
                   onClick={() => setSelectedMinBudget(value)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${
+                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
                     selectedMinBudget === value
                       ? "border-[#eb6239] bg-[#fff1eb] text-[#eb6239]"
                       : "border-border text-foreground hover:border-[#eb6239]"
@@ -329,13 +333,13 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
           </div>
           <div>
             <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Max Price</p>
-            <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+            <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
               {max.map((value) => (
                 <button
                   key={`max-${value}`}
                   type="button"
                   onClick={() => setSelectedMaxBudget(value)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm ${
+                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
                     selectedMaxBudget === value
                       ? "border-[#264143] bg-[#264143] text-white"
                       : "border-border text-foreground hover:border-[#264143]"
@@ -347,21 +351,31 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
             </div>
           </div>
         </div>
-        <div className="flex justify-between items-center mt-4">
+
+        {isInvalid && (
+          <div className="mt-4 p-2 bg-red-50 border border-red-100 rounded-lg">
+            <p className="text-[11px] text-red-600 font-medium text-center">
+              Max budget should be greater than Min budget
+            </p>
+          </div>
+        )}
+
+        <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
           <button
             type="button"
             onClick={() => {
               setSelectedMinBudget(null)
               setSelectedMaxBudget(null)
             }}
-            className="text-sm font-semibold text-muted-foreground"
+            className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
           >
-            Clear
+            Clear All
           </button>
           <Button
             type="button"
+            disabled={isInvalid}
             onClick={() => setShowBudgetDropdown(false)}
-            className="bg-[#eb6239] hover:bg-[#d6522f]"
+            className={`bg-[#eb6239] hover:bg-[#d6522f] text-white px-6 transition-all ${isInvalid ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
           >
             Apply
           </Button>
