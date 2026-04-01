@@ -26,7 +26,11 @@ const Card: React.FC<FeaturedStackCardProps> = ({ project }) => {
       <div className="card">
         {/* Image */}
         <div className="image-section">
-          <LikeButton propertyId={project.id.toString()} initialLiked={project.isLiked || false} />
+          <LikeButton
+            propertyId={project.id.toString()}
+            initialLiked={project.isLiked || false}
+            className="absolute right-3 top-3 z-20"
+          />
           <img
             src={project.image || "/placeholder.svg"}
             alt={project.name}
@@ -63,6 +67,8 @@ const StyledWrapper = styled.div`
     overflow: hidden;
     border-radius: 16px;
     padding: 8px;
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+    box-shadow: 0 24px 48px -34px rgba(7, 24, 46, 0.7);
   }
 
   @media (min-width: 768px) {
@@ -120,6 +126,11 @@ const StyledWrapper = styled.div`
     animation: rotBGimg 3.5s linear infinite;
   }
 
+  .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 30px 60px -32px rgba(7, 24, 46, 0.55);
+  }
+
   .image-section {
     position: relative;
     width: 100%;
@@ -128,6 +139,14 @@ const StyledWrapper = styled.div`
     margin-bottom: 6px;
     z-index: 1;
     height: 130px;
+  }
+
+  .image-section img {
+    transition: transform 0.55s ease;
+  }
+
+  .card:hover .image-section img {
+    transform: scale(1.05);
   }
 
   @media (min-width: 768px) {

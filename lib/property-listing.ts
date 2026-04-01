@@ -6,6 +6,11 @@ import {
   isPropertyGanjAddressLine2,
   makePropertyGanjAddressLine2,
 } from '@/lib/property-ganj';
+import { getCityByName } from '@/data/cityConfig';
+import {
+  resolvePropertyFloorplanBucket,
+  resolvePropertyPhotoBucket,
+} from '@/lib/property-media';
 
 export type OwnerType = 'owner' | 'agent' | 'builder';
 export type ListingPurpose = 'sale' | 'rent';
@@ -86,6 +91,13 @@ export type ListingContactInput = {
   email?: string;
 };
 
+export type BuilderListingInput = {
+  projectName?: string;
+  unitLabel?: string;
+  tower?: string;
+  floorLabel?: string;
+};
+
 export type ListingSubmissionInput = {
   title: string;
   description?: string;
@@ -108,6 +120,7 @@ export type ListingSubmissionInput = {
     floorplans?: UploadedListingFloorplan[];
   };
   contact?: ListingContactInput;
+  builder?: BuilderListingInput;
   status?: 'draft' | 'published' | 'under_offer' | 'sold' | 'rented';
   listedByPropertyGanj?: boolean;
   subdivision?: PropertyGanjSubdivision;
@@ -133,6 +146,7 @@ export type ListingMetadata = {
     videoUrl?: string;
   };
   contact?: ListingContactInput;
+  builder?: BuilderListingInput;
   marketing?: {
     listedByPropertyGanj?: boolean;
     subdivision?: PropertyGanjSubdivision;
@@ -311,6 +325,41 @@ const normalizeNumber = (value?: number | null) =>
 
 const normalizeBoolean = (value?: boolean | null) =>
   typeof value === 'boolean' ? value : undefined;
+
+function inferPropertyCity(property: Pick<DbPropertyRecord, 'city' | 'formatted_address' | 'address_line1' | 'locality'>) {
+  const explicitCity = normalizeText(property.city);
+  if (explicitCity) return explicitCity;
+
+  const normalizedLocality = normalizeComparable(property.locality);
+  const addressCandidates = [property.formatted_address, property.address_line1];
+
+  for (const candidate of addressCandidates) {
+    const segments = (candidate || '')
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    for (let index = segments.length - 1; index >= 0; index -= 1) {
+      const segment = segments[index];
+      if (getCityByName(segment)) {
+        return segment;
+      }
+    }
+
+    for (let index = segments.length - 1; index >= 0; index -= 1) {
+      const segment = segments[index];
+      const normalizedSegment = normalizeComparable(segment);
+
+      if (!normalizedSegment || normalizedSegment === normalizedLocality) continue;
+      if (normalizedSegment === 'india') continue;
+      if (/^\d{6}$/.test(segment)) continue;
+
+      return segment;
+    }
+  }
+
+  return undefined;
+}
 
 const normalizeInterestRecord = (record: PropertyInterestRecord) => ({
   userId: record.userId,
@@ -527,6 +576,12 @@ export function buildPropertyMutationFromListing(input: ListingSubmissionInput) 
       phone: normalizeText(input.contact?.phone),
       email: normalizeText(input.contact?.email),
     },
+    builder: {
+      projectName: normalizeText(input.builder?.projectName) || existingMetadata?.builder?.projectName,
+      unitLabel: normalizeText(input.builder?.unitLabel) || existingMetadata?.builder?.unitLabel,
+      tower: normalizeText(input.builder?.tower) || existingMetadata?.builder?.tower,
+      floorLabel: normalizeText(input.builder?.floorLabel) || existingMetadata?.builder?.floorLabel,
+    },
     marketing: {
       listedByPropertyGanj: Boolean(input.listedByPropertyGanj),
       subdivision: input.listedByPropertyGanj
@@ -585,7 +640,9 @@ export function buildPropertyMutationFromListing(input: ListingSubmissionInput) 
   };
 
   const propertyImages = photos.map((photo, index) => ({
-    bucket: photo.bucket || (photo.path && !photo.path.startsWith('http') ? 'property-media' : 'external'),
+    bucket:
+      photo.bucket ||
+      (photo.path && !photo.path.startsWith('http') ? resolvePropertyPhotoBucket() : 'external'),
     path: photo.path || photo.url || '',
     sort_order: photo.sortOrder ?? index,
     is_primary: Boolean(photo.isPrimary ?? index === 0),
@@ -597,7 +654,8 @@ export function buildPropertyMutationFromListing(input: ListingSubmissionInput) 
 
   const propertyFloorplans = floorplans.map((floorplan, index) => ({
     bucket:
-      floorplan.bucket || (floorplan.path && !floorplan.path.startsWith('http') ? 'property-media' : 'external'),
+      floorplan.bucket ||
+      (floorplan.path && !floorplan.path.startsWith('http') ? resolvePropertyFloorplanBucket() : 'external'),
     path: floorplan.path || floorplan.url || '',
     label: floorplan.label || `Floor plan ${index + 1}`,
     sort_order: floorplan.sortOrder ?? index,
@@ -663,6 +721,7 @@ export function mapDbPropertyForDetail(
   const purpose: ListingPurpose = property.for_rent ? 'rent' : 'sale';
   const price = property.for_rent ? property.rent : property.price;
   const listingId = makePropertyReference(property.id, property.pg_id);
+  const inferredCity = inferPropertyCity(property);
   const subdivisionMeta = metadata.marketing?.subdivision
     ? getPropertyGanjSubdivisionMeta(metadata.marketing.subdivision)
     : null;
@@ -682,7 +741,7 @@ export function mapDbPropertyForDetail(
     listedByRole: ownerRole,
     propertyGanjSubdivision: subdivisionMeta?.label,
     location: {
-      city: property.city || undefined,
+      city: inferredCity,
       locality: property.locality || undefined,
       area: metadata.location?.area,
       sector: metadata.location?.sector,

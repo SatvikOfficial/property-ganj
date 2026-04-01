@@ -9,6 +9,7 @@ const profileUpdateSchema = z.object({
   email: z.union([z.string().trim().email(), z.null()]).optional(),
   phone: z.string().trim().min(6).max(20).optional(),
   agent_id: z.string().trim().min(3).max(40).optional(),
+  avatar_url: z.union([z.string().trim().url(), z.null()]).optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field is required',
 });
@@ -41,7 +42,7 @@ export async function PATCH(request: Request) {
       .from('profiles')
       .update(updatePayload)
       .eq('user_id', user.id)
-      .select('user_id, full_name, email, phone, role, agent_id')
+      .select('user_id, full_name, email, phone, role, agent_id, avatar_url')
       .single();
 
     if (error) {

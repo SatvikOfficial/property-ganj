@@ -1,13 +1,19 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { ChevronDown, X, Heart, Share2 } from "lucide-react"
+import { ChevronDown, X, Share2 } from "lucide-react"
 import Link from "next/link"
 import Header from "@/components/header"
 import LikeButton from "@/components/LikeButton"
 import LucknowLocationAutocomplete, { ResolvedLucknowLocation } from "@/components/location/LucknowLocationAutocomplete"
 import { createClient } from "@/utils/supabase/client"
+import { useCity } from "@/components/CityContext"
+import {
+  buildGeoapifyStaticMapUrl,
+  buildGoogleMapsEmbedUrl,
+  buildGoogleMapsSearchUrl,
+} from "@/lib/geoapify"
 
 const propertyTypeOptions = ["Apartment", "Independent House/Villa", "Plot/Land", "Office", "Retail"]
 const bhkOptions = ["1 BHK", "2 BHK", "3 BHK", "4 BHK", "5+ BHK"]
@@ -58,11 +64,19 @@ const formatCurrency = (value?: number) => {
   }).format(value)
 }
 
+const formatBudgetSummary = (min?: number, max?: number) => {
+  if (min !== undefined && max !== undefined) return `${formatCurrency(min)} - ${formatCurrency(max)}`
+  if (min !== undefined) return `${formatCurrency(min)}+`
+  if (max !== undefined) return `Up to ${formatCurrency(max)}`
+  return "Open budget"
+}
+
 function SearchFiltersContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const { cityConfig } = useCity()
 
-  const initialLocation = searchParams.get("q") || "Lucknow"
+  const initialLocation = searchParams.get("q") || ""
   const [filters, setFilters] = useState<SearchFiltersState>(() => ({
     purpose: searchParams.get("purpose") === "rent" ? "rent" : "sale",
     location: initialLocation,
@@ -92,6 +106,52 @@ function SearchFiltersContent() {
   const [showSortModal, setShowSortModal] = useState(false)
   const [tempBudgetMin, setTempBudgetMin] = useState(filters.budgetMin ? `${filters.budgetMin}` : "")
   const [tempBudgetMax, setTempBudgetMax] = useState(filters.budgetMax ? `${filters.budgetMax}` : "")
+  const selectedLocationLabel = filters.location || locationQuery || filters.locality || cityConfig.name
+  const hasPreciseLocationFocus = filters.lat !== undefined && filters.lng !== undefined
+  const selectedLocationMapUrl = buildGeoapifyStaticMapUrl({
+    latitude: filters.lat,
+    longitude: filters.lng,
+    apiKey: process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY,
+    width: 900,
+    height: 520,
+    zoom: filters.lat !== undefined && filters.lng !== undefined ? 14 : 11,
+  })
+  const selectedLocationEmbedUrl = buildGoogleMapsEmbedUrl(selectedLocationLabel)
+  const selectedLocationSearchUrl = buildGoogleMapsSearchUrl(selectedLocationLabel)
+  const budgetSummary = formatBudgetSummary(filters.budgetMin, filters.budgetMax)
+  const propertyTypeSummary = filters.propertyTypes.length ? filters.propertyTypes.join(", ") : "Any property type"
+  const bhkSummary = filters.bhk.length ? filters.bhk.join(", ") : "Any configuration"
+  const ownerSummary = filters.ownerType === "all" ? "Owner, builder, and agent" : filters.ownerType
+  const tagSummary = filters.tags.length ? filters.tags.join(", ") : "No lifestyle filters applied"
+  const sortSummary = sortOptions.find((option) => option.value === filters.sortBy)?.label || "Newest First"
+
+  const filterRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setShowBudgetModal(false)
+        setShowPropertyTypeModal(false)
+        setShowBhkModal(false)
+        setShowPostedByModal(false)
+        setShowTagsModal(false)
+        setShowSortModal(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const toggleModal = (setter: React.Dispatch<React.SetStateAction<boolean>>, currentState: boolean) => {
+    setShowBudgetModal(false)
+    setShowPropertyTypeModal(false)
+    setShowBhkModal(false)
+    setShowPostedByModal(false)
+    setShowTagsModal(false)
+    setShowSortModal(false)
+    if (!currentState) setter(true)
+  }
+
   const handleLocationFilterChange = (value: string) => {
     setLocationQuery(value)
     const trimmed = value.trim()
@@ -119,7 +179,7 @@ function SearchFiltersContent() {
     const params = new URLSearchParams()
     params.set("purpose", state.purpose as string)
     if (state.location) params.set("q", state.location)
-    params.set("city", "Lucknow")
+    params.set("city", cityConfig.name)
     if (state.locality) params.set("locality", state.locality)
     if (state.propertyTypes.length) params.set("propertyType", state.propertyTypes.join(","))
     if (state.budgetMin) params.set("minPrice", String(state.budgetMin))
@@ -208,6 +268,26 @@ function SearchFiltersContent() {
     setShowBudgetModal(false)
   }
 
+  const clearAllFilters = () => {
+    setLocationQuery("")
+    setTempBudgetMin("")
+    setTempBudgetMax("")
+    setFilters((prev) => ({
+      purpose: prev.purpose,
+      location: "",
+      locality: undefined,
+      propertyTypes: [],
+      budgetMin: undefined,
+      budgetMax: undefined,
+      bhk: [],
+      ownerType: "all",
+      tags: [],
+      sortBy: "newest",
+      lat: undefined,
+      lng: undefined,
+    }))
+  }
+
   const togglePropertyType = (type: string) => {
     setFilters((prev) => ({
       ...prev,
@@ -242,7 +322,7 @@ function SearchFiltersContent() {
 
   return (
     <>
-      <div className="bg-card px-4 py-3 md:py-4 sticky top-[73px] z-40 shadow-sm">
+      <div className="bg-card px-4 py-3 md:py-4 sticky top-[73px] z-40 shadow-sm" ref={filterRef}>
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-wrap gap-2 items-center">
             <button
@@ -263,21 +343,15 @@ function SearchFiltersContent() {
               />
             </div>
 
-            <div className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm">
-              {filters.location}
-            </div>
-
-            <Link href="/search?q=Lucknow" className="text-primary text-sm font-semibold hover:opacity-80 active:opacity-60 touch-manipulation">
-              Add More
-            </Link>
-
-            <Link href="/search?q=Lucknow" className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 active:bg-muted/60 flex items-center gap-1 touch-manipulation">
-              Top Localities <ChevronDown className="w-4 h-4" />
-            </Link>
+            {filters.location && (
+              <div className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm max-w-[220px] truncate">
+                {filters.location}
+              </div>
+            )}
 
             <div className="relative">
               <button
-                onClick={() => setShowBudgetModal(!showBudgetModal)}
+                onClick={() => toggleModal(setShowBudgetModal, showBudgetModal)}
                 className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-2"
               >
                 {filters.budgetMin ? formatCurrency(filters.budgetMin) : "Min Budget"} -{" "}
@@ -337,7 +411,7 @@ function SearchFiltersContent() {
 
             <div className="relative">
               <button
-                onClick={() => setShowPropertyTypeModal(!showPropertyTypeModal)}
+                onClick={() => toggleModal(setShowPropertyTypeModal, showPropertyTypeModal)}
                 className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1"
               >
                 Property Type <ChevronDown className="w-4 h-4" />
@@ -365,7 +439,7 @@ function SearchFiltersContent() {
 
             <div className="relative">
               <button
-                onClick={() => setShowBhkModal(!showBhkModal)}
+                onClick={() => toggleModal(setShowBhkModal, showBhkModal)}
                 className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1"
               >
                 BHK <ChevronDown className="w-4 h-4" />
@@ -393,7 +467,7 @@ function SearchFiltersContent() {
 
             <div className="relative">
               <button
-                onClick={() => setShowPostedByModal(!showPostedByModal)}
+                onClick={() => toggleModal(setShowPostedByModal, showPostedByModal)}
                 className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1 capitalize"
               >
                 {filters.ownerType === "all" ? "Posted By" : `Posted: ${filters.ownerType}`}
@@ -422,7 +496,7 @@ function SearchFiltersContent() {
 
             <div className="relative">
               <button
-                onClick={() => setShowTagsModal(!showTagsModal)}
+                onClick={() => toggleModal(setShowTagsModal, showTagsModal)}
                 className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1"
               >
                 Tags {filters.tags.length > 0 && `(${filters.tags.length})`} <ChevronDown className="w-4 h-4" />
@@ -452,7 +526,7 @@ function SearchFiltersContent() {
 
             <div className="relative">
               <button
-                onClick={() => setShowSortModal(!showSortModal)}
+                onClick={() => toggleModal(setShowSortModal, showSortModal)}
                 className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1"
               >
                 Sort: {sortOptions.find((s) => s.value === filters.sortBy)?.label || "Newest First"} <ChevronDown className="w-4 h-4" />
@@ -477,22 +551,6 @@ function SearchFiltersContent() {
                 </div>
               )}
             </div>
-
-            <button 
-              onClick={() => {
-                // Scroll to show all filters or open a modal
-                const filtersSection = document.querySelector('[data-filters-section]');
-                if (filtersSection) {
-                  filtersSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-              }}
-              className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 active:bg-muted/60 flex items-center gap-2 touch-manipulation"
-            >
-              <span className="bg-secondary text-secondary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
-                1
-              </span>
-              More Filters <ChevronDown className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>
@@ -545,14 +603,15 @@ function SearchFiltersContent() {
                 const location = [property.location?.locality, property.location?.city].filter(Boolean).join(", ")
                 const image = property.media?.photos?.[0]?.url || "/placeholder.svg"
                 const isLiked = likedProperties.includes(property._id)
+                const distanceLabel = typeof property.distanceKm === "number" ? `${property.distanceKm} km away` : null
 
                 return (
                   <div
                     key={property._id}
-                    className="bg-card rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden border border-border"
+                    className="group overflow-hidden rounded-[24px] border border-[#eadcca] bg-white/95 shadow-[0_18px_36px_-28px_rgba(31,42,46,0.38)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_56px_-26px_rgba(31,42,46,0.26)]"
                   >
-                    <div className="flex flex-col md:flex-row gap-4 p-4">
-                      <div className="relative w-full md:w-48 h-48 bg-muted rounded-lg overflow-hidden flex-shrink-0">
+                    <div className="flex flex-col gap-4 p-4 md:flex-row md:gap-5">
+                      <div className="relative h-52 w-full overflow-hidden rounded-[18px] bg-muted md:h-[170px] md:w-[220px] md:flex-shrink-0">
                         <img
                           src={image}
                           alt={property.title}
@@ -561,23 +620,41 @@ function SearchFiltersContent() {
                         <div className="absolute top-2 left-2 bg-foreground/80 text-background px-2 py-1 rounded text-xs font-semibold backdrop-blur-sm">
                           {property.media?.photos?.length || 0} Photos
                         </div>
-                        <div className="absolute top-2 right-2 flex gap-1">
+                        <div className="absolute top-3 right-3 flex items-center gap-2">
                           <LikeButton propertyId={property._id} initialLiked={isLiked} />
-                          <button className="bg-background/80 rounded-full p-2 hover:bg-muted backdrop-blur-sm">
+                          <button className="inline-flex items-center justify-center rounded-full border border-white/60 bg-white/86 p-2 shadow-[0_16px_34px_-24px_rgba(31,42,46,0.42)] backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-white">
                             <Share2 className="w-4 h-4 text-muted-foreground" />
                           </button>
                         </div>
                       </div>
 
-                      <div className="flex-1">
-                        <div className="mb-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="mb-4">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-[#fff3ed] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#eb6239]">
+                              {property.purpose === "rent" ? "For rent" : "For sale"}
+                            </span>
+                            <span className="rounded-full border border-[#eadcca] bg-[#fffaf5] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#1f2a2e]">
+                              {property.propertyType}
+                            </span>
+                            {distanceLabel && (
+                              <span className="rounded-full border border-[#d9e4de] bg-[#f1f8f4] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.16em] text-[#2f6f4f]">
+                                {distanceLabel}
+                              </span>
+                            )}
+                          </div>
                           <Link href={`/property/${property._id}`}>
-                            <h3 className="font-bold text-foreground hover:text-primary mb-1">{property.title}</h3>
+                            <h3 className="mt-3 text-xl font-black tracking-tight text-foreground transition-colors duration-300 group-hover:text-primary">
+                              {property.title}
+                            </h3>
                           </Link>
-                          <p className="text-sm text-muted-foreground">{location}</p>
+                          <p className="mt-2 text-sm text-muted-foreground">{location}</p>
+                          <p className="mt-2 line-clamp-2 text-sm leading-6 text-[#667085]">
+                            {property.description?.slice(0, 180) || "Owner has not provided additional description yet."}
+                          </p>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-2 mb-3 bg-muted p-3 rounded-md">
+                        <div className="grid gap-3 rounded-[18px] bg-[#faf6f1] p-3 md:grid-cols-4">
                           <div className="text-xs">
                             <span className="text-muted-foreground block">CONFIGURATION</span>
                             <span className="font-semibold text-foreground">{bedrooms}</span>
@@ -589,6 +666,12 @@ function SearchFiltersContent() {
                             </span>
                           </div>
                           <div className="text-xs">
+                            <span className="text-muted-foreground block">RATE</span>
+                            <span className="font-semibold text-foreground">
+                              {sqftPrice || "On request"}
+                            </span>
+                          </div>
+                          <div className="text-xs">
                             <span className="text-muted-foreground block">STATUS</span>
                             <span className="font-semibold text-foreground">
                               {property.purpose === "rent" ? "For Rent" : "For Sale"}
@@ -596,11 +679,7 @@ function SearchFiltersContent() {
                           </div>
                         </div>
 
-                        <p className="text-sm text-muted-foreground mb-3">
-                          {property.description?.slice(0, 120) || "Owner has not provided additional description."}
-                        </p>
-
-                        <div className="flex items-center gap-3 mb-3">
+                        <div className="mt-4 flex items-center gap-3">
                           <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center font-bold text-secondary">
                             {(property.listedBy || "P").charAt(0)}
                           </div>
@@ -615,23 +694,26 @@ function SearchFiltersContent() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end justify-between md:w-40 flex-shrink-0">
+                      <div className="flex flex-col justify-between md:w-[170px] md:flex-shrink-0">
                         <div>
-                          <p className="text-2xl font-bold text-foreground text-right">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9ca3af] md:text-right">
+                            {property.purpose === "rent" ? "Monthly rent" : "Quoted price"}
+                          </p>
+                          <p className="mt-2 text-2xl font-black text-foreground md:text-right">
                             {formatCurrency(property.price)}
                           </p>
-                          {sqftPrice && <p className="text-sm text-muted-foreground text-right">{sqftPrice}</p>}
+                          {sqftPrice && <p className="text-sm text-muted-foreground md:text-right">{sqftPrice}</p>}
                         </div>
-                        <div className="space-y-2 w-full mt-4 md:mt-0">
+                        <div className="mt-4 space-y-2 w-full md:mt-6">
                           <Link 
                             href={`/property/${property._id}`}
-                            className="block w-full bg-primary text-primary-foreground py-2 font-semibold hover:bg-primary/90 active:bg-primary/80 rounded text-sm text-center touch-manipulation"
+                            className="block w-full rounded-full bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground touch-manipulation hover:bg-primary/90 active:bg-primary/80"
                           >
                             View Details
                           </Link>
                           <Link 
                             href={`/property/${property._id}`}
-                            className="block w-full border-2 border-primary text-primary py-2 font-semibold hover:bg-primary/10 active:bg-primary/20 rounded text-sm text-center touch-manipulation"
+                            className="block w-full rounded-full border-2 border-primary py-2.5 text-center text-sm font-semibold text-primary touch-manipulation hover:bg-primary/10 active:bg-primary/20"
                           >
                             Request Callback
                           </Link>
@@ -645,34 +727,110 @@ function SearchFiltersContent() {
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-accent/40 rounded-lg p-6 mb-6 text-center border border-accent">
-              <p className="text-accent-foreground font-bold mb-2">
-                Share your story and WIN vouchers worth ₹5000
-              </p>
-              <Link 
-                href="/about" 
-                className="inline-block bg-primary text-primary-foreground px-6 py-2 rounded-full font-bold hover:bg-primary/90 active:bg-primary/80 touch-manipulation"
-              >
-                Click Here
-              </Link>
-            </div>
+            <div className="space-y-6 lg:sticky lg:top-24">
+              {selectedLocationLabel && (
+                <div className="overflow-hidden rounded-[24px] border border-[#eadcca] bg-white shadow-[0_18px_42px_-30px_rgba(31,42,46,0.3)]">
+                  <div className="border-b border-[#eadcca] px-5 py-4">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Search focus</p>
+                    <h3 className="mt-2 text-lg font-black tracking-tight text-[#1f2a2e]">{selectedLocationLabel}</h3>
+                    <p className="mt-1 text-sm text-[#667085]">
+                      {hasPreciseLocationFocus
+                        ? "Listings are being surfaced around this point first, so nearby options show up before the rest of the city."
+                        : "Pick a locality suggestion to turn this into a proper map-led search instead of a broad city browse."}
+                    </p>
+                  </div>
+                  <div className="bg-[#f8f4ef]">
+                    {selectedLocationMapUrl ? (
+                      <img
+                        src={selectedLocationMapUrl}
+                        alt={`Map for ${selectedLocationLabel}`}
+                        className="h-[220px] w-full object-cover"
+                        loading="lazy"
+                      />
+                    ) : selectedLocationEmbedUrl ? (
+                      <iframe
+                        src={selectedLocationEmbedUrl}
+                        title={`Map for ${selectedLocationLabel}`}
+                        className="h-[220px] w-full"
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    ) : null}
+                  </div>
+                  {selectedLocationSearchUrl && (
+                    <div className="px-5 py-4">
+                      <a
+                        href={selectedLocationSearchUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:underline"
+                      >
+                        Open area in Google Maps
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
 
-            <div className="bg-card rounded-lg shadow-sm overflow-hidden border border-border">
-              <img src="/featured-property.jpg" alt="Featured Project" className="w-full h-48 object-cover" />
-              <div className="p-4">
-                <h3 className="font-bold text-foreground mb-1">Sahu City Phase 2</h3>
-                <p className="text-sm text-muted-foreground mb-3">Sahu Land Developers Pvt Ltd</p>
-                <p className="text-xs text-muted-foreground mb-3">Sultanpur Road, Lucknow</p>
-                <p className="text-sm text-foreground mb-2">
-                  <span className="font-bold">2, 3 BHK Flats</span>
+              <div className="overflow-hidden rounded-[24px] border border-[#eadcca] bg-white shadow-[0_18px_42px_-30px_rgba(31,42,46,0.24)]">
+                <div className="border-b border-[#eadcca] px-5 py-4">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Search snapshot</p>
+                  <h3 className="mt-2 text-lg font-black tracking-tight text-[#1f2a2e]">What this shortlist is optimized for</h3>
+                </div>
+                <div className="grid gap-3 px-5 py-5">
+                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Budget</p>
+                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{budgetSummary}</p>
+                  </div>
+                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Property type</p>
+                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{propertyTypeSummary}</p>
+                  </div>
+                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Configuration</p>
+                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{bhkSummary}</p>
+                  </div>
+                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Listed by</p>
+                    <p className="mt-1 text-sm font-semibold capitalize text-[#1f2a2e]">{ownerSummary}</p>
+                  </div>
+                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Tags</p>
+                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{tagSummary}</p>
+                  </div>
+                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Sort</p>
+                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{sortSummary}</p>
+                  </div>
+                </div>
+                <div className="border-t border-[#eadcca] px-5 py-4">
+                  <button
+                    type="button"
+                    onClick={clearAllFilters}
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:underline"
+                  >
+                    Reset search filters
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-dashed border-[#d9c6ae] bg-[#fffaf4] px-5 py-5">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Shortlisting tip</p>
+                <h3 className="mt-2 text-lg font-black tracking-tight text-[#1f2a2e]">Compare the right signals</h3>
+                <p className="mt-2 text-sm leading-6 text-[#667085]">
+                  Prioritize carpet area, furnishing, possession status, and the distance badge when you are browsing locality-led results.
                 </p>
-                <p className="text-primary font-bold mb-4">₹57.9 Lac onwards</p>
-                <Link 
-                  href="/property/1" 
-                  className="block w-full bg-secondary text-secondary-foreground py-2 font-semibold hover:bg-secondary/90 active:bg-secondary/80 rounded text-center touch-manipulation"
-                >
-                  View Details
-                </Link>
+                <p className="mt-3 text-sm leading-6 text-[#667085]">
+                  The closer cards are to your selected map focus, the more useful the comparison becomes for actual site visits.
+                </p>
+                <div className="mt-4">
+                  <Link
+                    href="/about"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:underline"
+                  >
+                    Learn how Property Ganj verifies listings
+                  </Link>
+                </div>
               </div>
             </div>
           </div>

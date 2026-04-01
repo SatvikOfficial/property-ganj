@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ChevronDown, ChevronRight, LogOut, Menu, User, X } from "lucide-react"
+import { ChevronDown, ChevronRight, LogOut, Menu, X } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
+import CitySelector from "@/components/CitySelector"
 import { createClient } from "@/utils/supabase/client"
 
 type UserInfo = {
@@ -14,6 +15,7 @@ type UserInfo = {
   email: string
   role?: string
   id?: string
+  avatarUrl?: string | null
 }
 
 type NavSection = {
@@ -138,12 +140,13 @@ export default function Header() {
 
   useEffect(() => {
     const fetchProfileData = async (userId: string, authUser: any) => {
-      const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", userId).single()
+      const { data: profile } = await supabase.from("profiles").select("role, avatar_url").eq("user_id", userId).single()
       setUser({
         name: authUser.user_metadata?.full_name || authUser.email || "User",
         email: authUser.email || "",
         id: userId,
         role: profile?.role,
+        avatarUrl: profile?.avatar_url || null,
       })
     }
 
@@ -177,6 +180,24 @@ export default function Header() {
     router.refresh()
   }
 
+  const dashboardHref =
+    user?.role === "admin"
+      ? "/admin"
+      : user?.role === "agent"
+        ? "/agent"
+        : user?.role === "builder"
+          ? "/builder"
+          : null
+
+  const dashboardLabel =
+    user?.role === "admin"
+      ? "Admin Dashboard"
+      : user?.role === "agent"
+        ? "Agent Dashboard"
+        : user?.role === "builder"
+          ? "Builder Dashboard"
+          : null
+
   return (
     <header className="sticky top-0 z-[9999] border-b border-border/70 bg-gray-100/90 text-foreground backdrop-blur-sm">
       <div className="w-full">
@@ -187,14 +208,21 @@ export default function Header() {
           </Link>
 
           <div className="hidden items-center gap-3 md:flex">
-            <button className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
-              Lucknow
-              <ChevronDown className="h-4 w-4" />
-            </button>
+            <CitySelector />
             {user ? (
               <div className="group relative">
                 <button className="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-medium text-foreground transition duration-300 hover:border-primary/30 hover:text-primary">
-                  <User className="h-4 w-4" />
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt={user.name}
+                      className="h-7 w-7 rounded-full object-cover border border-border"
+                    />
+                  ) : (
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
+                      {(user.name || "U").charAt(0).toUpperCase()}
+                    </span>
+                  )}
                   {user.name}
                   <ChevronDown className="h-4 w-4" />
                 </button>
@@ -209,14 +237,9 @@ export default function Header() {
                     <Link href="/profile/my-ads" className="block rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-accent">
                       My Ads
                     </Link>
-                    {user.role === "agent" ? (
-                      <Link href="/agent" className="block rounded-xl px-4 py-3 text-sm font-medium text-primary transition hover:bg-accent">
-                        Agent Dashboard
-                      </Link>
-                    ) : null}
-                    {user.role === "admin" ? (
-                      <Link href="/admin" className="block rounded-xl px-4 py-3 text-sm font-medium text-primary transition hover:bg-accent">
-                        Admin Dashboard
+                    {dashboardHref && dashboardLabel ? (
+                      <Link href={dashboardHref} className="block rounded-xl px-4 py-3 text-sm font-medium text-primary transition hover:bg-accent">
+                        {dashboardLabel}
                       </Link>
                     ) : null}
                     <button
@@ -280,8 +303,8 @@ export default function Header() {
                   </div>
 
                   {hasSections ? (
-                    <div className="pointer-events-none absolute left-0 top-full hidden w-[min(760px,82vw)] pt-3 group-hover:block">
-                      <div className="pointer-events-auto rounded-[28px] border border-border bg-white p-5 shadow-[0_22px_60px_rgba(15,23,42,0.12)]">
+                    <div className="invisible opacity-0 absolute left-0 top-full w-[min(760px,82vw)] pt-1 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                      <div className="rounded-[28px] border border-border bg-white p-5 shadow-[0_22px_60px_rgba(15,23,42,0.12)]">
                         <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
                           <div className="rounded-[24px] bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] p-4">
                             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">PropertyGanj</p>
@@ -429,6 +452,18 @@ export default function Header() {
                 >
                   My Ads
                 </Link>
+                {dashboardHref && dashboardLabel ? (
+                  <Link
+                    href={dashboardHref}
+                    onClick={() => {
+                      setIsMenuOpen(false)
+                      setExpandedGroup(null)
+                    }}
+                    className="block rounded-2xl bg-accent px-4 py-3 text-sm font-medium text-primary"
+                  >
+                    {dashboardLabel}
+                  </Link>
+                ) : null}
                 <button
                   type="button"
                   onClick={handleLogout}

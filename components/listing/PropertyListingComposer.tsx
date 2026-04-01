@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import {
   AMENITY_OPTIONS,
   AREA_UNIT_OPTIONS,
+  type BuilderListingInput,
   OWNER_TYPE_OPTIONS,
   PHOTO_CATEGORIES,
   PROPERTY_TYPE_OPTIONS,
@@ -63,6 +64,10 @@ type ListingComposerProps = {
   defaultSubdivision?: PropertyGanjSubdivision;
   onSuccess?: (property: any) => void;
   submitLabel?: string;
+  defaultOwnerType?: OwnerType;
+  lockOwnerType?: boolean;
+  showBuilderFields?: boolean;
+  builderDefaults?: BuilderListingInput;
 };
 
 type FormState = {
@@ -119,6 +124,12 @@ type FormState = {
     phone: string;
     email: string;
   };
+  builder: {
+    projectName: string;
+    unitLabel: string;
+    tower: string;
+    floorLabel: string;
+  };
   highlights: string[];
   amenities: string[];
   tags: string[];
@@ -164,14 +175,15 @@ function dbTypeToFormType(value?: string | null) {
 
 function buildInitialState(
   user: UserProfile | null,
-  mode: 'public' | 'admin',
   defaultSubdivision: PropertyGanjSubdivision,
+  defaultOwnerType: OwnerType,
+  builderDefaults?: BuilderListingInput,
   initialProperty?: DbPropertyRecord | null,
 ): { form: FormState; photos: Record<PhotoCategory, UploadedListingMedia[]>; floorplans: UploadedListingFloorplan[] } {
   if (!initialProperty) {
     return {
       form: {
-        ownerType: mode === 'admin' ? 'builder' : 'owner',
+        ownerType: defaultOwnerType,
         purpose: 'sale',
         propertyType: 'Apartment',
         title: '',
@@ -224,6 +236,12 @@ function buildInitialState(
           phone: user?.phone || '',
           email: user?.email || '',
         },
+        builder: {
+          projectName: builderDefaults?.projectName || '',
+          unitLabel: builderDefaults?.unitLabel || '',
+          tower: builderDefaults?.tower || '',
+          floorLabel: builderDefaults?.floorLabel || '',
+        },
         highlights: [''],
         amenities: [],
         tags: [],
@@ -262,7 +280,7 @@ function buildInitialState(
 
   return {
     form: {
-      ownerType: metadata.ownerType || (mode === 'admin' ? 'builder' : 'owner'),
+      ownerType: metadata.ownerType || defaultOwnerType,
       purpose: initialProperty.for_rent ? 'rent' : 'sale',
       propertyType: dbTypeToFormType(initialProperty.property_type),
       title: initialProperty.title,
@@ -314,6 +332,12 @@ function buildInitialState(
         name: metadata.contact?.name || user?.name || '',
         phone: metadata.contact?.phone || user?.phone || '',
         email: metadata.contact?.email || user?.email || '',
+      },
+      builder: {
+        projectName: metadata.builder?.projectName || builderDefaults?.projectName || '',
+        unitLabel: metadata.builder?.unitLabel || builderDefaults?.unitLabel || '',
+        tower: metadata.builder?.tower || builderDefaults?.tower || '',
+        floorLabel: metadata.builder?.floorLabel || builderDefaults?.floorLabel || '',
       },
       highlights: metadata.features?.highlights?.length ? metadata.features.highlights : [''],
       amenities: metadata.features?.amenities || [],
@@ -407,13 +431,17 @@ export default function PropertyListingComposer({
   defaultSubdivision = PROPERTY_GANJ_DEFAULT_SUBDIVISION,
   onSuccess,
   submitLabel,
+  defaultOwnerType = mode === 'admin' ? 'builder' : 'owner',
+  lockOwnerType = false,
+  showBuilderFields = false,
+  builderDefaults,
 }: ListingComposerProps) {
   const router = useRouter();
   const { toast } = useToast();
 
   const initialState = useMemo(
-    () => buildInitialState(user, mode, defaultSubdivision, initialProperty),
-    [defaultSubdivision, initialProperty, mode, user],
+    () => buildInitialState(user, defaultSubdivision, defaultOwnerType, builderDefaults, initialProperty),
+    [builderDefaults, defaultOwnerType, defaultSubdivision, initialProperty, user],
   );
 
   const [form, setForm] = useState<FormState>(initialState.form);
@@ -431,6 +459,8 @@ export default function PropertyListingComposer({
   }, [initialState]);
 
   const isLand = form.propertyType === 'Plot/Land';
+  const isBuilderWorkspace = defaultOwnerType === 'builder' && lockOwnerType;
+  const shouldShowBuilderFields = showBuilderFields || form.ownerType === 'builder';
   const totalPhotoCount = useMemo(
     () => Object.values(photos).reduce((sum, items) => sum + items.length, 0),
     [photos],
@@ -443,6 +473,16 @@ export default function PropertyListingComposer({
 
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const setBuilderField = <K extends keyof FormState['builder']>(
+    name: K,
+    value: FormState['builder'][K],
+  ) => {
+    setForm((prev) => ({
+      ...prev,
+      builder: { ...prev.builder, [name]: value },
+    }));
   };
 
   const setLocationField = <K extends keyof FormState['location']>(
@@ -516,7 +556,7 @@ export default function PropertyListingComposer({
         pincode: resolved.pincode || prev.location.pincode,
         latitude: resolved.latitude ? resolved.latitude.toFixed(6) : prev.location.latitude,
         longitude: resolved.longitude ? resolved.longitude.toFixed(6) : prev.location.longitude,
-        placeId: prev.location.placeId,
+        placeId: resolved.placeId || prev.location.placeId,
         geoSource: 'geoapify',
       },
     }));
@@ -606,7 +646,7 @@ export default function PropertyListingComposer({
   };
 
   const resetForm = () => {
-    const resetState = buildInitialState(user, mode, defaultSubdivision, null);
+    const resetState = buildInitialState(user, defaultSubdivision, defaultOwnerType, builderDefaults, null);
     setForm(resetState.form);
     setPhotos(resetState.photos);
     setFloorplans(resetState.floorplans);
@@ -708,6 +748,14 @@ export default function PropertyListingComposer({
           phone: form.contact.phone.trim() || undefined,
           email: form.contact.email.trim() || undefined,
         },
+        builder: shouldShowBuilderFields
+          ? {
+              projectName: form.builder.projectName.trim() || undefined,
+              unitLabel: form.builder.unitLabel.trim() || undefined,
+              tower: form.builder.tower.trim() || undefined,
+              floorLabel: form.builder.floorLabel.trim() || undefined,
+            }
+          : undefined,
         highlights: form.highlights.map((highlight) => highlight.trim()).filter(Boolean),
         amenities: form.amenities,
         tags: form.tags,
@@ -739,11 +787,20 @@ export default function PropertyListingComposer({
         status: 'published',
       };
 
-      const endpoint = mode === 'admin' ? '/api/admin/properties' : '/api/properties';
-      const method = mode === 'admin' && initialProperty ? 'PATCH' : 'POST';
+      const isEditing = Boolean(initialProperty?.id);
+      const endpoint = mode === 'admin'
+        ? '/api/admin/properties'
+        : isEditing
+          ? `/api/properties/${initialProperty?.id}`
+          : '/api/properties';
+      const method = mode === 'admin'
+        ? isEditing ? 'PATCH' : 'POST'
+        : isEditing
+          ? 'PATCH'
+          : 'POST';
       const body =
         method === 'PATCH'
-          ? JSON.stringify({ propertyId: initialProperty?.id, payload })
+          ? JSON.stringify(mode === 'admin' ? { propertyId: initialProperty?.id, payload } : { payload })
           : JSON.stringify(payload);
 
       const response = await fetch(endpoint, {
@@ -758,20 +815,20 @@ export default function PropertyListingComposer({
       }
 
       toast({
-        title: mode === 'admin' ? 'Listing saved' : 'Listing published',
+        title: initialProperty ? 'Listing updated' : mode === 'admin' ? 'Listing saved' : 'Listing published',
         description:
           mode === 'admin'
             ? 'Property Ganj inventory has been updated.'
-            : 'Your listing is live and ready to receive interest requests.',
+            : initialProperty
+              ? 'Your changes are now live on the listing page.'
+              : 'Your listing is live and ready to receive interest requests.',
       });
 
-      if (mode === 'admin') {
+      if (onSuccess) {
         onSuccess?.(data?.property);
       } else if (data?.property?.id) {
         router.push(`/property/${data.property.id}`);
         router.refresh();
-      } else {
-        onSuccess?.(data?.property);
       }
     } catch (error) {
       toast({
@@ -790,15 +847,25 @@ export default function PropertyListingComposer({
         <div className="grid gap-6 md:grid-cols-[1.25fr,0.75fr] md:items-end">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.34em] text-[#9ca3af]">
-              {mode === 'admin' ? 'Property Ganj inventory' : 'Property owner intake'}
+              {mode === 'admin'
+                ? 'Property Ganj inventory'
+                : isBuilderWorkspace
+                  ? 'Builder inventory composer'
+                  : 'Property owner intake'}
             </p>
             <h1 className="mt-3 text-3xl font-black tracking-tight text-[#1f2a2e] md:text-4xl">
-              {mode === 'admin' ? 'Create a full listing page, not just a tile' : 'Publish a listing buyers can actually evaluate'}
+              {mode === 'admin'
+                ? 'Create a full listing page, not just a tile'
+                : isBuilderWorkspace
+                  ? 'Launch and manage builder inventory with project-ready unit data'
+                  : 'Publish a listing buyers can actually evaluate'}
             </h1>
             <p className="mt-3 max-w-3xl text-sm leading-7 text-[#667085]">
               {mode === 'admin'
                 ? 'This composer saves the full property story: location detail, specs, pricing terms, media, and internal seller contact. Public pages stay buyer-friendly while Property Ganj keeps the direct seller information private.'
-                : 'Add enough information for a buyer to understand the property without ever needing to call the owner directly. Property Ganj handles the callback and lead routing.'}
+                : isBuilderWorkspace
+                  ? 'Create units under named projects, keep inventory structured by tower and floor, and publish detail pages that are ready for callbacks, routing, and sales operations.'
+                  : 'Add enough information for a buyer to understand the property without ever needing to call the owner directly. Property Ganj handles the callback and lead routing.'}
             </p>
           </div>
           <div className="rounded-[28px] border border-[#eadcca] bg-white/90 p-4">
@@ -840,24 +907,36 @@ export default function PropertyListingComposer({
         title="Listing Identity"
         description="Capture who is listing the property, what kind of inventory it is, and the headline buyers will see first."
       >
-        <div className="grid gap-3 md:grid-cols-3">
-          {OWNER_TYPE_OPTIONS.map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => setField('ownerType', option.id)}
-              className={cn(
-                'rounded-[24px] border px-4 py-4 text-left transition',
-                form.ownerType === option.id
-                  ? 'border-[#eb6239] bg-[#fff3ed] shadow-[0_14px_38px_-28px_rgba(235,98,57,0.7)]'
-                  : 'border-[#eadcca] bg-white/85',
-              )}
-            >
-              <p className="font-semibold text-[#1f2a2e]">{option.label}</p>
-              <p className="mt-1 text-xs leading-5 text-[#667085]">{option.description}</p>
-            </button>
-          ))}
-        </div>
+        {lockOwnerType ? (
+          <div className="rounded-[24px] border border-[#eadcca] bg-white/85 px-5 py-4">
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#9ca3af]">Listing owner type</p>
+            <p className="mt-2 text-lg font-black text-[#1f2a2e]">
+              {OWNER_TYPE_OPTIONS.find((option) => option.id === defaultOwnerType)?.label || 'Builder'}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-[#667085]">
+              This dashboard is locked to builder inventory so units stay grouped under your projects and reports.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-3">
+            {OWNER_TYPE_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setField('ownerType', option.id)}
+                className={cn(
+                  'rounded-[24px] border px-4 py-4 text-left transition',
+                  form.ownerType === option.id
+                    ? 'border-[#eb6239] bg-[#fff3ed] shadow-[0_14px_38px_-28px_rgba(235,98,57,0.7)]'
+                    : 'border-[#eadcca] bg-white/85',
+                )}
+              >
+                <p className="font-semibold text-[#1f2a2e]">{option.label}</p>
+                <p className="mt-1 text-xs leading-5 text-[#667085]">{option.description}</p>
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="grid gap-3 md:grid-cols-2">
           {PURPOSE_OPTIONS.map((option) => (
@@ -927,6 +1006,51 @@ export default function PropertyListingComposer({
           </div>
         </div>
 
+        {shouldShowBuilderFields ? (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Project name</label>
+              <input
+                type="text"
+                value={form.builder.projectName}
+                onChange={(event) => setBuilderField('projectName', event.target.value)}
+                className="w-full rounded-[20px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                placeholder="E.g. Skyline Residency"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Unit label</label>
+              <input
+                type="text"
+                value={form.builder.unitLabel}
+                onChange={(event) => setBuilderField('unitLabel', event.target.value)}
+                className="w-full rounded-[20px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                placeholder="E.g. A-1203"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Tower / block</label>
+              <input
+                type="text"
+                value={form.builder.tower}
+                onChange={(event) => setBuilderField('tower', event.target.value)}
+                className="w-full rounded-[20px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                placeholder="Tower A"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Floor label</label>
+              <input
+                type="text"
+                value={form.builder.floorLabel}
+                onChange={(event) => setBuilderField('floorLabel', event.target.value)}
+                className="w-full rounded-[20px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                placeholder="12th Floor"
+              />
+            </div>
+          </div>
+        ) : null}
+
         <div>
           <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Description</label>
           <textarea
@@ -962,6 +1086,9 @@ export default function PropertyListingComposer({
               onChange={(value) => {
                 setLocationQuery(value);
                 setLocationField('locality', value);
+                setLocationField('latitude', '');
+                setLocationField('longitude', '');
+                setLocationField('placeId', '');
                 setLocationField('geoSource', 'manual');
               }}
               onSelect={handleLocationSelect}
@@ -1408,7 +1535,9 @@ export default function PropertyListingComposer({
           <Sparkles className="h-4 w-4 text-[#eb6239]" />
           {mode === 'admin'
             ? 'Curated Property Ganj listings get the same data depth as public submissions.'
-            : 'The published page hides the seller contact and routes the buyer back through Property Ganj.'}
+            : isBuilderWorkspace
+              ? 'Builder listings keep project and unit metadata structured while the public page still routes buyer callbacks through Property Ganj.'
+              : 'The published page hides the seller contact and routes the buyer back through Property Ganj.'}
         </div>
         <div className="flex gap-3">
           <Button

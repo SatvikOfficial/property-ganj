@@ -2,10 +2,11 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Phone, Mail, User as UserIcon, LogOut, ShieldCheck, Clock, Briefcase, ChevronRight } from 'lucide-react';
+import { Phone, Mail, User as UserIcon, LogOut, ShieldCheck, Clock, Briefcase, ChevronRight, Camera, Loader2, Trash2 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import AgentApplicationModal from '@/components/AgentApplicationModal';
+import { RecentlyViewedProperties } from '@/components/profile/RecentlyViewedProperties';
 
 type ProfileUser = {
   id: string;
@@ -13,6 +14,7 @@ type ProfileUser = {
   email?: string | null;
   phone: string;
   role: string;
+  avatar_url?: string | null;
   created_at?: string;
 };
 
@@ -20,31 +22,64 @@ interface ProfileClientProps {
   user: ProfileUser;
 }
 
+type EditableProfile = {
+  name: string;
+  email: string;
+  phone: string;
+  avatarUrl: string | null;
+};
+
+function buildEditableProfile(user: ProfileUser): EditableProfile {
+  return {
+    name: user.name || '',
+    email: user.email || '',
+    phone: user.phone || '',
+    avatarUrl: user.avatar_url || null,
+  };
+}
+
 export function ProfileClient({ user }: ProfileClientProps) {
   const router = useRouter();
   const { toast } = useToast();
   const supabase = createClient();
-  
-  const [formData, setFormData] = useState({
-    name: user.name || '',
-    email: user.email || '',
-    phone: user.phone || '',
-  });
+
+  const [savedProfile, setSavedProfile] = useState<EditableProfile>(() => buildEditableProfile(user));
+  const [formData, setFormData] = useState<EditableProfile>(() => buildEditableProfile(user));
   const [isSaving, setIsSaving] = useState(false);
   const [isApplying, setIsApplying] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const hasChanges = useMemo(() => {
     return (
-      formData.name.trim() !== (user.name || '') ||
-      (formData.email || '').trim() !== (user.email || '') ||
-      formData.phone.trim() !== (user.phone || '')
+      formData.name.trim() !== savedProfile.name ||
+      formData.email.trim() !== savedProfile.email ||
+      formData.phone.trim() !== savedProfile.phone ||
+      formData.avatarUrl !== savedProfile.avatarUrl
     );
-  }, [formData, user]);
+  }, [formData, savedProfile]);
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
+
+  const dashboardHref =
+    user.role === 'admin'
+      ? '/admin'
+      : user.role === 'agent'
+        ? '/agent'
+        : user.role === 'builder'
+          ? '/builder'
+          : null;
+
+  const dashboardLabel =
+    user.role === 'admin'
+      ? 'Open Admin Dashboard'
+      : user.role === 'agent'
+        ? 'Open Agent Dashboard'
+        : user.role === 'builder'
+          ? 'Open Builder Dashboard'
+          : null;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -66,6 +101,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
           full_name: formData.name.trim(),
           email: formData.email.trim() || null,
           phone: formData.phone.trim(),
+          avatar_url: formData.avatarUrl,
         }),
       });
       const data = await response.json().catch(() => ({}));
@@ -77,6 +113,12 @@ export function ProfileClient({ user }: ProfileClientProps) {
       toast({
         title: 'Profile updated',
         description: 'Your account details were saved successfully.',
+      });
+      setSavedProfile({
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        avatarUrl: formData.avatarUrl,
       });
       router.refresh();
     } catch (error) {
@@ -90,15 +132,103 @@ export function ProfileClient({ user }: ProfileClientProps) {
     }
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.currentTarget.value = '';
+
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Unsupported file',
+        description: 'Please upload an image file for your profile photo.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const uploadBody = new FormData();
+      uploadBody.append('file', file);
+      uploadBody.append('category', 'profile-avatar');
+
+      const uploadResponse = await fetch('/api/uploads/photos', {
+        method: 'POST',
+        body: uploadBody,
+      });
+      const uploadData = await uploadResponse.json().catch(() => ({}));
+
+      if (!uploadResponse.ok) {
+        throw new Error(uploadData?.error || 'Unable to upload photo');
+      }
+
+      const profileResponse = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar_url: uploadData.url }),
+      });
+      const profileData = await profileResponse.json().catch(() => ({}));
+
+      if (!profileResponse.ok) {
+        throw new Error(profileData?.error || 'Unable to save profile photo');
+      }
+
+      setFormData((prev) => ({ ...prev, avatarUrl: uploadData.url }));
+      setSavedProfile((prev) => ({ ...prev, avatarUrl: uploadData.url }));
+      toast({
+        title: 'Profile photo updated',
+        description: 'Your new photo is now attached to your account.',
+      });
+      router.refresh();
+    } catch (error) {
+      toast({
+        title: 'Photo update failed',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = async () => {
+    setIsUploadingAvatar(true);
+    try {
+      const response = await fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar_url: null }),
+      });
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data?.error || 'Unable to remove profile photo');
+      }
+
+      setFormData((prev) => ({ ...prev, avatarUrl: null }));
+      setSavedProfile((prev) => ({ ...prev, avatarUrl: null }));
+      toast({
+        title: 'Profile photo removed',
+        description: 'Your profile now uses the default initial badge.',
+      });
+      router.refresh();
+    } catch (error) {
+      toast({
+        title: 'Remove failed',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
   const [isAgentModalOpen, setIsAgentModalOpen] = useState(false);
 
   useEffect(() => {
-    // Populate form data
-    setFormData({
-      name: user.name || '',
-      email: user.email || '',
-      phone: user.phone || '',
-    });
+    const nextProfile = buildEditableProfile(user);
+    setSavedProfile(nextProfile);
+    setFormData(nextProfile);
   }, [user]);
 
   const handleApplyAgent = async (applicationData: any) => {
@@ -139,6 +269,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
   };
 
   const memberYear = user.created_at ? new Date(user.created_at).getFullYear() : new Date().getFullYear();
+  const avatarInitial = (formData.name || user.email || 'U').charAt(0).toUpperCase();
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -147,10 +278,35 @@ export function ProfileClient({ user }: ProfileClientProps) {
         <div className="bg-card border border-border rounded-3xl p-8 shadow-sm flex flex-col items-center text-center relative overflow-hidden group">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
-          <div className="w-24 h-24 mb-6 rounded-full bg-primary/10 border-4 border-background flex items-center justify-center shadow-lg relative z-10">
-            <span className="text-4xl shadow-sm text-primary font-bold">
-              {(formData.name || 'U').charAt(0).toUpperCase()}
-            </span>
+          <div className="relative z-10 mb-6">
+            <div className="w-24 h-24 rounded-full bg-primary/10 border-4 border-background flex items-center justify-center shadow-lg overflow-hidden">
+              {formData.avatarUrl ? (
+                <img
+                  src={formData.avatarUrl}
+                  alt={formData.name || 'Profile photo'}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="text-4xl shadow-sm text-primary font-bold">
+                  {avatarInitial}
+                </span>
+              )}
+            </div>
+
+            <label
+              htmlFor="profile-avatar-input"
+              className="absolute -bottom-1 -right-1 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-white bg-[#1f2a2e] text-white shadow-lg transition hover:bg-[#2d3c40]"
+            >
+              {isUploadingAvatar ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+            </label>
+            <input
+              id="profile-avatar-input"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+              disabled={isUploadingAvatar}
+            />
           </div>
           
           <h2 className="text-2xl font-bold text-foreground relative z-10">{formData.name || 'User'}</h2>
@@ -169,6 +325,29 @@ export function ProfileClient({ user }: ProfileClientProps) {
               <Clock className="w-5 h-5 text-amber-500" />
               <span className="text-muted-foreground">Member Since: <strong className="text-foreground">{memberYear}</strong></span>
             </div>
+          </div>
+
+          <div className="mt-6 flex w-full flex-col gap-3 relative z-10">
+            {formData.avatarUrl ? (
+              <button
+                type="button"
+                onClick={handleRemoveAvatar}
+                disabled={isUploadingAvatar}
+                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-white/80 px-4 py-3 text-sm font-semibold text-foreground transition hover:border-destructive/30 hover:text-destructive disabled:opacity-50"
+              >
+                <Trash2 className="h-4 w-4" />
+                Remove Photo
+              </button>
+            ) : null}
+            {dashboardHref && dashboardLabel ? (
+              <a
+                href={dashboardHref}
+                className="flex items-center justify-center gap-2 rounded-xl border border-[#eadcca] bg-white px-4 py-3 text-sm font-semibold text-[#1f2a2e] transition hover:border-primary hover:text-primary"
+              >
+                {dashboardLabel}
+                <ChevronRight className="h-4 w-4" />
+              </a>
+            ) : null}
           </div>
 
           <button
@@ -229,6 +408,9 @@ export function ProfileClient({ user }: ProfileClientProps) {
                   required
                 />
               </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Profile photos save instantly. Name, email, and phone save when you click the button below.
+              </p>
             </div>
 
             <div className="space-y-2 group">
@@ -289,6 +471,11 @@ export function ProfileClient({ user }: ProfileClientProps) {
         onSubmit={handleApplyAgent} 
         user={user} 
       />
+
+      {/* Recently Viewed */}
+      <div className="lg:col-span-3">
+        <RecentlyViewedProperties />
+      </div>
     </div>
   );
 }

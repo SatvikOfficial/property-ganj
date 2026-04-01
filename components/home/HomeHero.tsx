@@ -12,7 +12,7 @@ export default function HomeHero() {
   const [activeFilter, setActiveFilter] = useState("Buy")
 
   return (
-    <section id="hero-section" className="relative z-0 bg-background pb-2 pt-3">
+    <section id="hero-section" className="relative z-20 bg-background pb-1 pt-2">
       <div className="w-full">
         <div className="relative border border-slate-200/80 shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:rounded-[32px]">
           {/* Background Wrapper with Overflow Hidden to keep video/overlays clipped */}
@@ -30,11 +30,11 @@ export default function HomeHero() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(255,255,255,0.16),transparent_22%),radial-gradient(circle_at_84%_20%,rgba(235,98,57,0.18),transparent_26%)]" />
           </div>
 
-          <div className="relative z-10 flex min-h-[300px] flex-col justify-center gap-4 px-5 py-5 sm:px-8 sm:py-6 lg:min-h-[332px] lg:px-10 lg:py-6">
-            <div className="flex w-full flex-col gap-6 lg:flex-row lg:items-stretch lg:gap-8 xl:gap-10">
-              <div className="flex min-w-0 flex-1 flex-col justify-center gap-4">
+          <div className="relative z-10 flex min-h-[200px] flex-col justify-center gap-2 px-5 py-3 sm:px-8 sm:py-3 lg:min-h-[228px] lg:px-10 lg:py-3">
+            <div className="flex w-full flex-col gap-5 lg:flex-row lg:items-stretch lg:gap-7 xl:gap-8">
+              <div className="flex min-w-0 flex-1 flex-col justify-center gap-3.5">
                 <div className="max-w-3xl">
-                  <div className="mt-3 max-w-4xl [&_.text-foreground]:!text-white [&_h1]:!mb-0 [&_h1]:!text-white">
+                  <div className="mt-2 max-w-4xl [&_.text-foreground]:!text-white [&_h1]:!mb-0 [&_h1]:!text-white">
                     <DynamicGreeting />
                   </div>
                   <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80 sm:text-base">
@@ -68,7 +68,7 @@ export default function HomeHero() {
                 </div>
               </div>
 
-              <div className="w-full shrink-0 lg:w-[min(100%,340px)] xl:w-[min(100%,380px)]">
+              <div className="w-full shrink-0 lg:w-[min(100%,320px)] xl:w-[min(100%,360px)]">
                 <BuilderShowcase />
               </div>
             </div>

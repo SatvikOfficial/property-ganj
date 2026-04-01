@@ -52,4 +52,3 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ error: 'Failed to fetch properties' }, { status: 500 });
   }
 }
-

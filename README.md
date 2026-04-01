@@ -42,13 +42,15 @@ Create a local `.env` file with the values below:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=property-media
+NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET=property-photos
+NEXT_PUBLIC_SUPABASE_FLOORPLAN_STORAGE_BUCKET=property-floorplans
 ```
 
 Notes:
 
 - `SUPABASE_SERVICE_ROLE_KEY` is required for admin APIs and the registration repair flow.
-- `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET` is optional. It defaults to `property-media`.
+- `NEXT_PUBLIC_SUPABASE_STORAGE_BUCKET` is optional. It defaults to `property-photos`.
+- `NEXT_PUBLIC_SUPABASE_FLOORPLAN_STORAGE_BUCKET` is optional. It defaults to `property-floorplans`.
 
 ## Local Development
 

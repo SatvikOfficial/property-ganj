@@ -69,7 +69,7 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --font-sans: "Manrope", "Segoe UI", sans-serif;
+  --font-sans: "Plus Jakarta Sans", "Segoe UI", sans-serif;
 }
 
 * {
@@ -154,6 +154,56 @@ a {
 
 .animate-glow-pulse {
   animation: glow-pulse 5s ease-in-out infinite;
+}
+
+@keyframes pg-heart-pop {
+  0% {
+    transform: scale(0.72);
+  }
+
+  45% {
+    transform: scale(1.24);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes pg-heart-ring {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.5);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+@keyframes pg-heart-particle {
+  0% {
+    opacity: 0;
+    transform:
+      translate(-50%, -50%)
+      rotate(calc(var(--particle-index) * 60deg))
+      translateY(-2px)
+      scale(0.3);
+  }
+
+  22% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform:
+      translate(-50%, -50%)
+      rotate(calc(var(--particle-index) * 60deg))
+      translateY(-22px)
+      scale(0);
+  }
 }
 
 .premium-surface {

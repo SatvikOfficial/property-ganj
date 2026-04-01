@@ -8,15 +8,19 @@ import {
   type UploadedListingFloorplan,
   type UploadedListingMedia,
 } from '@/lib/property-listing';
+import { hydrateLocationInput } from '@/lib/geoapify';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 
 const querySchema = z.object({
+  ids: z.string().optional(),
   purpose: z.enum(['sale', 'rent']).optional(),
   propertyType: z.string().optional(),
   ownerType: z.string().optional(),
   city: z.string().optional(),
   locality: z.string().optional(),
+  lat: z.coerce.number().optional(),
+  lng: z.coerce.number().optional(),
   minPrice: z.coerce.number().optional(),
   maxPrice: z.coerce.number().optional(),
   bedrooms: z.coerce.number().optional(),
@@ -26,6 +30,7 @@ const querySchema = z.object({
   limit: z.coerce.number().min(1).max(100).optional().default(20),
   page: z.coerce.number().min(1).optional().default(1),
   userId: z.string().uuid().optional(),
+  featured: z.coerce.boolean().optional(),
 });
 
 function toNumber(value: unknown) {
@@ -36,6 +41,35 @@ function toNumber(value: unknown) {
 
 function normalizeTag(value: string) {
   return value.trim().toLowerCase();
+}
+
+function calculateDistanceKm(
+  originLat?: number,
+  originLng?: number,
+  targetLat?: number,
+  targetLng?: number,
+) {
+  if (
+    originLat === undefined ||
+    originLng === undefined ||
+    targetLat === undefined ||
+    targetLng === undefined
+  ) {
+    return undefined;
+  }
+
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const earthRadiusKm = 6371;
+  const deltaLat = toRadians(targetLat - originLat);
+  const deltaLng = toRadians(targetLng - originLng);
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(toRadians(originLat)) *
+      Math.cos(toRadians(targetLat)) *
+      Math.sin(deltaLng / 2) *
+      Math.sin(deltaLng / 2);
+
+  return Number((earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1));
 }
 
 function toMediaAsset(item: any, index: number): UploadedListingMedia {
@@ -140,6 +174,7 @@ function toSubmissionInput(body: any, ownerUserId?: string): ListingSubmissionIn
       phone: body?.contact_phone,
       email: body?.contact_email,
     },
+    builder: body?.builder,
     status: body?.status,
     listedByPropertyGanj: body?.listedByPropertyGanj,
     subdivision: body?.subdivision,
@@ -162,10 +197,13 @@ export async function GET(request: NextRequest) {
   }
 
   const {
+    ids,
     purpose,
     propertyType,
     city,
     locality,
+    lat,
+    lng,
     minPrice,
     maxPrice,
     bedrooms,
@@ -179,7 +217,14 @@ export async function GET(request: NextRequest) {
   } = parsed.data;
 
   const admin = createAdminClient();
-  const requiresMetadataFiltering = Boolean(ownerType || tags);
+  const requestedIds = (ids || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean)
+    .slice(0, 100);
+  const hasDistanceSearch = lat !== undefined && lng !== undefined;
+  const shouldApplyTextLocationFilters = !hasDistanceSearch;
+  const requiresMetadataFiltering = Boolean(ownerType || tags || hasDistanceSearch);
   let query = admin
     .from('properties')
     .select('*, property_images(*), property_floorplans(*)', { count: 'exact' })
@@ -187,6 +232,7 @@ export async function GET(request: NextRequest) {
 
   if (purpose === 'sale') query = query.eq('for_sale', true);
   if (purpose === 'rent') query = query.eq('for_rent', true);
+  if (requestedIds.length > 0) query = query.in('id', requestedIds);
   if (userId) query = query.eq('owner_user_id', userId);
   if (propertyType) {
     const normalizedTypes = propertyType
@@ -201,7 +247,7 @@ export async function GET(request: NextRequest) {
     }
   }
   if (city) query = query.ilike('city', `%${city}%`);
-  if (locality) query = query.ilike('locality', `%${locality}%`);
+  if (locality && shouldApplyTextLocationFilters) query = query.ilike('locality', `%${locality}%`);
   if (minPrice !== undefined) {
     query = purpose === 'rent' ? query.gte('rent', minPrice) : query.gte('price', minPrice);
   }
@@ -209,7 +255,20 @@ export async function GET(request: NextRequest) {
     query = purpose === 'rent' ? query.lte('rent', maxPrice) : query.lte('price', maxPrice);
   }
   if (bedrooms !== undefined && bedrooms > 0) query = query.eq('bedrooms', bedrooms);
-  if (q) query = query.textSearch('search_vector', q);
+  if (q && shouldApplyTextLocationFilters) {
+    // Sanitize for tsquery: split on non-alphanumeric, filter empties, join with &
+    const sanitized = q
+      .replace(/[^\w\s]/g, ' ')
+      .split(/\s+/)
+      .filter(Boolean)
+      .join(' & ');
+    if (sanitized) {
+      query = query.textSearch('search_vector', sanitized);
+    } else {
+      // Fallback to ilike if sanitization yields nothing
+      query = query.or(`title.ilike.%${q}%,locality.ilike.%${q}%,city.ilike.%${q}%`);
+    }
+  }
 
   switch (sortBy) {
     case 'price-low':
@@ -231,8 +290,11 @@ export async function GET(request: NextRequest) {
 
   const from = (page - 1) * limit;
   const to = from + limit - 1;
-  if (!requiresMetadataFiltering) {
+  if (!requiresMetadataFiltering && requestedIds.length === 0) {
     query = query.range(from, to);
+  } else if (requestedIds.length === 0) {
+    const candidateWindowEnd = hasDistanceSearch ? Math.max(to + 120, 239) : Math.max(to + 40, 119);
+    query = query.range(0, candidateWindowEnd);
   }
 
   const { data, count, error } = await query;
@@ -242,6 +304,12 @@ export async function GET(request: NextRequest) {
 
   const mappedProperties = (data || []).map((property) => {
     const mapped = mapDbPropertyForDetail(property as any, null);
+    const distanceKm = calculateDistanceKm(
+      lat,
+      lng,
+      mapped.location.latitude,
+      mapped.location.longitude,
+    );
     return {
       _id: mapped.id,
       id: mapped.id,
@@ -270,6 +338,7 @@ export async function GET(request: NextRequest) {
         latitude: mapped.location.latitude,
         longitude: mapped.location.longitude,
       },
+      distanceKm,
       media: {
         photos: mapped.media.photos,
       },
@@ -305,13 +374,37 @@ export async function GET(request: NextRequest) {
     return ownerMatches && tagsMatch;
   });
 
-  const properties = requiresMetadataFiltering
-    ? filteredProperties.slice(from, to + 1)
+  const postProcessedProperties = hasDistanceSearch
+    ? [...filteredProperties].sort((left, right) => {
+        const leftDistance = left.distanceKm ?? Number.POSITIVE_INFINITY;
+        const rightDistance = right.distanceKm ?? Number.POSITIVE_INFINITY;
+
+        if (sortBy === 'newest') {
+          if (leftDistance !== rightDistance) return leftDistance - rightDistance;
+          return new Date(right.createdAt || 0).getTime() - new Date(left.createdAt || 0).getTime();
+        }
+
+        if (leftDistance !== rightDistance) return leftDistance - rightDistance;
+        return 0;
+      })
     : filteredProperties;
+
+  const properties = requestedIds.length > 0
+    ? requestedIds
+        .map((id) => postProcessedProperties.find((property) => property.id === id))
+        .filter((property): property is (typeof postProcessedProperties)[number] => Boolean(property))
+    : requiresMetadataFiltering
+      ? postProcessedProperties.slice(from, to + 1)
+      : postProcessedProperties;
 
   return NextResponse.json({
     properties,
-    count: requiresMetadataFiltering ? filteredProperties.length : count,
+    count:
+      requestedIds.length > 0
+        ? properties.length
+        : requiresMetadataFiltering
+          ? postProcessedProperties.length
+          : count,
   });
 }
 
@@ -328,6 +421,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const submission = toSubmissionInput(body, user.id);
+    submission.location = await hydrateLocationInput(submission.location);
     if (!submission.title.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }

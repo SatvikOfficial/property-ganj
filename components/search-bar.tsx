@@ -5,6 +5,7 @@ import { ChevronDown, Search, Mic } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import LucknowLocationAutocomplete, { ResolvedLucknowLocation } from "@/components/location/LucknowLocationAutocomplete"
 import { useRouter } from "next/navigation"
+import { useCity } from "@/components/CityContext"
 
 type PropertyTypeItem = {
   label: string
@@ -117,11 +118,12 @@ const getBudgetDisplayText = (minValue: number | null, maxValue: number | null, 
   return "Budget"
 }
 
-export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = "Buy" }: SearchBarProps) {
+export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: SearchBarProps) {
   const router = useRouter()
+  const { cityConfig } = useCity()
   const normalizedFilter = normalizeFilter(activeFilter)
 
-  const [location, setLocation] = useState(defaultLocation)
+  const [location, setLocation] = useState(defaultLocation || "")
   const [resolvedLocation, setResolvedLocation] = useState<ResolvedLucknowLocation | null>(null)
   const [isListening, setIsListening] = useState(false)
   const [selectedPropertyTypes, setSelectedPropertyTypes] = useState<string[]>([])
@@ -202,13 +204,13 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
 
   const handleSearch = () => {
     const params = new URLSearchParams()
-    const trimmedLocation = location.trim() || "Lucknow"
+    const trimmedLocation = location.trim() || cityConfig.name
     params.set("q", trimmedLocation)
 
     if (resolvedLocation?.locality) {
       params.set("locality", resolvedLocation.locality)
     }
-    params.set("city", "Lucknow")
+    params.set("city", cityConfig.name)
     if (resolvedLocation?.latitude && resolvedLocation?.longitude) {
       params.set("lat", resolvedLocation.latitude.toString())
       params.set("lng", resolvedLocation.longitude.toString())
@@ -387,7 +389,7 @@ export default function SearchBar({ defaultLocation = "Lucknow", activeFilter = 
   return (
     <div className="max-w-3xl w-full search-bar-container">
       <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-stretch md:items-center bg-background rounded-md md:rounded-full border-2 border-black shadow-sm md:hover:shadow-md transition-shadow p-0.5 md:p-1.5 active:shadow-md md:active:shadow-md">
-        <div className="flex items-center gap-0.5 md:gap-2 px-1 md:px-3 flex-1 min-w-0 overflow-hidden">
+        <div className="flex items-center gap-0.5 md:gap-2 px-1 md:px-3 flex-1 min-w-0 relative">
           <LucknowLocationAutocomplete
             value={location}
             onChange={handleLocationInputChange}

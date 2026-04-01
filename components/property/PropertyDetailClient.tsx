@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -23,9 +23,12 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  X,
+  Maximize2,
 } from 'lucide-react';
 
 import LikeButton from '@/components/LikeButton';
+import { addRecentlyViewed, recordPropertyActivity } from '@/lib/recently-viewed';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -36,6 +39,13 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import {
+  buildGeoapifyStaticMapUrl,
+  buildGoogleMapsEmbedUrl,
+  buildGoogleMapsSearchUrl,
+  buildLocationQuery,
+  geocodeLocation,
+} from '@/lib/geoapify';
 
 type PropertyMediaItem = {
   id: string;
@@ -173,9 +183,15 @@ export function PropertyDetailClient({
   const { toast } = useToast();
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(1);
   const [isInterestOpen, setIsInterestOpen] = useState(false);
   const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
   const [interestRequested, setInterestRequested] = useState(initialInterest);
+  const [resolvedMapLocation, setResolvedMapLocation] = useState<{
+    latitude?: number;
+    longitude?: number;
+  } | null>(null);
   const [interestForm, setInterestForm] = useState({
     name: viewer.name || '',
     phone: viewer.phone || '',
@@ -198,18 +214,104 @@ export function PropertyDetailClient({
     [property.id, property.media.photos],
   );
 
+  // Track this property view
+  useEffect(() => {
+    if (property.id) addRecentlyViewed(property.id);
+  }, [property.id]);
+
   const activeImage = galleryImages[currentImageIndex] || galleryImages[0];
   const locationLine = [property.location.locality, property.location.area, property.location.city]
     .filter(Boolean)
     .join(', ');
+  const mapSearchQuery = buildLocationQuery([
+    property.location.address,
+    property.location.landmark,
+    property.location.road,
+    property.location.locality,
+    property.location.area,
+    property.location.city,
+    property.location.pincode,
+  ]);
 
   const geoapifyKey = process.env.NEXT_PUBLIC_GEOAPIFY_API_KEY;
-  const mapPreviewUrl =
-    property.location.latitude !== undefined &&
-    property.location.longitude !== undefined &&
-    geoapifyKey
-      ? `https://maps.geoapify.com/v1/staticmap?style=osm-carto&width=1200&height=620&center=lonlat:${property.location.longitude},${property.location.latitude}&zoom=15&marker=lonlat:${property.location.longitude},${property.location.latitude};color:%23eb6239;size:large&apiKey=${geoapifyKey}`
-      : null;
+  const previewLatitude = property.location.latitude ?? resolvedMapLocation?.latitude;
+  const previewLongitude = property.location.longitude ?? resolvedMapLocation?.longitude;
+  const mapPreviewUrl = buildGeoapifyStaticMapUrl({
+    latitude: previewLatitude,
+    longitude: previewLongitude,
+    apiKey: geoapifyKey,
+    width: 1400,
+    height: 760,
+    zoom: 15,
+  });
+  const googleMapsEmbedUrl = buildGoogleMapsEmbedUrl(mapSearchQuery);
+  const googleMapsSearchUrl = buildGoogleMapsSearchUrl(mapSearchQuery);
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    if (
+      property.location.latitude !== undefined &&
+      property.location.longitude !== undefined
+    ) {
+      setResolvedMapLocation(null);
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    if (!geoapifyKey || !mapSearchQuery) {
+      setResolvedMapLocation(null);
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    const resolveMapLocation = async () => {
+      const resolved = await geocodeLocation({
+        city: property.location.city,
+        locality: property.location.locality,
+        area: property.location.area,
+        sector: property.location.sector,
+        block: property.location.block,
+        road: property.location.road,
+        address: property.location.address,
+        pincode: property.location.pincode,
+        landmark: property.location.landmark,
+      }, geoapifyKey);
+
+      if (!isCancelled) {
+        setResolvedMapLocation(
+          resolved?.latitude !== undefined && resolved.longitude !== undefined
+            ? {
+                latitude: resolved.latitude,
+                longitude: resolved.longitude,
+              }
+            : null,
+        );
+      }
+    };
+
+    resolveMapLocation();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [
+    geoapifyKey,
+    mapSearchQuery,
+    property.location.address,
+    property.location.area,
+    property.location.block,
+    property.location.city,
+    property.location.landmark,
+    property.location.latitude,
+    property.location.locality,
+    property.location.longitude,
+    property.location.pincode,
+    property.location.road,
+    property.location.sector,
+  ]);
 
   const displayArea =
     property.specs.carpetArea || property.specs.plotArea || property.specs.builtUpArea || undefined;
@@ -343,6 +445,7 @@ export function PropertyDetailClient({
 
       setInterestRequested(true);
       setIsInterestOpen(false);
+      recordPropertyActivity(property.id, 'interest');
       toast({
         title: 'Interest recorded',
         description: 'Property Ganj has your request and can route it internally.',
@@ -425,62 +528,110 @@ export function PropertyDetailClient({
                 </div>
               </div>
 
-              <div className="relative overflow-hidden rounded-[30px] border border-[#eadcca] bg-[#f7f2ec]">
-                <div className="relative aspect-[4/3] overflow-hidden bg-[#f1ebe4]">
-                  <img
-                    src={activeImage?.url || '/placeholder.svg'}
-                    alt={activeImage?.label || property.title}
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/28 via-transparent to-transparent" />
-                  {activeImage?.label ? (
-                    <div className="absolute bottom-4 left-4 rounded-full bg-black/65 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-                      {activeImage.label}
+              {/* Gallery Grid Layout */}
+              <div className="overflow-hidden rounded-[30px] border border-[#eadcca] bg-[#f7f2ec]">
+                {galleryImages.length >= 3 ? (
+                  <div className="grid grid-cols-4 grid-rows-2 gap-1 aspect-[16/8]">
+                    <div className="col-span-2 row-span-2 relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(0); setIsLightboxOpen(true); }}>
+                      <img src={galleryImages[0]?.url || '/placeholder.svg'} alt={galleryImages[0]?.label || property.title} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
                     </div>
-                  ) : null}
-                  {canMovePrev ? (
-                    <button
-                      type="button"
-                      onClick={() => setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)}
-                      className="absolute left-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
-                    >
-                      <ChevronLeft className="h-5 w-5" />
-                    </button>
-                  ) : null}
-                  {canMoveNext ? (
-                    <button
-                      type="button"
-                      onClick={() => setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length)}
-                      className="absolute right-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
-                    >
-                      <ChevronRight className="h-5 w-5" />
-                    </button>
-                  ) : null}
-                </div>
+                    <div className="relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(1); setIsLightboxOpen(true); }}>
+                      <img src={galleryImages[1]?.url || '/placeholder.svg'} alt={galleryImages[1]?.label || 'Photo 2'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                    </div>
+                    <div className="relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(2); setIsLightboxOpen(true); }}>
+                      <img src={galleryImages[2]?.url || '/placeholder.svg'} alt={galleryImages[2]?.label || 'Photo 3'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                    </div>
+                    {galleryImages.length >= 4 ? (
+                      <div className="relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(3); setIsLightboxOpen(true); }}>
+                        <img src={galleryImages[3]?.url || '/placeholder.svg'} alt={galleryImages[3]?.label || 'Photo 4'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                      </div>
+                    ) : (
+                      <div className="bg-[#f1ebe4]" />
+                    )}
+                    {galleryImages.length >= 5 ? (
+                      <div className="relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(4); setIsLightboxOpen(true); }}>
+                        <img src={galleryImages[4]?.url || '/placeholder.svg'} alt={galleryImages[4]?.label || 'Photo 5'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                        {galleryImages.length > 5 && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                            <span className="text-lg font-bold text-white">+{galleryImages.length - 5} more</span>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="bg-[#f1ebe4]" />
+                    )}
+                  </div>
+                ) : (
+                  <div className="relative aspect-[16/9] overflow-hidden bg-[#f1ebe4]">
+                    <img
+                      src={activeImage?.url || '/placeholder.svg'}
+                      alt={activeImage?.label || property.title}
+                      className="h-full w-full object-cover cursor-pointer"
+                      onClick={() => setIsLightboxOpen(true)}
+                    />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/28 via-transparent to-transparent" />
+                    {canMovePrev ? (
+                      <button
+                        type="button"
+                        onClick={() => setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)}
+                        className="absolute left-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                    ) : null}
+                    {canMoveNext ? (
+                      <button
+                        type="button"
+                        onClick={() => setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length)}
+                        className="absolute right-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    ) : null}
+                  </div>
+                )}
+                {/* Thumbnail strip */}
                 {galleryImages.length > 1 ? (
-                  <div className="flex gap-3 overflow-x-auto px-4 py-4 scrollbar-hide">
+                  <div className="flex gap-2 overflow-x-auto px-3 py-3 scrollbar-hide">
                     {galleryImages.map((image, index) => (
                       <button
                         key={image.id}
                         type="button"
-                        onClick={() => setCurrentImageIndex(index)}
+                        onClick={() => { setCurrentImageIndex(index); setIsLightboxOpen(true); }}
                         className={cn(
-                          'relative h-20 w-24 flex-shrink-0 overflow-hidden rounded-[18px] border transition',
+                          'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-xl border transition',
                           index === currentImageIndex
                             ? 'border-[#eb6239] ring-2 ring-[#f9c7b4]'
-                            : 'border-[#eadcca] opacity-80 hover:opacity-100',
+                            : 'border-[#eadcca] opacity-70 hover:opacity-100',
                         )}
                       >
-                        <img src={image.url} alt={image.label || `Gallery image ${index + 1}`} className="h-full w-full object-cover" />
-                        {image.category ? (
-                          <span className="absolute bottom-1 left-1 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-white">
-                            {image.category}
-                          </span>
-                        ) : null}
+                        <img src={image.url} alt={image.label || `Gallery ${index + 1}`} className="h-full w-full object-cover" />
                       </button>
                     ))}
+                    {property.media.videoUrl ? (
+                      <div className="flex h-16 w-20 flex-shrink-0 items-center justify-center rounded-xl border border-[#eadcca] bg-[#1f2a2e] text-white cursor-pointer hover:bg-[#2d3c40] transition">
+                        <PlayCircle className="h-6 w-6" />
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
+                {/* View all / photo count badge */}
+                <div className="flex items-center justify-between px-4 pb-3">
+                  <div className="flex items-center gap-2 text-xs text-[#667085]">
+                    <ImageIcon className="h-3.5 w-3.5" />
+                    <span>{galleryImages.length} photos</span>
+                    {property.media.videoUrl ? <span>• 1 video</span> : null}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsLightboxOpen(true)}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-[#eadcca] bg-white px-3 py-1.5 text-xs font-semibold text-[#1f2a2e] transition hover:border-[#eb6239] hover:text-[#eb6239]"
+                  >
+                    <Maximize2 className="h-3 w-3" />
+                    View all photos
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -678,30 +829,118 @@ export function PropertyDetailClient({
                   <p className="text-sm text-[#667085]">Enough micro-location detail to decide whether the property deserves a visit.</p>
                 </div>
               </div>
-              {locationFacts.length > 0 ? (
-                <div className="mt-6 grid gap-3 md:grid-cols-2">
-                  {locationFacts.map((fact) => (
-                    <div key={fact.label} className="rounded-[22px] border border-[#eadcca] bg-[#fffaf5] px-4 py-4">
-                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9ca3af]">{fact.label}</p>
-                      <p className="mt-2 text-sm leading-7 text-[#1f2a2e]">{fact.value}</p>
+              <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.12fr),minmax(300px,0.88fr)]">
+                <div className="overflow-hidden rounded-[28px] border border-[#eadcca] bg-[#f6f0ea]">
+                  {mapPreviewUrl ? (
+                    <div className="relative">
+                      <img
+                        src={mapPreviewUrl}
+                        alt={`Map preview for ${property.title}`}
+                        className="h-full w-full object-cover"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(31,42,46,0.02)_0%,rgba(31,42,46,0)_40%,rgba(31,42,46,0.42)_100%)]" />
+                      <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/85 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#1f2a2e] backdrop-blur">
+                        Locality map
+                      </div>
+                      <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-end justify-between gap-3">
+                        <div>
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/70">Pinned around</p>
+                          <p className="mt-1 text-lg font-black text-white">{locationLine || property.location.city || 'Property location'}</p>
+                        </div>
+                        {googleMapsSearchUrl ? (
+                          <a
+                            href={googleMapsSearchUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1f2a2e] shadow-[0_18px_34px_-24px_rgba(31,42,46,0.48)] transition hover:-translate-y-0.5"
+                          >
+                            Open in Google Maps
+                            <ArrowUpRight className="h-4 w-4" />
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
-                  ))}
+                  ) : googleMapsEmbedUrl ? (
+                    <iframe
+                      src={googleMapsEmbedUrl}
+                      title={`Map for ${property.title}`}
+                      className="h-[320px] w-full"
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
+                  ) : (
+                    <div className="flex min-h-[320px] items-center justify-center px-6 text-center text-sm leading-7 text-[#667085]">
+                      The listing has location details, but the live map could not be loaded right now.
+                    </div>
+                  )}
                 </div>
-              ) : null}
-              {mapPreviewUrl ? (
-                <div className="mt-6 overflow-hidden rounded-[26px] border border-[#eadcca] bg-[#f6f0ea]">
-                  <img
-                    src={mapPreviewUrl}
-                    alt={`Map preview for ${property.title}`}
-                    className="h-full w-full object-cover"
+
+                <div className="space-y-4">
+                  <div className="rounded-[26px] border border-[#eadcca] bg-[#fffaf5] p-5">
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Neighbourhood snapshot</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                      <div className="rounded-[20px] border border-[#eadcca] bg-white px-4 py-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9ca3af]">Locality</p>
+                        <p className="mt-2 text-sm font-semibold leading-6 text-[#1f2a2e]">
+                          {locationLine || property.location.address || 'Location shared by the seller'}
+                        </p>
+                      </div>
+                      <div className="rounded-[20px] border border-[#eadcca] bg-white px-4 py-4">
+                        <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9ca3af]">Address signal</p>
+                        <p className="mt-2 text-sm font-semibold leading-6 text-[#1f2a2e]">
+                          {property.location.address || buildLocationQuery([property.location.road, property.location.landmark]) || 'Address detail available after callback'}
+                        </p>
+                      </div>
+                    </div>
+                    {(previewLatitude !== undefined && previewLongitude !== undefined) ? (
+                      <p className="mt-4 text-xs leading-5 text-[#667085]">
+                        Coordinates were resolved automatically so buyers can preview the micro-market without waiting for manual map data.
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {locationFacts.length > 0 ? (
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                      {locationFacts.map((fact) => (
+                        <div key={fact.label} className="rounded-[22px] border border-[#eadcca] bg-white px-4 py-4">
+                          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9ca3af]">{fact.label}</p>
+                          <p className="mt-2 text-sm leading-7 text-[#1f2a2e]">{fact.value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              {googleMapsEmbedUrl ? (
+                <div className="mt-4 overflow-hidden rounded-[26px] border border-[#eadcca] bg-white">
+                  <div className="flex items-center justify-between border-b border-[#eadcca] px-4 py-3">
+                    <div>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Interactive map</p>
+                      <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">Google Maps view for this locality</p>
+                    </div>
+                    {googleMapsSearchUrl ? (
+                      <a
+                        href={googleMapsSearchUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-[#eb6239] transition hover:underline"
+                      >
+                        Expand
+                        <ArrowUpRight className="h-4 w-4" />
+                      </a>
+                    ) : null}
+                  </div>
+                  <iframe
+                    src={googleMapsEmbedUrl}
+                    title={`Interactive map for ${property.title}`}
+                    className="h-[300px] w-full"
                     loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
                   />
                 </div>
-              ) : (
-                <div className="mt-6 rounded-[24px] border border-dashed border-[#eadcca] bg-[#fffaf5] px-4 py-5 text-sm leading-7 text-[#667085]">
-                  Add precise latitude and longitude to unlock the static map preview for this listing.
-                </div>
-              )}
+              ) : null}
             </div>
           </div>
 
@@ -796,6 +1035,88 @@ export function PropertyDetailClient({
           </section>
         ) : null}
       </div>
+
+      {/* Fullscreen Lightbox */}
+      {isLightboxOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex flex-col bg-black/95"
+          onClick={() => { setIsLightboxOpen(false); setZoomLevel(1); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') { setIsLightboxOpen(false); setZoomLevel(1); }
+            if (e.key === 'ArrowRight') setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
+            if (e.key === 'ArrowLeft') setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+          }}
+          tabIndex={0}
+          role="dialog"
+          aria-label="Image lightbox"
+        >
+          {/* Top bar */}
+          <div className="flex items-center justify-between px-4 py-3 z-20" onClick={(e) => e.stopPropagation()}>
+            <div className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur">
+              {currentImageIndex + 1} / {galleryImages.length}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 text-lg font-bold"
+                title="Zoom out"
+              >
+                −
+              </button>
+              <span className="text-white/70 text-sm font-medium min-w-[3rem] text-center">
+                {Math.round(zoomLevel * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 text-lg font-bold"
+                title="Zoom in"
+              >
+                +
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsLightboxOpen(false); setZoomLevel(1); }}
+                className="ml-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          {/* Image area — clicking the image itself doesn't close, clicking outside does */}
+          <div className="flex flex-1 items-center justify-center overflow-auto px-16 py-4">
+            <img
+              src={galleryImages[currentImageIndex]?.url || '/placeholder.svg'}
+              alt={galleryImages[currentImageIndex]?.label || `Photo ${currentImageIndex + 1}`}
+              className="max-h-full object-contain rounded-lg transition-transform duration-200"
+              style={{ transform: `scale(${zoomLevel})`, cursor: zoomLevel > 1 ? 'grab' : 'default' }}
+              onClick={(e) => e.stopPropagation()}
+              draggable={false}
+            />
+          </div>
+          {/* Navigation arrows — always visible for single images too (as close hints) */}
+          {galleryImages.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length); setZoomLevel(1); }}
+                className="absolute left-4 top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length); setZoomLevel(1); }}
+                className="absolute right-4 top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <Dialog open={isInterestOpen} onOpenChange={setIsInterestOpen}>
         <DialogContent className="rounded-[30px] border border-[#eadcca] bg-white p-0 sm:max-w-[560px]">

@@ -1,14 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { ChevronRight, Building2, Users, Crown, Sparkles, ArrowUpRight } from "lucide-react"
+import { ChevronRight, Building2, Users, Crown, Sparkles, ArrowUpRight, MapPin, BookOpen, Landmark } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import Header from "@/components/header"
 import HomeHero from "@/components/home/HomeHero"
 import FeaturedProjectsShowcase from "@/components/home/FeaturedProjectsShowcase"
 import LikeButton from "@/components/LikeButton"
-import AgentApplicationModal from "@/components/AgentApplicationModal"
+import { useCity } from "@/components/CityContext"
 import { createClient } from "@/utils/supabase/client"
 import {
   PROPERTY_GANJ_SUBDIVISIONS,
@@ -71,8 +71,9 @@ export default function HomePage() {
   const [liveProperties, setLiveProperties] = useState<any[]>([])
   const [likedProperties, setLikedProperties] = useState<string[]>([])
   const [liveAgents, setLiveAgents] = useState<any[]>([])
-  const [isAgentModalOpen, setIsAgentModalOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const { cityConfig } = useCity()
+  const cityName = cityConfig.name
 
   const propertyImages = [
     "/2bhk-apartment.jpg",
@@ -323,7 +324,13 @@ export default function HomePage() {
       <Link key={`${property.id || index}-${index}`} href={href} className="min-w-[280px] snap-start flex-shrink-0 group">
         <div className="cursor-pointer active:scale-[0.97] transition-all duration-300 touch-manipulation">
           <div className="relative mb-3 bg-muted rounded-xl overflow-hidden h-48 shadow-sm group-hover:shadow-lg transition-shadow duration-300">
-            {!isPlaceholder && <LikeButton propertyId={property.id} initialLiked={property.isLiked} />}
+            {!isPlaceholder && (
+              <LikeButton
+                propertyId={property.id}
+                initialLiked={property.isLiked}
+                className="absolute right-3 top-3 z-20"
+              />
+            )}
             <Image
               src={property.image || "/placeholder.svg"}
               alt={property.bhk}
@@ -359,7 +366,13 @@ export default function HomePage() {
         className={`group flex h-full flex-col overflow-hidden rounded-[24px] border ${sectionStyle.border} bg-white/95 shadow-[0_14px_32px_rgba(16,35,36,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_20px_44px_rgba(16,35,36,0.12)]`}
       >
         <div className="relative h-44 overflow-hidden bg-muted">
-          {!isPlaceholder && <LikeButton propertyId={project.id} initialLiked={project.isLiked} />}
+          {!isPlaceholder && (
+            <LikeButton
+              propertyId={project.id}
+              initialLiked={project.isLiked}
+              className="absolute right-3 top-3 z-20"
+            />
+          )}
           <Image
             src={project.image || "/placeholder.svg"}
             alt={project.name}
@@ -568,107 +581,161 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Quick Cards Section */}
-      <section className="bg-accent/20 py-4 md:py-8">
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* Discover Properties — Themed Gradient Cards */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <section className="py-8 md:py-14">
         <div className="w-full">
-          <h2 className="text-foreground font-bold text-base md:text-lg mb-3 md:mb-6">Discover Properties in Lucknow</h2>
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-2 md:gap-4">
-            {quickCards.map((card) => (
+          <div className="mb-5 md:mb-8">
+            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Explore by category</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">Discover Properties in {cityName}</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+            {[
+              { title: "10,000+ Properties", subtitle: "Browse all listings", icon: "🏠", bgClass: "bg-[#181a1f] border border-border/40", textClass: "text-white", iconColor: "text-white/20", href: `/search?q=${cityName}` },
+              { title: "Share Your Story", subtitle: "#MeriPropertyMeraGanj", icon: "✨", bgClass: "bg-[#d1b18a] border border-[#bd9b74]", textClass: "text-neutral-900", iconColor: "text-black/10", href: "/about" },
+              { title: "Handpicked Projects", subtitle: "Curated for you", icon: "⭐", bgClass: "bg-[#2d3633] border border-[#242c2a]", textClass: "text-white", iconColor: "text-white/20", href: "/search?purpose=sale" },
+              { title: "Owner Properties", subtitle: "Zero brokerage", icon: "🔑", bgClass: "bg-[#f4f2ef] border border-[#e5e0d8]", textClass: "text-neutral-900", iconColor: "text-black/5", href: "/search?ownerType=owner" },
+            ].map((card, i) => (
               <Link
-                key={card.id}
-                href={card.id === 1 ? "/search?q=Lucknow" : card.id === 2 ? "/about" : card.id === 3 ? "/search?purpose=sale" : "/search?ownerType=owner"}
-                className={`${card.bgColor} rounded-lg p-3 md:p-6 cursor-pointer hover:shadow-md transition-shadow active:scale-95 touch-manipulation block`}
+                key={i}
+                href={card.href}
+                className={`group relative overflow-hidden rounded-[22px] ${card.bgClass} p-5 md:p-7 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]`}
               >
-                <p className="text-primary font-bold text-sm md:text-lg mb-1 md:mb-2 leading-tight">{card.title}</p>
-                <p className="text-primary text-xs md:text-sm hover:underline line-clamp-1">{card.subtitle}</p>
+                <div className={`absolute -right-4 -top-4 text-5xl ${card.iconColor} transition-transform duration-500 group-hover:scale-125`}>
+                  {card.icon}
+                </div>
+                <p className="text-3xl mb-3">{card.icon}</p>
+                <p className={`${card.textClass} font-bold text-sm md:text-base leading-tight`}>{card.title}</p>
+                <p className={`mt-1 ${card.textClass === 'text-white' ? 'text-white/70' : 'text-neutral-600'} text-xs md:text-sm`}>{card.subtitle}</p>
+                <div className={`mt-3 inline-flex items-center gap-1 text-[11px] font-semibold ${card.textClass === 'text-white' ? 'text-white/90' : 'text-neutral-800'} uppercase tracking-wider`}>
+                  Explore <ArrowUpRight className="h-3 w-3" />
+                </div>
               </Link>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Popular Localities section */}
-      <section className="bg-background py-6 md:py-12">
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* Popular Localities — Image Background Cards */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <section className="bg-[#faf8f5] py-8 md:py-14 border-t border-border/30">
         <div className="w-full">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground mb-4 md:mb-8">Popular Localities in Lucknow</h2>
+          <div className="mb-5 md:mb-8 flex items-end justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Top neighbourhoods</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">Popular Localities in {cityName}</h2>
+            </div>
+            <Link href={`/search?q=${cityName}`} className="text-primary text-sm font-semibold hover:underline hidden md:block">View all →</Link>
+          </div>
           <div className="relative">
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide px-0 snap-x snap-mandatory" data-locality-scroll>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory" data-locality-scroll>
               {localities.map((locality) => (
-                <div key={locality.id} className="bg-card border border-border rounded-lg p-4 min-w-[280px] snap-start active:scale-95 transition-transform touch-manipulation">
-                  <h3 className="font-bold text-foreground text-lg mb-2 flex items-center gap-2">
-                    {locality.name}
-                    <span className="text-muted-foreground text-sm">↗</span>
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-3">{locality.priceRange}</p>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="text-accent">★</span>
-                    <span className="font-semibold">{locality.rating}</span>
-                    <span className="text-muted-foreground text-sm">{locality.reviews} Reviews</span>
+                <Link
+                  key={locality.id}
+                  href={`/search?q=${locality.name},${cityName}`}
+                  className="group relative min-w-[300px] snap-start flex-shrink-0 overflow-hidden rounded-[22px] border border-border bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                >
+                  {/* Image header */}
+                  <div className="relative h-36 overflow-hidden bg-gradient-to-br from-slate-200 to-slate-100">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-3 left-4 right-4">
+                      <h3 className="text-lg font-black text-white drop-shadow">{locality.name}</h3>
+                    </div>
+                    <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-black/40 backdrop-blur-sm px-2 py-1">
+                      <span className="text-yellow-400 text-xs">★</span>
+                      <span className="text-white text-xs font-bold">{locality.rating}</span>
+                    </div>
                   </div>
-                  <div className="bg-secondary/20 rounded-lg p-3 text-center">
-                    <p className="text-primary font-bold">{locality.properties} Properties for Sale →</p>
+                  {/* Content */}
+                  <div className="p-4">
+                    <p className="text-sm font-semibold text-foreground">{locality.priceRange}</p>
+                    <p className="text-xs text-muted-foreground mt-1">{locality.reviews} reviews</p>
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
+                        <MapPin className="h-3 w-3" />
+                        {locality.properties} Properties
+                      </span>
+                      <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
             <button
               onClick={() => {
                 const container = document.querySelector('[data-locality-scroll]');
-                if (container) container.scrollBy({ left: 300, behavior: 'smooth' });
+                if (container) container.scrollBy({ left: 320, behavior: 'smooth' });
               }}
-              className="hidden md:block absolute right-0 md:-right-4 top-1/2 transform -translate-y-1/2 bg-background rounded-full p-2 shadow-lg hover:shadow-xl active:shadow-md active:scale-95 z-10 touch-manipulation"
+              className="hidden md:flex absolute right-0 md:-right-3 top-1/2 -translate-y-1/2 h-10 w-10 items-center justify-center rounded-full bg-white border border-border shadow-lg hover:shadow-xl z-10"
               aria-label="Scroll right"
             >
-              <ChevronRight className="w-6 h-6 text-foreground" />
+              <ChevronRight className="w-5 h-5 text-foreground" />
             </button>
           </div>
         </div>
       </section>
 
-      {/* Top Agents in Lucknow section */}
-      <section className="bg-accent/20 py-6 md:py-12">
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* Trusted Agents — Premium Cards */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <section className="py-8 md:py-14 border-t border-border/30">
         <div className="w-full">
-          <div className="flex items-center justify-between mb-4 md:mb-8">
-            <h2 className="text-xl md:text-2xl font-bold text-foreground">Ganj Trusted Agents in Lucknow</h2>
-            <Link href="/search?ownerType=agent" className="text-primary font-semibold hover:underline active:opacity-70 touch-manipulation text-sm md:text-base">
+          <div className="flex items-end justify-between mb-5 md:mb-8">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Verified professionals</p>
+              <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">Ganj Trusted Agents in {cityName}</h2>
+            </div>
+            <Link href="/search?ownerType=agent" className="text-primary font-semibold hover:underline text-sm hidden md:block">
               See all →
             </Link>
           </div>
           <div className="relative">
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide px-0 snap-x snap-mandatory" data-agent-scroll>
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory" data-agent-scroll>
               {displayAgents.map((agent) => (
                 <Link
                   key={agent.id}
                   href={`/agent/${agent.id}`}
-                  className="bg-card rounded-lg p-6 min-w-[280px] snap-start active:scale-95 transition-transform touch-manipulation flex-shrink-0"
+                  className="group min-w-[300px] snap-start flex-shrink-0 overflow-hidden rounded-[22px] border border-border bg-white p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                 >
-                  <div className="flex items-start gap-3 mb-4">
-                    <img src={agent.image || "/placeholder.svg"} alt={agent.name} loading="lazy" className="w-16 h-16 rounded-lg object-cover" />
-                    <div>
-                      <h3 className="font-bold text-foreground">{agent.name}</h3>
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="relative">
+                      <img src={agent.image || "/placeholder.svg"} alt={agent.name} loading="lazy" className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md" />
+                      <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-xs shadow-sm ring-2 ring-white">
+                        ✓
+                      </div>
                     </div>
-                    <span className="text-xs bg-foreground text-background px-2 py-1 rounded">✓</span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-foreground text-base truncate">{agent.name}</h3>
+                      <p className="text-sm text-muted-foreground truncate">{agent.company}</p>
+                      <div className="mt-1.5 flex items-center gap-1">
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+                          Verified
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="font-semibold text-foreground text-sm mb-3">{agent.company}</p>
-                  <div className="flex gap-4 text-xs mb-4 pb-4 border-b border-border">
-                    <div>
-                      <p className="text-muted-foreground">Operating Since</p>
-                      <p className="font-bold text-foreground">{agent.since}</p>
+                  <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#faf8f5] p-3 mb-3">
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Since</p>
+                      <p className="font-bold text-foreground text-sm">{agent.since}</p>
                     </div>
-                    <div>
-                      <p className="text-muted-foreground">Buyers Served</p>
-                      <p className="font-bold text-foreground">{agent.buyers}</p>
+                    <div className="text-center">
+                      <p className="text-xs text-muted-foreground">Buyers</p>
+                      <p className="font-bold text-foreground text-sm">{agent.buyers}</p>
                     </div>
                   </div>
-                  <div className="flex gap-4 text-center text-sm">
-                    <div className="flex-1">
-                      <p className="font-bold text-foreground text-lg">{agent.propertiesSale}</p>
-                      <p className="text-xs text-muted-foreground">Properties for Sale</p>
+                  <div className="flex gap-3 text-center">
+                    <div className="flex-1 rounded-xl bg-primary/5 p-2.5">
+                      <p className="font-black text-primary text-xl">{agent.propertiesSale}</p>
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">For Sale</p>
                     </div>
                     {agent.propertiesRent > 0 && (
-                      <div className="flex-1">
-                        <p className="font-bold text-foreground text-lg">{agent.propertiesRent}</p>
-                        <p className="text-xs text-muted-foreground">Properties for Rent</p>
+                      <div className="flex-1 rounded-xl bg-sky-50 p-2.5">
+                        <p className="font-black text-sky-600 text-xl">{agent.propertiesRent}</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">For Rent</p>
                       </div>
                     )}
                   </div>
@@ -678,84 +745,103 @@ export default function HomePage() {
             <button
               onClick={() => {
                 const container = document.querySelector('[data-agent-scroll]');
-                if (container) container.scrollBy({ left: 300, behavior: 'smooth' });
+                if (container) container.scrollBy({ left: 320, behavior: 'smooth' });
               }}
-              className="hidden md:block absolute right-0 md:-right-4 top-1/2 transform -translate-y-1/2 bg-background rounded-full p-2 shadow-lg active:shadow-md active:scale-95 z-10 touch-manipulation"
+              className="hidden md:flex absolute right-0 md:-right-3 top-1/2 -translate-y-1/2 h-10 w-10 items-center justify-center rounded-full bg-white border border-border shadow-lg z-10"
               aria-label="Scroll right"
             >
-              <ChevronRight className="w-6 h-6 text-foreground" />
+              <ChevronRight className="w-5 h-5 text-foreground" />
             </button>
           </div>
 
           {/* Become an Agent CTA */}
-          <div className="mt-12 bg-card border-2 border-primary/20 p-6 md:p-8 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+          <div className="mt-10 overflow-hidden rounded-[26px] bg-gradient-to-r from-[#1f2a2e] to-[#2d3c42] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
             <div>
-              <h3 className="text-xl md:text-2xl font-bold mb-2">Are you a Real Estate Professional?</h3>
-              <p className="text-muted-foreground text-sm md:text-base max-w-2xl">Join PropertyGanj's network of Trusted Agents. Get access to verified leads, premium listings, and an exclusive agent profile.</p>
+              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-white/50 mb-2">Join our network</p>
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Are you a Real Estate Professional?</h3>
+              <p className="text-white/65 text-sm md:text-base max-w-2xl">Get access to verified leads, premium listings, and an exclusive agent profile on PropertyGanj.</p>
             </div>
-            <button
-               onClick={() => {
-                 if (!currentUser) window.location.href = '/auth';
-                 else setIsAgentModalOpen(true);
-               }}
-               className="bg-primary text-primary-foreground font-bold px-8 py-3 rounded-xl whitespace-nowrap hover:bg-primary/90 transition shadow-lg shrink-0"
+            <Link
+               href={currentUser ? '/agent/register' : '/auth'}
+               className="bg-[#eb6239] text-white font-bold px-8 py-3.5 rounded-full whitespace-nowrap hover:bg-[#d85a35] transition shadow-lg shrink-0 inline-block text-center"
             >
               Apply as Agent
-            </button>
+            </Link>
           </div>
-
-          <AgentApplicationModal 
-            isOpen={isAgentModalOpen} 
-            onClose={() => setIsAgentModalOpen(false)} 
-            user={currentUser}
-            onSubmit={async (formData) => {
-              const response = await fetch('/api/profile/agent-application', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
-              });
-              const data = await response.json().catch(() => ({}));
-              if (!response.ok) {
-                alert('Failed to apply: ' + (data?.error || 'Please try again.'));
-                throw new Error(data?.error || 'Failed to apply');
-              }
-              alert('Application submitted successfully! Our team will review your profile.');
-            }}
-          />
         </div>
       </section>
 
-      {/* Your Real Estate Guide section */}
-      <section className="bg-accent/20 py-12">
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* Real Estate Guide — Premium Card Layout */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <section className="bg-[#faf8f5] py-8 md:py-14 border-t border-border/30">
         <div className="w-full">
-          <h2 className="text-2xl font-bold text-foreground mb-8">Your Real Estate Guide</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="border-2 border-primary rounded-lg p-6">
-              <h3 className="text-xl font-bold text-foreground mb-4">Property Ganj Insights</h3>
-              <ul className="space-y-3">
-                {["Understanding Circle Rates in Lucknow", "Vastu Shastra for a Happy Home", "What is Stamp Duty and How is it Calculated?", "Lucknow's Metro Network: A Homebuyer's Guide", "LDA vs. RERA: What You Need to Know"].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                    <span className="text-primary text-xl">●</span>
-                    <Link href={`/blog/${i+1}`} className="text-muted-foreground text-sm">{item}</Link>
-                  </li>
+          <div className="mb-5 md:mb-8">
+            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Knowledge centre</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">Your Real Estate Guide</h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Insights Card */}
+            <div className="rounded-[26px] border border-border bg-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                  <BookOpen className="h-5 w-5 text-primary" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">Property Ganj Insights</h3>
+              </div>
+              <div className="space-y-1">
+                {[
+                  { title: "Understanding Circle Rates", icon: "📊" },
+                  { title: "Vastu Shastra for a Happy Home", icon: "🏛️" },
+                  { title: "Stamp Duty: How is it Calculated?", icon: "📝" },
+                  { title: `${cityName}'s Metro: A Homebuyer's Guide`, icon: "🚇" },
+                  { title: "LDA vs. RERA: What You Need to Know", icon: "⚖️" },
+                ].map((item, i) => (
+                  <Link
+                    key={i}
+                    href={`/blog/${i + 1}`}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-[#faf8f5] group"
+                  >
+                    <span className="text-lg flex-shrink-0">{item.icon}</span>
+                    <span className="text-sm text-foreground font-medium group-hover:text-primary transition-colors">{item.title}</span>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+                  </Link>
                 ))}
-              </ul>
-              <Link href="/blog" className="text-primary font-semibold text-sm mt-6 inline-block hover:underline active:opacity-70 touch-manipulation">
-                See all →
+              </div>
+              <Link href="/blog" className="mt-4 inline-flex items-center gap-1 text-primary text-sm font-semibold hover:underline">
+                Read all articles <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </div>
-            <div className="border-2 border-primary rounded-lg p-6">
-              <h3 className="text-xl font-bold text-foreground mb-4">Loan & Finance</h3>
-              <ul className="space-y-3">
-                {["Home Loan Eligibility: How to Check Your Qualification", "Interest Rates and EMI Calculations: A Complete Guide", "Top Banks for Home Loans in Lucknow: Compare Interest Rates", "Home Loan Documents: Complete Checklist for Property Buyers", "Pre-EMI vs Full EMI: Which Option is Right for You?"].map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 cursor-pointer hover:text-primary transition-colors">
-                    <span className="text-primary text-xl">●</span>
-                    <Link href={`/blog/${i+1}`} className="text-muted-foreground text-sm">{item}</Link>
-                  </li>
+
+            {/* Loan & Finance Card */}
+            <div className="rounded-[26px] border border-border bg-white p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50">
+                  <Landmark className="h-5 w-5 text-emerald-600" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">Loan & Finance</h3>
+              </div>
+              <div className="space-y-1">
+                {[
+                  { title: "Home Loan Eligibility Check", icon: "✅" },
+                  { title: "Interest Rates & EMI Guide", icon: "💰" },
+                  { title: `Top Banks for Loans in ${cityName}`, icon: "🏦" },
+                  { title: "Documents Checklist for Buyers", icon: "📋" },
+                  { title: "Pre-EMI vs Full EMI", icon: "📖" },
+                ].map((item, i) => (
+                  <Link
+                    key={i}
+                    href={`/blog/${i + 1}`}
+                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-emerald-50/50 group"
+                  >
+                    <span className="text-lg flex-shrink-0">{item.icon}</span>
+                    <span className="text-sm text-foreground font-medium group-hover:text-emerald-600 transition-colors">{item.title}</span>
+                    <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity ml-auto flex-shrink-0" />
+                  </Link>
                 ))}
-              </ul>
-              <Link href="/loan-finance" className="text-primary font-semibold text-sm mt-6 inline-block hover:underline">
-                See all →
+              </div>
+              <Link href="/loan-finance" className="mt-4 inline-flex items-center gap-1 text-emerald-600 text-sm font-semibold hover:underline">
+                Explore finance options <ArrowUpRight className="h-3.5 w-3.5" />
               </Link>
             </div>
           </div>

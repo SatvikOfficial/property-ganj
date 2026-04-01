@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { buildPropertyMutationFromListing, type ListingSubmissionInput } from '@/lib/property-listing';
+import { hydrateLocationInput } from '@/lib/geoapify';
 import { createAdminClient } from '@/utils/supabase/admin';
 import { createClient } from '@/utils/supabase/server';
 
@@ -44,6 +45,7 @@ function toSubmissionInput(body: any, ownerUserId?: string): ListingSubmissionIn
       floorplans: Array.isArray(body?.media?.floorplans) ? body.media.floorplans : [],
     },
     contact: body?.contact,
+    builder: body?.builder,
     status: body?.status || 'published',
     listedByPropertyGanj: body?.listedByPropertyGanj,
     subdivision: body?.subdivision,
@@ -109,6 +111,7 @@ export async function POST(req: NextRequest) {
   }
 
   const submission = toSubmissionInput(payload, authz.userId);
+  submission.location = await hydrateLocationInput(submission.location);
   const { propertyPayload, propertyImages, propertyFloorplans } = buildPropertyMutationFromListing(submission);
 
   const { data: property, error: propertyError } = await admin
@@ -232,6 +235,7 @@ export async function PATCH(req: NextRequest) {
     },
     currentProperty.owner_user_id || authz.userId,
   );
+  submission.location = await hydrateLocationInput(submission.location);
 
   const { propertyPayload, propertyImages, propertyFloorplans } = buildPropertyMutationFromListing(submission);
 

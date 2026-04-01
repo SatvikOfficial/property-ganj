@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { uploadPropertyPhoto } from '@/lib/uploads';
+import { createClient } from '@/utils/supabase/server';
 
 export const runtime = 'nodejs';
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const file = formData.get('file');
     const category = (formData.get('category') as string) || 'other';
@@ -17,13 +27,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (file.type && !file.type.startsWith('image/')) {
+      return NextResponse.json(
+        { error: 'Only image uploads are supported' },
+        { status: 400 }
+      );
+    }
+
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     const uploadResult = await uploadPropertyPhoto(buffer, {
       folder: `property-ganj/${category}`,
       category,
-      fileName: undefined,
+      fileName: file.name,
+      mimeType: file.type || undefined,
     });
 
     return NextResponse.json(

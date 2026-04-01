@@ -26,8 +26,27 @@ export default async function ProfilePage() {
     email: user.email || '',
     phone: profile?.phone || '',
     role: profile?.role || 'user',
+    avatar_url: profile?.avatar_url || null,
     created_at: profile?.created_at,
   };
+
+  const dashboardHref =
+    profile?.role === 'admin'
+      ? '/admin'
+      : profile?.role === 'agent'
+        ? '/agent'
+        : profile?.role === 'builder'
+          ? '/builder'
+          : null;
+
+  const dashboardLabel =
+    profile?.role === 'admin'
+      ? 'Admin Dashboard'
+      : profile?.role === 'agent'
+        ? 'Agent Dashboard'
+        : profile?.role === 'builder'
+          ? 'Builder Dashboard'
+          : null;
 
   return (
     <main className="min-h-screen bg-background">
@@ -35,9 +54,9 @@ export default async function ProfilePage() {
       <div className="max-w-6xl mx-auto p-6 mt-10">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-foreground">My Profile</h1>
-          {profile?.role === 'admin' && (
-            <a href="/admin" className="inline-flex items-center justify-center px-5 py-2.5 bg-foreground text-background font-bold rounded-xl hover:opacity-90 transition shadow-md">
-              Admin Dashboard
+          {dashboardHref && dashboardLabel && (
+            <a href={dashboardHref} className="inline-flex items-center justify-center px-5 py-2.5 bg-foreground text-background font-bold rounded-xl hover:opacity-90 transition shadow-md">
+              {dashboardLabel}
             </a>
           )}
         </div>

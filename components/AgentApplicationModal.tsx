@@ -22,7 +22,7 @@ export default function AgentApplicationModal({ isOpen, onClose, onSubmit, user 
   const [isSubmitted, setIsSubmitted] = useState(false);
   
   const specialtyOptions = ["Residential Sales", "Commercial Spaces", "Land Development", "Investment Properties", "Luxury Properties", "Rental Properties", "Property Valuation", "First-time Buyers"];
-  const languageOptions = ["English", "Hindi", "Urdu", "Punjabi", "Bengali", "Marathi", "Gujarati", "Tamil", "Telegu"];
+  const languageOptions = ["English", "Hindi"];
 
   if (!isOpen) return null;
 
@@ -120,7 +120,7 @@ export default function AgentApplicationModal({ isOpen, onClose, onSubmit, user 
               <div className="w-full md:w-2/3 space-y-4">
                 <div>
                   <label className="text-sm font-semibold text-foreground mb-1 block">Full Name</label>
-                  <input type="text" value={user?.name || user?.full_name || ''} disabled className="w-full p-3 rounded-xl border border-border bg-muted text-muted-foreground text-sm" />
+                  <input type="text" defaultValue={user?.name || user?.full_name || ''} name="fullName" className="w-full p-3 rounded-xl border border-border bg-background text-foreground text-sm focus:ring-2 focus:ring-primary outline-none" placeholder="Enter your full name" />
                 </div>
                 <div>
                   <label className="text-sm font-semibold text-foreground mb-1 block">Years of Experience</label>
