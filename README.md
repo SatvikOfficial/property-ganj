@@ -1,5 +1,5 @@
 # PropertyGanj
-
+ 
 PropertyGanj is a Next.js real estate marketplace focused on property discovery, listing management, and lead workflows for Lucknow. The app includes public marketing pages, property search, authentication, profile flows, agent tooling, and admin inventory controls backed by Supabase.
 
 ## Stack
