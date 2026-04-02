@@ -134,9 +134,15 @@ export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
   const [user, setUser] = useState<UserInfo | null>(null)
+  const [isScrolled, setIsScrolled] = useState(false)
   const [supabase] = useState(() => createClient())
 
   const router = useRouter()
+
+  const closeMenu = () => {
+    setIsMenuOpen(false)
+    setExpandedGroup(null)
+  }
 
   useEffect(() => {
     const fetchProfileData = async (userId: string, authUser: any) => {
@@ -171,11 +177,38 @@ export default function Header() {
     return () => subscription.unsubscribe()
   }, [supabase])
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 24)
+    }
+
+    handleScroll()
+    window.addEventListener("scroll", handleScroll, { passive: true })
+
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
+
+  useEffect(() => {
+    if (typeof document === "undefined") return
+
+    const previousOverflow = document.body.style.overflow
+    const previousTouchAction = document.body.style.touchAction
+
+    if (isMenuOpen) {
+      document.body.style.overflow = "hidden"
+      document.body.style.touchAction = "none"
+    }
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.body.style.touchAction = previousTouchAction
+    }
+  }, [isMenuOpen])
+
   const handleLogout = async () => {
     await supabase.auth.signOut()
     setUser(null)
-    setIsMenuOpen(false)
-    setExpandedGroup(null)
+    closeMenu()
     router.push("/auth")
     router.refresh()
   }
@@ -198,13 +231,45 @@ export default function Header() {
           ? "Builder Dashboard"
           : null
 
+  const mobileProfileLinks = [
+    { href: "/profile", label: "My Profile" },
+    { href: "/profile/liked", label: "Liked Properties" },
+    { href: "/profile/my-ads", label: "My Ads" },
+  ]
+
   return (
-    <header className="sticky top-0 z-[9999] border-b border-border/70 bg-gray-100/90 text-foreground backdrop-blur-sm">
-      <div className="w-full">
-        <div className="flex items-center justify-between gap-4 py-3">
-          <Link href="/" className="flex items-center gap-3 transition duration-300 hover:opacity-90">
-            <Image src="/logo.jpg" alt="PropertyGanj Logo" width={42} height={42} className="rounded-lg" />
-            <Image src="/logotext.png" alt="PropertyGanj" width={184} height={36} className="hidden h-8 w-auto md:block" />
+    <>
+      <header
+        className={`sticky top-0 z-[9999] border-b border-border/70 text-foreground backdrop-blur-xl transition-all duration-300 ${
+        isScrolled
+          ? "bg-[rgba(248,250,252,0.94)] shadow-[0_18px_40px_-32px_rgba(15,23,42,0.35)]"
+          : "bg-[rgba(248,250,252,0.86)]"
+      }`}
+    >
+      <div className="pg-mobile-safe-top w-full">
+        <div
+          className={`flex items-center justify-between gap-3 px-4 transition-[padding] duration-300 md:px-0 ${
+            isScrolled ? "py-2" : "py-3"
+          }`}
+        >
+          <Link href="/" className="flex min-w-0 items-center gap-3 transition duration-300 hover:opacity-90">
+            <Image
+              src="/logo.jpg"
+              alt="PropertyGanj Logo"
+              width={42}
+              height={42}
+              className={`rounded-xl object-contain transition-all duration-300 ${isScrolled ? "h-10 w-10" : "h-[42px] w-[42px]"}`}
+            />
+            <div className="min-w-0 overflow-hidden md:hidden">
+              <span
+                className={`block whitespace-nowrap text-sm font-black tracking-[0.22em] text-[#1f2a2e] transition-all duration-300 ${
+                  isScrolled ? "max-w-0 translate-y-[-2px] opacity-0" : "max-w-[10rem] opacity-100"
+                }`}
+              >
+                PROPERTYGANJ
+              </span>
+            </div>
+            <Image src="/logotext.png" alt="PropertyGanj" width={184} height={36} className={`hidden object-contain md:block transition-all duration-300 ${isScrolled ? "h-8 w-[163px]" : "h-[36px] w-[184px]"}`} />
           </Link>
 
           <div className="hidden items-center gap-3 md:flex">
@@ -216,7 +281,7 @@ export default function Header() {
                     <img
                       src={user.avatarUrl}
                       alt={user.name}
-                      className="h-7 w-7 rounded-full object-cover border border-border"
+                      className="h-7 w-7 rounded-full border border-border object-cover"
                     />
                   ) : (
                     <span className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-[11px] font-bold text-primary">
@@ -255,7 +320,7 @@ export default function Header() {
               </div>
             ) : (
               <Link href="/auth">
-                <Button className="h-auto rounded-lg bg-[#eb6239] px-4 py-2 text-sm font-semibold text-white transition-all border-b-[4px] border-[#d6522f] hover:-translate-y-[1px] hover:border-b-[5px] hover:bg-[#ef724d] active:translate-y-[1px] active:border-b-[3px]">
+                <Button className="h-auto rounded-lg border-b-[4px] border-[#d6522f] bg-[#eb6239] px-4 py-2 text-sm font-semibold text-white transition-all hover:-translate-y-[1px] hover:border-b-[5px] hover:bg-[#ef724d] active:translate-y-[1px] active:border-b-[3px]">
                   Login / Sign Up
                 </Button>
               </Link>
@@ -272,15 +337,11 @@ export default function Header() {
 
           <button
             type="button"
-            onClick={() =>
-              setIsMenuOpen((open) => {
-                const next = !open
-                if (!next) setExpandedGroup(null)
-                return next
-              })
-            }
-            className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-border bg-white text-foreground transition duration-300 hover:border-primary/35 hover:text-primary md:hidden"
-            aria-label="Toggle menu"
+            onClick={() => setIsMenuOpen((open) => !open)}
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-full border bg-white text-foreground transition duration-300 md:hidden ${
+              isMenuOpen ? "border-primary/35 text-primary shadow-[0_12px_28px_-18px_rgba(235,98,57,0.5)]" : "border-border"
+            }`}
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -303,7 +364,7 @@ export default function Header() {
                   </div>
 
                   {hasSections ? (
-                    <div className="invisible opacity-0 absolute left-0 top-full w-[min(760px,82vw)] pt-1 group-hover:visible group-hover:opacity-100 transition-all duration-200">
+                    <div className="invisible absolute left-0 top-full w-[min(760px,82vw)] pt-1 opacity-0 transition-all duration-200 group-hover:visible group-hover:opacity-100">
                       <div className="rounded-[28px] border border-border bg-white p-5 shadow-[0_22px_60px_rgba(15,23,42,0.12)]">
                         <div className="grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
                           <div className="rounded-[24px] bg-[linear-gradient(180deg,#f8fafc_0%,#ffffff_100%)] p-4">
@@ -350,24 +411,85 @@ export default function Header() {
           </div>
         </nav>
       </div>
+      </header>
 
-      {isMenuOpen ? (
-        <div className="border-t border-border bg-white pb-5 pl-6 pr-4 pt-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] md:hidden">
-          <div className="space-y-3">
-            {navGroups.map((group) => {
+      <div className="pg-mobile-drawer-shell md:hidden" data-open={isMenuOpen}>
+        <button
+          type="button"
+          aria-label="Close mobile navigation"
+          className="pg-mobile-drawer-backdrop"
+          onClick={closeMenu}
+        />
+
+        <div className="pg-mobile-drawer">
+          <div className="flex items-center justify-between gap-3 rounded-[28px] border border-white/70 bg-white/85 px-4 py-3 shadow-[0_18px_42px_-30px_rgba(15,23,42,0.2)] backdrop-blur">
+            <div className="flex min-w-0 items-center gap-3">
+              <Image src="/logo.jpg" alt="PropertyGanj Logo" width={40} height={40} className="h-10 w-10 rounded-xl object-contain" />
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary">Navigation</p>
+                <p className="truncate text-sm font-semibold text-[#1f2a2e]">PropertyGanj</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={closeMenu}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-foreground"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          <div
+            className="pg-mobile-drawer-item mt-4 rounded-[28px] border border-[#eadcca] bg-white/90 p-4 shadow-[0_20px_48px_-36px_rgba(15,23,42,0.22)]"
+            style={{ transitionDelay: isMenuOpen ? "90ms" : "0ms" }}
+          >
+            {user ? (
+              <div className="flex items-center gap-3">
+                {user.avatarUrl ? (
+                  <img src={user.avatarUrl} alt={user.name} className="h-11 w-11 rounded-2xl border border-border object-cover" />
+                ) : (
+                  <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-sm font-black text-primary">
+                    {(user.name || "U").charAt(0).toUpperCase()}
+                  </span>
+                )}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-bold text-[#1f2a2e]">{user.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm leading-6 text-muted-foreground">
+                  Sign in to save listings, manage ads, and move faster once you find the right property.
+                </p>
+                <Link
+                  href="/auth"
+                  onClick={closeMenu}
+                  className="flex h-11 items-center justify-center rounded-full bg-[#eb6239] px-4 text-sm font-semibold text-white"
+                >
+                  Login / Sign Up
+                </Link>
+              </div>
+            )}
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {navGroups.map((group, index) => {
               const hasSections = Boolean(group.sections?.length)
               const expanded = expandedGroup === group.title
 
               return (
-                <div key={group.title} className="rounded-2xl border border-border bg-white">
-                  <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <div
+                  key={group.title}
+                  className="pg-mobile-drawer-item rounded-[26px] border border-[#eadcca] bg-white/92 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.18)]"
+                  style={{ transitionDelay: isMenuOpen ? `${140 + index * 45}ms` : "0ms" }}
+                >
+                  <div className="flex items-center justify-between gap-3 px-4 py-4">
                     <Link
                       href={group.href}
-                      onClick={() => {
-                        setIsMenuOpen(false)
-                        setExpandedGroup(null)
-                      }}
-                      className="text-sm font-semibold text-foreground"
+                      onClick={closeMenu}
+                      className="min-w-0 text-sm font-bold text-[#1f2a2e]"
                     >
                       {group.title}
                     </Link>
@@ -375,15 +497,16 @@ export default function Header() {
                       <button
                         type="button"
                         onClick={() => setExpandedGroup(expanded ? null : group.title)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-accent text-primary"
+                        className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#fff4ed] text-primary"
                         aria-label={`Toggle ${group.title}`}
                       >
                         <ChevronDown className={`h-4 w-4 transition duration-300 ${expanded ? "rotate-180" : ""}`} />
                       </button>
                     ) : null}
                   </div>
+
                   {hasSections && expanded ? (
-                    <div className="space-y-4 border-t border-border px-4 py-4">
+                    <div className="space-y-4 border-t border-[#f2e5d9] px-4 pb-4 pt-3">
                       <p className="text-sm leading-6 text-muted-foreground">{group.description}</p>
                       {group.sections?.map((section) => (
                         <div key={section.title}>
@@ -395,11 +518,8 @@ export default function Header() {
                               <Link
                                 key={item.label}
                                 href={item.href}
-                                onClick={() => {
-                                  setIsMenuOpen(false)
-                                  setExpandedGroup(null)
-                                }}
-                                className="flex items-center justify-between rounded-2xl bg-accent px-3 py-2 text-sm font-medium text-foreground"
+                                onClick={closeMenu}
+                                className="flex min-h-11 items-center justify-between rounded-2xl bg-[#faf6f1] px-4 py-3 text-sm font-medium text-foreground"
                               >
                                 <span>{item.label}</span>
                                 {item.tag ? (
@@ -419,47 +539,27 @@ export default function Header() {
             })}
           </div>
 
-          <div className="mt-4 space-y-3 rounded-[28px] border border-border bg-white p-4">
+          <div
+            className="pg-mobile-drawer-item mt-4 space-y-3 rounded-[28px] border border-[#eadcca] bg-white/92 p-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.18)]"
+            style={{ transitionDelay: isMenuOpen ? "420ms" : "0ms" }}
+          >
             {user ? (
               <>
-                <Link
-                  href="/profile"
-                  onClick={() => {
-                    setIsMenuOpen(false)
-                    setExpandedGroup(null)
-                  }}
-                  className="block rounded-2xl bg-accent px-4 py-3 text-sm font-medium"
-                >
-                  My Profile
-                </Link>
-                <Link
-                  href="/profile/liked"
-                  onClick={() => {
-                    setIsMenuOpen(false)
-                    setExpandedGroup(null)
-                  }}
-                  className="block rounded-2xl bg-accent px-4 py-3 text-sm font-medium"
-                >
-                  Liked Properties
-                </Link>
-                <Link
-                  href="/profile/my-ads"
-                  onClick={() => {
-                    setIsMenuOpen(false)
-                    setExpandedGroup(null)
-                  }}
-                  className="block rounded-2xl bg-accent px-4 py-3 text-sm font-medium"
-                >
-                  My Ads
-                </Link>
+                {mobileProfileLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={closeMenu}
+                    className="flex min-h-11 items-center rounded-2xl bg-[#faf6f1] px-4 py-3 text-sm font-medium text-foreground"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
                 {dashboardHref && dashboardLabel ? (
                   <Link
                     href={dashboardHref}
-                    onClick={() => {
-                      setIsMenuOpen(false)
-                      setExpandedGroup(null)
-                    }}
-                    className="block rounded-2xl bg-accent px-4 py-3 text-sm font-medium text-primary"
+                    onClick={closeMenu}
+                    className="flex min-h-11 items-center rounded-2xl bg-[#fff4ed] px-4 py-3 text-sm font-semibold text-primary"
                   >
                     {dashboardLabel}
                   </Link>
@@ -467,39 +567,24 @@ export default function Header() {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground"
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground"
                 >
                   <LogOut className="h-4 w-4" />
                   Logout
                 </button>
               </>
-            ) : (
-              <>
-                <Link
-                  href="/auth"
-                  onClick={() => {
-                    setIsMenuOpen(false)
-                    setExpandedGroup(null)
-                  }}
-                  className="block rounded-full bg-[#eb6239] px-4 py-3 text-center text-sm font-semibold text-white"
-                >
-                  Login / Sign Up
-                </Link>
-                <Link
-                  href="/list-property"
-                  onClick={() => {
-                    setIsMenuOpen(false)
-                    setExpandedGroup(null)
-                  }}
-                  className="block rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-white"
-                >
-                  Post Property Free
-                </Link>
-              </>
-            )}
+            ) : null}
+
+            <Link
+              href="/list-property"
+              onClick={closeMenu}
+              className="flex h-11 items-center justify-center rounded-full bg-[#1f2a2e] px-4 text-sm font-semibold text-white"
+            >
+              Post Property Free
+            </Link>
           </div>
         </div>
-      ) : null}
-    </header>
+      </div>
+    </>
   )
 }

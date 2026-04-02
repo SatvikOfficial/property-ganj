@@ -45,7 +45,7 @@ const StickyContact = () => {
   }, []);
 
   return (
-    <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-2 items-end animate-slide-up md:bottom-[90px] md:right-6 md:gap-3">
+    <div className="fixed bottom-[calc(7rem+env(safe-area-inset-bottom))] right-3 z-40 flex flex-col items-end gap-2 animate-slide-up md:bottom-[90px] md:right-6 md:gap-3">
       {/* Social Icons Group - matches top 3 icons in user image */}
       <div className="flex flex-col gap-2 mb-1 items-end md:gap-3 md:mb-2">
         {/* WhatsApp Icon */}

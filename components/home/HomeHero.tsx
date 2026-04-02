@@ -12,9 +12,9 @@ export default function HomeHero() {
   const [activeFilter, setActiveFilter] = useState("Buy")
 
   return (
-    <section id="hero-section" className="relative z-20 bg-background pb-1 pt-2">
+    <section id="hero-section" className="relative z-20 bg-background pb-2 pt-1 md:pb-1 md:pt-2">
       <div className="w-full">
-        <div className="relative border border-slate-200/80 shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:rounded-[32px]">
+        <div className="relative overflow-hidden rounded-[26px] border border-slate-200/80 shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:rounded-[32px]">
           {/* Background Wrapper with Overflow Hidden to keep video/overlays clipped */}
           <div className="absolute inset-0 overflow-hidden rounded-[32px] sm:rounded-[32px]">
             <video
@@ -30,19 +30,25 @@ export default function HomeHero() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(255,255,255,0.16),transparent_22%),radial-gradient(circle_at_84%_20%,rgba(235,98,57,0.18),transparent_26%)]" />
           </div>
 
-          <div className="relative z-10 flex min-h-[200px] flex-col justify-center gap-2 px-5 py-3 sm:px-8 sm:py-3 lg:min-h-[228px] lg:px-10 lg:py-3">
-            <div className="flex w-full flex-col gap-5 lg:flex-row lg:items-stretch lg:gap-7 xl:gap-8">
-              <div className="flex min-w-0 flex-1 flex-col justify-center gap-3.5">
-                <div className="max-w-3xl">
+          <div className="relative z-10 flex min-h-[240px] max-md:min-h-0 flex-col justify-center gap-3 px-4 py-4 max-md:py-3 sm:px-8 sm:py-3 lg:min-h-[228px] lg:px-10 lg:py-3">
+            <div className="flex w-full flex-col gap-5 max-md:gap-3 lg:flex-row lg:items-stretch lg:gap-7 xl:gap-8">
+              <div className="flex min-w-0 flex-1 flex-col justify-center gap-4 max-md:gap-3">
+                <div className="max-w-3xl pg-mobile-hero-item" style={{ ['--pg-enter-delay' as string]: '0ms' }}>
                   <div className="mt-2 max-w-4xl [&_.text-foreground]:!text-white [&_h1]:!mb-0 [&_h1]:!text-white">
                     <DynamicGreeting />
                   </div>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80 sm:text-base">
+                  <p
+                    className="mt-2 max-w-2xl text-sm leading-6 text-white/80 sm:text-base pg-mobile-hero-item"
+                    style={{ ['--pg-enter-delay' as string]: '80ms' }}
+                  >
                     Explore homes, rentals, plots, and commercial inventory in one cleaner flow backed by smarter filters.
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div
+                  className="pg-mobile-chip-row gap-2 md:flex md:flex-wrap md:overflow-visible md:pb-0 pg-mobile-hero-item"
+                  style={{ ['--pg-enter-delay' as string]: '160ms' }}
+                >
                   {heroFilters.map((filter) => {
                     const isActive = filter === activeFilter
 
@@ -51,7 +57,7 @@ export default function HomeHero() {
                         key={filter}
                         type="button"
                         onClick={() => setActiveFilter(filter)}
-                        className={`rounded-full px-4 py-2 text-sm font-semibold transition duration-300 ${
+                        className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition duration-300 ${
                           isActive
                             ? "bg-white text-slate-900 shadow-[0_12px_24px_rgba(255,255,255,0.16)]"
                             : "border border-white/16 bg-white/10 text-white/82 backdrop-blur hover:bg-white/16"
@@ -63,12 +69,15 @@ export default function HomeHero() {
                   })}
                 </div>
 
-                <div className="max-w-5xl">
+                <div className="max-w-5xl pg-mobile-hero-item" style={{ ['--pg-enter-delay' as string]: '240ms' }}>
                   <SearchBar activeFilter={activeFilter} />
                 </div>
               </div>
 
-              <div className="w-full shrink-0 lg:w-[min(100%,320px)] xl:w-[min(100%,360px)]">
+              <div
+                className="w-full shrink-0 pg-mobile-hero-item lg:w-[min(100%,320px)] xl:w-[min(100%,360px)]"
+                style={{ ['--pg-enter-delay' as string]: '320ms' }}
+              >
                 <BuilderShowcase />
               </div>
             </div>

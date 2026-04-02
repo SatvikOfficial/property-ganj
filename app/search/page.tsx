@@ -143,14 +143,40 @@ function SearchFiltersContent() {
   }, [])
 
   const toggleModal = (setter: React.Dispatch<React.SetStateAction<boolean>>, currentState: boolean) => {
+    closeAllModals()
+    if (!currentState) setter(true)
+  }
+
+  const closeAllModals = () => {
     setShowBudgetModal(false)
     setShowPropertyTypeModal(false)
     setShowBhkModal(false)
     setShowPostedByModal(false)
     setShowTagsModal(false)
     setShowSortModal(false)
-    if (!currentState) setter(true)
   }
+
+  const isAnyModalOpen =
+    showBudgetModal ||
+    showPropertyTypeModal ||
+    showBhkModal ||
+    showPostedByModal ||
+    showTagsModal ||
+    showSortModal
+
+  useEffect(() => {
+    if (!isAnyModalOpen || typeof window === "undefined" || window.innerWidth >= 768) return
+
+    const originalOverflow = document.body.style.overflow
+    const originalTouchAction = document.body.style.touchAction
+    document.body.style.overflow = "hidden"
+    document.body.style.touchAction = "none"
+
+    return () => {
+      document.body.style.overflow = originalOverflow
+      document.body.style.touchAction = originalTouchAction
+    }
+  }, [isAnyModalOpen])
 
   const handleLocationFilterChange = (value: string) => {
     setLocationQuery(value)
@@ -322,17 +348,28 @@ function SearchFiltersContent() {
 
   return (
     <>
-      <div className="bg-card px-4 py-3 md:py-4 sticky top-[73px] z-40 shadow-sm" ref={filterRef}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap gap-2 items-center">
+      <button
+        type="button"
+        aria-label="Close filters"
+        className="pg-mobile-backdrop md:hidden"
+        data-open={isAnyModalOpen ? "true" : "false"}
+        onClick={closeAllModals}
+      />
+
+      <div
+        className="sticky top-[var(--pg-mobile-header-offset)] z-40 border-b border-border/70 bg-card/95 px-4 py-3 shadow-sm backdrop-blur-md md:top-[73px] md:py-4"
+        ref={filterRef}
+      >
+        <div className="max-w-7xl mx-auto space-y-3">
+          <div className="flex flex-col gap-3 md:flex-row md:flex-wrap md:items-center md:gap-2">
             <button
               onClick={() => setFilters((prev) => ({ ...prev, purpose: prev.purpose === "rent" ? "sale" : "rent" }))}
-              className="bg-primary text-primary-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-primary/90 active:bg-primary/80 flex items-center gap-1 touch-manipulation"
+              className="inline-flex w-fit items-center gap-1 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground touch-manipulation hover:bg-primary/90 active:bg-primary/80"
             >
               {filters.purpose === "rent" ? "Rent" : "Buy"} <ChevronDown className="w-4 h-4" />
             </button>
 
-            <div className="w-full md:w-72 flex-1 min-w-[250px]">
+            <div className="w-full min-w-0 flex-1 md:w-72 md:min-w-[250px]">
               <LucknowLocationAutocomplete
                 value={locationQuery}
                 onChange={handleLocationFilterChange}
@@ -344,34 +381,58 @@ function SearchFiltersContent() {
             </div>
 
             {filters.location && (
-              <div className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm max-w-[220px] truncate">
+              <div className="w-full rounded-2xl border border-border bg-muted/70 px-4 py-2.5 text-sm font-semibold text-muted-foreground md:w-auto md:max-w-[220px] md:rounded-full md:py-2 md:truncate">
                 {filters.location}
               </div>
             )}
+          </div>
 
+          <div className="pg-mobile-chip-row items-center md:flex md:flex-wrap md:gap-2 md:overflow-visible md:pb-0">
             <div className="relative">
               <button
                 onClick={() => toggleModal(setShowBudgetModal, showBudgetModal)}
-                className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-2"
+                className="inline-flex shrink-0 items-center gap-2 rounded-full border border-border bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted/80"
               >
                 {filters.budgetMin ? formatCurrency(filters.budgetMin) : "Min Budget"} -{" "}
                 {filters.budgetMax ? formatCurrency(filters.budgetMax) : "Max Budget"}
                 {(filters.budgetMin || filters.budgetMax) && (
-                  <X className="w-4 h-4 cursor-pointer" onClick={removeBudgetFilter} />
+                  <X
+                    className="w-4 h-4 cursor-pointer"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      removeBudgetFilter()
+                    }}
+                  />
                 )}
               </button>
 
-              {showBudgetModal && (
-                <div className="absolute top-full md:top-12 left-0 bg-background rounded-lg shadow-xl p-4 md:p-6 w-full md:w-80 z-50 border border-border mt-2 md:mt-0 max-h-[80vh] overflow-y-auto">
-                  <p className="text-sm font-semibold text-foreground mb-4">Set your budget range</p>
-                  <div className="flex gap-4 mb-4">
+              <div
+                className={`pg-mobile-sheet md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:z-50 md:mt-2 md:max-h-[80vh] md:w-80 md:overflow-y-auto md:rounded-lg md:border md:border-border md:bg-background md:shadow-xl md:before:hidden ${showBudgetModal ? "md:block" : "md:hidden"}`}
+                data-open={showBudgetModal ? "true" : "false"}
+              >
+                <div className="flex items-start justify-between gap-4 px-5 pb-3 pt-2 md:hidden">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Budget</p>
+                    <h3 className="mt-1 text-lg font-black tracking-tight text-[#1f2a2e]">Set your range</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeAllModals}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-[#1f2a2e]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="px-5 pb-5 pt-1 md:p-4 md:pt-4">
+                  <p className="mb-4 hidden text-sm font-semibold text-foreground md:block">Set your budget range</p>
+                  <div className="mb-4 grid gap-4 md:grid-cols-2">
                     <div className="flex-1">
                       <label className="text-xs text-muted-foreground">Min (₹)</label>
                       <input
                         type="text"
                         value={tempBudgetMin}
                         onChange={(e) => setTempBudgetMin(e.target.value)}
-                        className="border border-border rounded px-2 py-2 w-full text-sm bg-background"
+                        className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-base md:mt-1 md:rounded md:px-2 md:py-2 md:text-sm"
                         placeholder="50L"
                       />
                     </div>
@@ -381,7 +442,7 @@ function SearchFiltersContent() {
                         type="text"
                         value={tempBudgetMax}
                         onChange={(e) => setTempBudgetMax(e.target.value)}
-                        className="border border-border rounded px-2 py-2 w-full text-sm bg-background"
+                        className="mt-2 w-full rounded-2xl border border-border bg-background px-4 py-3 text-base md:mt-1 md:rounded md:px-2 md:py-2 md:text-sm"
                         placeholder="1.5Cr"
                       />
                     </div>
@@ -406,75 +467,123 @@ function SearchFiltersContent() {
                     </span>
                   </button>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="relative">
               <button
                 onClick={() => toggleModal(setShowPropertyTypeModal, showPropertyTypeModal)}
-                className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted/80"
               >
                 Property Type <ChevronDown className="w-4 h-4" />
               </button>
 
-              {showPropertyTypeModal && (
-                <div className="absolute top-full md:top-12 left-0 bg-background rounded-lg shadow-xl p-4 w-full md:w-48 z-50 border border-border mt-2 md:mt-0 max-h-[60vh] overflow-y-auto">
+              <div
+                className={`pg-mobile-sheet md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:z-50 md:mt-2 md:max-h-[60vh] md:w-48 md:overflow-y-auto md:rounded-lg md:border md:border-border md:bg-background md:shadow-xl md:before:hidden ${showPropertyTypeModal ? "md:block" : "md:hidden"}`}
+                data-open={showPropertyTypeModal ? "true" : "false"}
+              >
+                <div className="flex items-start justify-between gap-4 px-5 pb-3 pt-2 md:hidden">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Property type</p>
+                    <h3 className="mt-1 text-lg font-black tracking-tight text-[#1f2a2e]">Choose listing types</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeAllModals}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-[#1f2a2e]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="px-5 pb-5 pt-1 md:p-4 md:pt-4">
                   {propertyTypeOptions.map((type) => (
                     <label
                       key={type}
-                      className="flex items-center gap-2 py-2 cursor-pointer hover:bg-muted px-2 rounded"
+                      className="flex items-center gap-3 rounded-2xl px-3 py-3 text-base transition hover:bg-muted md:rounded md:px-2 md:py-2 md:text-sm"
                     >
                       <input
                         type="checkbox"
                         checked={filters.propertyTypes.includes(type)}
                         onChange={() => togglePropertyType(type)}
-                        className="w-4 h-4 accent-primary"
+                        className="h-4 w-4 accent-primary"
                       />
-                      <span className="text-sm text-foreground">{type}</span>
+                      <span className="text-foreground">{type}</span>
                     </label>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="relative">
               <button
                 onClick={() => toggleModal(setShowBhkModal, showBhkModal)}
-                className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted/80"
               >
                 BHK <ChevronDown className="w-4 h-4" />
               </button>
 
-              {showBhkModal && (
-                <div className="absolute top-full md:top-12 left-0 bg-background rounded-lg shadow-xl p-4 w-full md:w-40 z-50 border border-border mt-2 md:mt-0 max-h-[60vh] overflow-y-auto">
+              <div
+                className={`pg-mobile-sheet md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:z-50 md:mt-2 md:max-h-[60vh] md:w-40 md:overflow-y-auto md:rounded-lg md:border md:border-border md:bg-background md:shadow-xl md:before:hidden ${showBhkModal ? "md:block" : "md:hidden"}`}
+                data-open={showBhkModal ? "true" : "false"}
+              >
+                <div className="flex items-start justify-between gap-4 px-5 pb-3 pt-2 md:hidden">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Configuration</p>
+                    <h3 className="mt-1 text-lg font-black tracking-tight text-[#1f2a2e]">Select BHK</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeAllModals}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-[#1f2a2e]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="px-5 pb-5 pt-1 md:p-4 md:pt-4">
                   {bhkOptions.map((bhk) => (
                     <label
                       key={bhk}
-                      className="flex items-center gap-2 py-2 cursor-pointer hover:bg-muted px-2 rounded"
+                      className="flex items-center gap-3 rounded-2xl px-3 py-3 text-base transition hover:bg-muted md:rounded md:px-2 md:py-2 md:text-sm"
                     >
                       <input
                         type="checkbox"
                         checked={filters.bhk.includes(bhk)}
                         onChange={() => toggleBhk(bhk)}
-                        className="w-4 h-4 accent-primary"
+                        className="h-4 w-4 accent-primary"
                       />
-                      <span className="text-sm text-foreground">{bhk}</span>
+                      <span className="text-foreground">{bhk}</span>
                     </label>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="relative">
               <button
                 onClick={() => toggleModal(setShowPostedByModal, showPostedByModal)}
-                className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1 capitalize"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted px-4 py-2 text-sm font-semibold capitalize text-muted-foreground transition hover:bg-muted/80"
               >
                 {filters.ownerType === "all" ? "Posted By" : `Posted: ${filters.ownerType}`}
                 <ChevronDown className="w-4 h-4" />
               </button>
-              {showPostedByModal && (
-                <div className="absolute top-full md:top-12 left-0 bg-background rounded-lg shadow-xl p-4 w-full md:w-40 z-50 border border-border mt-2 md:mt-0 max-h-[60vh] overflow-y-auto">
+              <div
+                className={`pg-mobile-sheet md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:z-50 md:mt-2 md:max-h-[60vh] md:w-40 md:overflow-y-auto md:rounded-lg md:border md:border-border md:bg-background md:shadow-xl md:before:hidden ${showPostedByModal ? "md:block" : "md:hidden"}`}
+                data-open={showPostedByModal ? "true" : "false"}
+              >
+                <div className="flex items-start justify-between gap-4 px-5 pb-3 pt-2 md:hidden">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Source</p>
+                    <h3 className="mt-1 text-lg font-black tracking-tight text-[#1f2a2e]">Choose who posted it</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeAllModals}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-[#1f2a2e]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="px-5 pb-5 pt-1 md:p-4 md:pt-4">
                   {postedByOptions.map((option) => (
                     <button
                       key={option}
@@ -483,7 +592,7 @@ function SearchFiltersContent() {
                         setFilters((prev) => ({ ...prev, ownerType: option }))
                         setShowPostedByModal(false)
                       }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm capitalize ${
+                      className={`w-full rounded-2xl px-3 py-3 text-left text-base capitalize transition md:rounded-md md:py-2 md:text-sm ${
                         filters.ownerType === option ? "bg-muted font-semibold" : "hover:bg-muted"
                       }`}
                     >
@@ -491,28 +600,44 @@ function SearchFiltersContent() {
                     </button>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="relative">
               <button
                 onClick={() => toggleModal(setShowTagsModal, showTagsModal)}
-                className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted/80"
               >
                 Tags {filters.tags.length > 0 && `(${filters.tags.length})`} <ChevronDown className="w-4 h-4" />
               </button>
-              {showTagsModal && (
-                <div className="absolute top-full md:top-12 left-0 bg-background rounded-lg shadow-xl p-4 w-full md:w-64 z-50 border border-border max-h-[60vh] overflow-y-auto mt-2 md:mt-0">
-                  <p className="text-sm font-semibold text-foreground mb-3">Select Tags</p>
+              <div
+                className={`pg-mobile-sheet md:absolute md:top-full md:left-0 md:right-auto md:bottom-auto md:z-50 md:mt-2 md:max-h-[60vh] md:w-64 md:overflow-y-auto md:rounded-lg md:border md:border-border md:bg-background md:shadow-xl md:before:hidden ${showTagsModal ? "md:block" : "md:hidden"}`}
+                data-open={showTagsModal ? "true" : "false"}
+              >
+                <div className="flex items-start justify-between gap-4 px-5 pb-3 pt-2 md:hidden">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Lifestyle filters</p>
+                    <h3 className="mt-1 text-lg font-black tracking-tight text-[#1f2a2e]">Choose tags</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeAllModals}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-[#1f2a2e]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="px-5 pb-5 pt-1 md:p-4 md:pt-4">
+                  <p className="mb-3 hidden text-sm font-semibold text-foreground md:block">Select Tags</p>
                   <div className="flex flex-wrap gap-2">
                     {tagOptions.map((tag) => (
                       <button
                         key={tag}
                         type="button"
                         onClick={() => toggleTag(tag)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                        className={`rounded-full px-3 py-2 text-sm font-semibold transition-all md:py-1 md:text-xs ${
                           filters.tags.includes(tag)
-                            ? "bg-primary text-primary-foreground"
+                            ? "bg-primary text-primary-foreground shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"
                             : "bg-muted text-muted-foreground hover:bg-muted/80"
                         }`}
                       >
@@ -521,18 +646,34 @@ function SearchFiltersContent() {
                     ))}
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="relative">
               <button
                 onClick={() => toggleModal(setShowSortModal, showSortModal)}
-                className="bg-muted text-muted-foreground px-4 py-2 rounded-full font-semibold text-sm hover:bg-muted/80 flex items-center gap-1"
+                className="inline-flex shrink-0 items-center gap-1 rounded-full border border-border bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground transition hover:bg-muted/80"
               >
                 Sort: {sortOptions.find((s) => s.value === filters.sortBy)?.label || "Newest First"} <ChevronDown className="w-4 h-4" />
               </button>
-              {showSortModal && (
-                <div className="absolute top-full md:top-12 right-0 bg-background rounded-lg shadow-xl p-4 w-full md:w-56 z-50 border border-border mt-2 md:mt-0 max-h-[60vh] overflow-y-auto">
+              <div
+                className={`pg-mobile-sheet md:absolute md:top-full md:right-0 md:left-auto md:bottom-auto md:z-50 md:mt-2 md:max-h-[60vh] md:w-56 md:overflow-y-auto md:rounded-lg md:border md:border-border md:bg-background md:shadow-xl md:before:hidden ${showSortModal ? "md:block" : "md:hidden"}`}
+                data-open={showSortModal ? "true" : "false"}
+              >
+                <div className="flex items-start justify-between gap-4 px-5 pb-3 pt-2 md:hidden">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Ranking</p>
+                    <h3 className="mt-1 text-lg font-black tracking-tight text-[#1f2a2e]">Sort results</h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeAllModals}
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-white text-[#1f2a2e]"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="px-5 pb-5 pt-1 md:p-4 md:pt-4">
                   {sortOptions.map((option) => (
                     <button
                       key={option.value}
@@ -541,7 +682,7 @@ function SearchFiltersContent() {
                         setFilters((prev) => ({ ...prev, sortBy: option.value }))
                         setShowSortModal(false)
                       }}
-                      className={`w-full text-left px-3 py-2 rounded-md text-sm ${
+                      className={`w-full rounded-2xl px-3 py-3 text-left text-base transition md:rounded-md md:py-2 md:text-sm ${
                         filters.sortBy === option.value ? "bg-muted font-semibold" : "hover:bg-muted"
                       }`}
                     >
@@ -549,7 +690,7 @@ function SearchFiltersContent() {
                     </button>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
@@ -558,45 +699,48 @@ function SearchFiltersContent() {
       {/* Selected Tags Display */}
       <div data-filters-section></div>
       {filters.tags.length > 0 && (
-        <div className="bg-muted/50 px-4 py-3 border-b border-border">
-          <div className="max-w-7xl mx-auto flex flex-wrap gap-2 items-center">
-            <span className="text-sm text-muted-foreground font-semibold">Active Tags:</span>
-            {filters.tags.map((tag) => (
-              <span
-                key={tag}
-                className="bg-primary text-primary-foreground px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2"
-              >
-                {tag}
-                <button
-                  onClick={() => removeTag(tag)}
-                  className="hover:bg-primary/80 rounded-full p-0.5"
+        <div className="border-b border-border bg-muted/50 px-4 py-3">
+          <div className="max-w-7xl mx-auto space-y-2 md:space-y-0">
+            <span className="block text-sm font-semibold text-muted-foreground md:hidden">Active Tags</span>
+            <div className="pg-mobile-scroll-row items-center md:flex md:flex-wrap md:gap-2 md:overflow-visible">
+              <span className="hidden text-sm font-semibold text-muted-foreground md:inline-flex">Active Tags:</span>
+              {filters.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-full bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground md:py-1 md:text-xs"
                 >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
+                  {tag}
+                  <button
+                    onClick={() => removeTag(tag)}
+                    className="hover:bg-primary/80 rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       )}
 
-      <section className="bg-background py-8 px-4">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <section className="bg-background px-4 py-6 md:py-8">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <h2 className="text-muted-foreground font-semibold text-lg mb-6">
+            <h2 className="mb-5 text-base font-semibold text-muted-foreground md:mb-6 md:text-lg" data-mobile-reveal="pending">
               {loading ? "Loading properties..." : `Showing ${totalCount} matching properties`}
             </h2>
             {error && <p className="text-sm text-red-500 mb-4">{error}</p>}
 
-            <div className="space-y-4">
+            <div className="space-y-3 md:space-y-4">
               {!loading && properties.length === 0 && (
-                <div className="bg-card border border-dashed border-border rounded-lg p-8 text-center">
+                <div className="bg-card border border-dashed border-border rounded-lg p-8 text-center" data-mobile-reveal="pending">
                   <p className="text-foreground font-semibold mb-2">No properties found</p>
                   <p className="text-sm text-muted-foreground mb-4">
                     Try adjusting your filters or search criteria.
                   </p>
                 </div>
               )}
-              {properties.map((property) => {
+              {properties.map((property, index) => {
                 const area = property.specs?.carpetArea || property.specs?.builtUpArea
                 const sqftPrice = area ? `₹${Math.round(property.price / area)}/sqft` : ""
                 const bedrooms = property.specs?.bedrooms ? `${property.specs.bedrooms} BHK` : property.propertyType
@@ -608,14 +752,17 @@ function SearchFiltersContent() {
                 return (
                   <div
                     key={property._id}
-                    className="group overflow-hidden rounded-[24px] border border-[#eadcca] bg-white/95 shadow-[0_18px_36px_-28px_rgba(31,42,46,0.38)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_24px_56px_-26px_rgba(31,42,46,0.26)]"
+                    className="group overflow-hidden rounded-[24px] border border-[#eadcca] bg-white/95 shadow-[0_18px_36px_-28px_rgba(31,42,46,0.38)] transition-all duration-300 md:hover:-translate-y-1 md:hover:shadow-[0_24px_56px_-26px_rgba(31,42,46,0.26)]"
+                    data-mobile-reveal="pending"
+                    data-mobile-reveal-delay={String(Math.min(index * 70, 280))}
+                    style={{ ["--pg-reveal-delay" as string]: `${Math.min(index * 70, 280)}ms` }}
                   >
-                    <div className="flex flex-col gap-4 p-4 md:flex-row md:gap-5">
-                      <div className="relative h-52 w-full overflow-hidden rounded-[18px] bg-muted md:h-[170px] md:w-[220px] md:flex-shrink-0">
+                    <div className="flex flex-col gap-4 p-3.5 md:flex-row md:gap-5 md:p-4">
+                      <div className="relative aspect-[16/11] w-full overflow-hidden rounded-[18px] bg-muted md:h-[170px] md:w-[220px] md:flex-shrink-0 md:aspect-auto">
                         <img
                           src={image}
                           alt={property.title}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform"
+                          className="h-full w-full object-cover transition-transform duration-500 md:hover:scale-105"
                         />
                         <div className="absolute top-2 left-2 bg-foreground/80 text-background px-2 py-1 rounded text-xs font-semibold backdrop-blur-sm">
                           {property.media?.photos?.length || 0} Photos
@@ -654,7 +801,7 @@ function SearchFiltersContent() {
                           </p>
                         </div>
 
-                        <div className="grid gap-3 rounded-[18px] bg-[#faf6f1] p-3 md:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-3 rounded-[18px] bg-[#faf6f1] p-3 md:grid-cols-4">
                           <div className="text-xs">
                             <span className="text-muted-foreground block">CONFIGURATION</span>
                             <span className="font-semibold text-foreground">{bedrooms}</span>
@@ -679,7 +826,7 @@ function SearchFiltersContent() {
                           </div>
                         </div>
 
-                        <div className="mt-4 flex items-center gap-3">
+                        <div className="mt-4 flex items-center gap-3 rounded-[18px] bg-[#fffaf5] p-3 md:bg-transparent md:p-0">
                           <div className="w-10 h-10 bg-secondary/20 rounded-lg flex items-center justify-center font-bold text-secondary">
                             {(property.listedBy || "P").charAt(0)}
                           </div>
@@ -694,7 +841,7 @@ function SearchFiltersContent() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col justify-between md:w-[170px] md:flex-shrink-0">
+                      <div className="flex flex-col justify-between rounded-[20px] border border-[#eadcca] bg-[#fffaf5] p-4 md:w-[170px] md:flex-shrink-0 md:border-0 md:bg-transparent md:p-0">
                         <div>
                           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#9ca3af] md:text-right">
                             {property.purpose === "rent" ? "Monthly rent" : "Quoted price"}
@@ -707,13 +854,13 @@ function SearchFiltersContent() {
                         <div className="mt-4 space-y-2 w-full md:mt-6">
                           <Link 
                             href={`/property/${property._id}`}
-                            className="block w-full rounded-full bg-primary py-2.5 text-center text-sm font-semibold text-primary-foreground touch-manipulation hover:bg-primary/90 active:bg-primary/80"
+                            className="block w-full rounded-full bg-primary py-3 text-center text-sm font-semibold text-primary-foreground touch-manipulation hover:bg-primary/90 active:bg-primary/80 md:py-2.5"
                           >
                             View Details
                           </Link>
                           <Link 
                             href={`/property/${property._id}`}
-                            className="block w-full rounded-full border-2 border-primary py-2.5 text-center text-sm font-semibold text-primary touch-manipulation hover:bg-primary/10 active:bg-primary/20"
+                            className="block w-full rounded-full border-2 border-primary py-3 text-center text-sm font-semibold text-primary touch-manipulation hover:bg-primary/10 active:bg-primary/20 md:py-2.5"
                           >
                             Request Callback
                           </Link>
@@ -727,9 +874,9 @@ function SearchFiltersContent() {
           </div>
 
           <div className="lg:col-span-1">
-            <div className="space-y-6 lg:sticky lg:top-24">
+            <div className="space-y-4 md:space-y-6 lg:sticky lg:top-24">
               {selectedLocationLabel && (
-                <div className="overflow-hidden rounded-[24px] border border-[#eadcca] bg-white shadow-[0_18px_42px_-30px_rgba(31,42,46,0.3)]">
+                <div className="overflow-hidden rounded-[24px] border border-[#eadcca] bg-white shadow-[0_18px_42px_-30px_rgba(31,42,46,0.3)]" data-mobile-reveal="pending">
                   <div className="border-b border-[#eadcca] px-5 py-4">
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Search focus</p>
                     <h3 className="mt-2 text-lg font-black tracking-tight text-[#1f2a2e]">{selectedLocationLabel}</h3>
@@ -772,7 +919,7 @@ function SearchFiltersContent() {
                 </div>
               )}
 
-              <div className="overflow-hidden rounded-[24px] border border-[#eadcca] bg-white shadow-[0_18px_42px_-30px_rgba(31,42,46,0.24)]">
+              <div className="overflow-hidden rounded-[24px] border border-[#eadcca] bg-white shadow-[0_18px_42px_-30px_rgba(31,42,46,0.24)]" data-mobile-reveal="pending">
                 <div className="border-b border-[#eadcca] px-5 py-4">
                   <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Search snapshot</p>
                   <h3 className="mt-2 text-lg font-black tracking-tight text-[#1f2a2e]">What this shortlist is optimized for</h3>
@@ -814,7 +961,7 @@ function SearchFiltersContent() {
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-dashed border-[#d9c6ae] bg-[#fffaf4] px-5 py-5">
+              <div className="rounded-[24px] border border-dashed border-[#d9c6ae] bg-[#fffaf4] px-5 py-5" data-mobile-reveal="pending">
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Shortlisting tip</p>
                 <h3 className="mt-2 text-lg font-black tracking-tight text-[#1f2a2e]">Compare the right signals</h3>
                 <p className="mt-2 text-sm leading-6 text-[#667085]">

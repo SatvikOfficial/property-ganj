@@ -412,7 +412,7 @@ export default function HomePage() {
 
   // Section header component
   const SectionHeader = ({ icon, title, subtitle, href, gradient }: { icon: React.ReactNode, title: string, subtitle?: string, href?: string, gradient: string }) => (
-    <div className={`flex items-center justify-between mb-6 md:mb-8`}>
+    <div className={`mb-6 flex items-center justify-between max-md:mb-4 md:mb-8`}>
       <div className="flex items-center gap-3">
         <div className={`p-2.5 rounded-xl ${gradient} shadow-sm`}>
           {icon}
@@ -436,23 +436,23 @@ export default function HomePage() {
       <HomeHero />
 
       {/* Featured Projects Section */}
-      <section className="bg-background pb-3 pt-0">
-        <div className="w-full rounded-[32px] border border-amber-100 bg-[linear-gradient(135deg,#fff9ef_0%,#ffffff_58%,#fff1e4_100%)] p-3 shadow-[0_18px_60px_rgba(235,98,57,0.08)] sm:p-4">
-          <div className="mb-3 flex items-center justify-between gap-4">
+      <section className="bg-background pb-3 max-md:pb-1 pt-0">
+        <div className="w-full rounded-[32px] border border-amber-100 bg-[linear-gradient(135deg,#fff9ef_0%,#ffffff_58%,#fff1e4_100%)] p-3 max-md:rounded-[26px] max-md:p-2.5 shadow-[0_18px_60px_rgba(235,98,57,0.08)] sm:p-4">
+          <div className="mb-3 flex items-center justify-between gap-4 max-md:mb-2.5">
             <div className="flex items-center gap-3">
-              <div className="rounded-2xl bg-amber-100 p-2.5 shadow-sm">
-                <Sparkles className="h-5 w-5 text-amber-600" />
+              <div className="rounded-2xl bg-amber-100 p-2.5 max-md:p-2 shadow-sm">
+                <Sparkles className="h-5 w-5 max-md:h-4 max-md:w-4 text-amber-600" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-foreground md:text-2xl">Featured Projects</h2>
-                <p className="text-xs text-muted-foreground md:text-sm">
+                <h2 className="text-xl max-md:text-lg font-bold text-foreground md:text-2xl">Featured Projects</h2>
+                <p className="text-xs text-muted-foreground max-md:hidden md:text-sm">
                   Auto-rotating spotlight so every signature listing gets attention.
                 </p>
               </div>
             </div>
             <Link
               href="/search?purpose=sale"
-              className="whitespace-nowrap text-sm font-semibold text-primary transition hover:underline md:text-base"
+              className="whitespace-nowrap text-sm max-md:text-[13px] font-semibold text-primary transition hover:underline md:text-base"
             >
               See all →
             </Link>
@@ -467,7 +467,7 @@ export default function HomePage() {
       {/* ============================================================ */}
       {/* SECTION 1: Listed by Property Ganj */}
       {/* ============================================================ */}
-      <section className="relative py-8 md:py-14 overflow-hidden">
+      <section className="relative overflow-hidden py-8 max-md:py-6 md:py-14">
         <div className="absolute inset-0 bg-gradient-to-r from-[#264143]/5 via-primary/5 to-[#264143]/5" />
         <div className="absolute top-0 right-0 w-72 h-72 bg-primary/5 rounded-full blur-3xl -mr-20 -mt-20" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/10 rounded-full blur-3xl -ml-20 -mb-20" />
@@ -480,8 +480,26 @@ export default function HomePage() {
             gradient="bg-primary/10"
           />
           {displayPgSections.length > 0 ? (
-            <div className="space-y-6">
-              <div className="grid gap-3 md:grid-cols-3">
+            <div className="space-y-6 max-md:space-y-5">
+              <div className="pg-mobile-scroll-row md:hidden">
+                {displayPgSections.slice(0, 3).map((section) => {
+                  const style = propertyGanjSectionStyles[section.id]
+                  return (
+                    <div
+                      key={section.id}
+                      className={`min-w-[82vw] max-w-[20rem] shrink-0 snap-start rounded-[24px] border ${style.border} ${style.shell} p-4 shadow-[0_16px_34px_rgba(16,35,36,0.06)]`}
+                    >
+                      <p className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] ${style.badge}`}>
+                        {section.label}
+                      </p>
+                      <p className="mt-3 text-sm font-semibold text-foreground">{section.listings.length} live listing{section.listings.length > 1 ? "s" : ""}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
+                    </div>
+                  )
+                })}
+              </div>
+
+              <div className="hidden gap-3 md:grid md:grid-cols-3">
                 {displayPgSections.slice(0, 3).map((section) => {
                   const style = propertyGanjSectionStyles[section.id]
                   return (
@@ -512,7 +530,7 @@ export default function HomePage() {
                           <p className={`inline-flex rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] ${style.badge}`}>
                             Property Ganj Curated
                           </p>
-                          <h3 className="mt-3 text-2xl font-semibold text-foreground">{section.label}</h3>
+                          <h3 className="mt-3 text-2xl max-md:text-xl font-semibold text-foreground">{section.label}</h3>
                           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{section.description}</p>
                         </div>
                         <div className={`inline-flex w-fit items-center rounded-full px-4 py-2 text-sm font-semibold ${style.count}`}>
@@ -520,7 +538,15 @@ export default function HomePage() {
                         </div>
                       </div>
 
-                      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                      <div className="pg-mobile-scroll-row md:hidden">
+                        {section.listings.map((project) => (
+                          <div key={project.id} className="min-w-[84vw] max-w-[22rem] shrink-0 snap-start">
+                            {renderPgListingCard(project)}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-4">
                         {section.listings.map((project) => renderPgListingCard(project))}
                       </div>
                     </div>
@@ -546,7 +572,7 @@ export default function HomePage() {
       {/* ============================================================ */}
       {/* SECTION 2: Listed by Agents */}
       {/* ============================================================ */}
-      <section className="bg-gradient-to-br from-background via-blue-50/30 to-background py-8 md:py-14 border-t border-border/30">
+      <section className="bg-gradient-to-br from-background via-blue-50/30 to-background py-8 max-md:py-6 md:py-14 border-t border-border/30">
         <div className="w-full">
           <SectionHeader
             icon={<Users className="w-5 h-5 text-blue-600" />}
@@ -565,7 +591,7 @@ export default function HomePage() {
       {/* ============================================================ */}
       {/* SECTION 3: Listed by Owner */}
       {/* ============================================================ */}
-      <section className="bg-gradient-to-br from-background via-emerald-50/20 to-background py-8 md:py-14 border-t border-border/30">
+      <section className="bg-gradient-to-br from-background via-emerald-50/20 to-background py-8 max-md:py-6 md:py-14 border-t border-border/30">
         <div className="w-full">
           <SectionHeader
             icon={<Building2 className="w-5 h-5 text-emerald-600" />}
@@ -584,7 +610,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* Discover Properties — Themed Gradient Cards */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <section className="py-8 md:py-14">
+      <section className="py-8 max-md:py-6 md:py-14">
         <div className="w-full">
           <div className="mb-5 md:mb-8">
             <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Explore by category</p>
@@ -620,7 +646,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* Popular Localities — Image Background Cards */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <section className="bg-[#faf8f5] py-8 md:py-14 border-t border-border/30">
+      <section className="bg-[#faf8f5] py-8 max-md:py-6 md:py-14 border-t border-border/30">
         <div className="w-full">
           <div className="mb-5 md:mb-8 flex items-end justify-between">
             <div>
@@ -681,7 +707,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* Trusted Agents — Premium Cards */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <section className="py-8 md:py-14 border-t border-border/30">
+      <section className="py-8 max-md:py-6 md:py-14 border-t border-border/30">
         <div className="w-full">
           <div className="flex items-end justify-between mb-5 md:mb-8">
             <div>
@@ -755,7 +781,7 @@ export default function HomePage() {
           </div>
 
           {/* Become an Agent CTA */}
-          <div className="mt-10 overflow-hidden rounded-[26px] bg-gradient-to-r from-[#1f2a2e] to-[#2d3c42] p-6 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
+          <div className="mt-10 max-md:mt-8 overflow-hidden rounded-[26px] bg-gradient-to-r from-[#1f2a2e] to-[#2d3c42] p-6 max-md:p-5 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 max-md:gap-4 shadow-2xl">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-white/50 mb-2">Join our network</p>
               <h3 className="text-xl md:text-2xl font-bold text-white mb-2">Are you a Real Estate Professional?</h3>
@@ -774,7 +800,7 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* Real Estate Guide — Premium Card Layout */}
       {/* ═══════════════════════════════════════════════════════════ */}
-      <section className="bg-[#faf8f5] py-8 md:py-14 border-t border-border/30">
+      <section className="bg-[#faf8f5] py-8 max-md:py-6 md:py-14 border-t border-border/30">
         <div className="w-full">
           <div className="mb-5 md:mb-8">
             <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Knowledge centre</p>

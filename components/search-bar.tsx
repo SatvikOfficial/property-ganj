@@ -133,48 +133,56 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
   const [selectedMinBudget, setSelectedMinBudget] = useState<number | null>(null)
   const [selectedMaxBudget, setSelectedMaxBudget] = useState<number | null>(null)
 
-  useEffect(() => {
-    const heroSection = document.getElementById('hero-section');
-    if (heroSection) {
-      if (showPropertyDropdown || showBudgetDropdown) {
-        heroSection.style.zIndex = '10000';
-      } else {
-        heroSection.style.zIndex = '0';
-      }
-    }
-  }, [showPropertyDropdown, showBudgetDropdown]);
+  const closeSheets = () => {
+    setShowPropertyDropdown(false)
+    setShowBudgetDropdown(false)
+  }
 
-  // Close dropdowns when clicking outside
+  const isSheetOpen = showPropertyDropdown || showBudgetDropdown
+
   useEffect(() => {
+    if (!isSheetOpen) return
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement
-      // Don't close if clicking inside the dropdown
+
       if (target.closest('.property-dropdown') || target.closest('.budget-dropdown')) {
         return
       }
-      // Don't close if clicking the button that opens the dropdown
+
       if (target.closest('.property-type-button') || target.closest('.budget-button')) {
         return
       }
+
       if (!target.closest('.search-bar-container')) {
-        setShowPropertyDropdown(false)
-        setShowBudgetDropdown(false)
+        closeSheets()
       }
     }
 
-    if (showPropertyDropdown || showBudgetDropdown) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showPropertyDropdown, showBudgetDropdown])
+
+  useEffect(() => {
+    if (typeof document === "undefined") return
+
+    const previousOverflow = document.body.style.overflow
+    const previousTouchAction = document.body.style.touchAction
+
+    if (!isSheetOpen) return
+
+    document.body.style.overflow = "hidden"
+    document.body.style.touchAction = "none"
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.body.style.touchAction = previousTouchAction
     }
   }, [showPropertyDropdown, showBudgetDropdown])
 
   const handleLocationInputChange = (text: string) => {
     setLocation(text)
-    if (!text.trim()) {
-      setResolvedLocation(null)
-    } else {
-      setResolvedLocation(null)
-    }
+    setResolvedLocation(null)
   }
 
   const handleResolvedLocation = (resolved: ResolvedLucknowLocation) => {
@@ -224,7 +232,6 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
     }
 
     if (selectedBedroom) {
-      // Handle 5+ BHK (6) - send 5 for API
       const bedroomsValue = selectedBedroom === 6 ? 5 : selectedBedroom
       params.set("bedrooms", String(bedroomsValue))
     }
@@ -237,6 +244,7 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
       params.set("maxPrice", String(convertBudgetToRupees(selectedMaxBudget, normalizedFilter)))
     }
 
+    closeSheets()
     router.push(`/search?${params.toString()}`)
   }
 
@@ -259,47 +267,56 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
   }
 
   const renderPropertyDropdown = () => (
-    <div className="absolute top-full md:top-12 left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 w-[calc(100vw-2rem)] sm:w-[320px] rounded-2xl border border-border bg-white shadow-xl p-4 z-[9999] mt-2 md:mt-0 max-h-[80vh] overflow-y-auto custom-scrollbar">
-      {propertyTypeGroups.map((group) => (
-        <div key={group.title} className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold uppercase text-muted-foreground">{group.title}</p>
+    <div
+      data-open={showPropertyDropdown}
+      className="property-dropdown pg-mobile-sheet opacity-0 pointer-events-none data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto md:absolute md:left-1/2 md:top-[calc(100%+0.75rem)] md:w-[360px] md:-translate-x-1/2 md:translate-y-2 md:rounded-[26px] md:border md:border-border md:bg-white md:p-4 md:shadow-[0_28px_56px_-34px_rgba(15,23,42,0.28)] md:data-[open=true]:translate-y-0"
+    >
+      <div className="px-4 pb-5 pt-2 md:p-0">
+        <div className="mb-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Property Type</p>
+          <p className="mt-1 text-sm text-muted-foreground">Pick a property category and preferred configuration.</p>
+        </div>
+
+        {propertyTypeGroups.map((group) => (
+          <div key={group.title} className="mb-5">
+            <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">{group.title}</p>
+            <div className="flex flex-wrap gap-2">
+              {group.items.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => togglePropertyType(item.value)}
+                  className={`min-h-11 rounded-full border px-4 py-2 text-sm transition-all ${
+                    selectedPropertyTypes.includes(item.value)
+                      ? "border-[#eb6239] bg-[#fff1eb] text-[#eb6239] shadow-[inset_0_0_0_1px_rgba(235,98,57,0.1)]"
+                      : "border-border text-foreground hover:border-[#eb6239]"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
+        ))}
+
+        <div className="border-t border-border pt-4">
+          <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Bedrooms</p>
           <div className="flex flex-wrap gap-2">
-            {group.items.map((item) => (
+            {bhkOptions.map((option) => (
               <button
-                key={item.value}
+                key={option}
                 type="button"
-                onClick={() => togglePropertyType(item.value)}
-                className={`rounded-full border px-3 py-1 text-sm ${
-                  selectedPropertyTypes.includes(item.value)
-                    ? "border-[#eb6239] bg-[#fff1eb] text-[#eb6239]"
-                    : "border-border text-foreground hover:border-[#eb6239]"
+                onClick={() => setSelectedBedroom((prev) => (prev === option ? null : option))}
+                className={`min-h-11 rounded-full border px-4 py-2 text-sm transition-all ${
+                  selectedBedroom === option
+                    ? "border-[#264143] bg-[#264143] text-white"
+                    : "border-border text-foreground hover:border-[#264143]"
                 }`}
               >
-                {item.label}
+                {option === 6 ? "5+ BHK" : `${option} BHK`}
               </button>
             ))}
           </div>
-        </div>
-      ))}
-      <div className="border-t border-border pt-3">
-        <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Bedrooms</p>
-        <div className="flex flex-wrap gap-2">
-          {bhkOptions.map((option) => (
-            <button
-              key={option}
-              type="button"
-              onClick={() => setSelectedBedroom((prev) => (prev === option ? null : option))}
-              className={`rounded-full border px-3 py-1 text-sm ${
-                selectedBedroom === option
-                  ? "border-[#264143] bg-[#264143] text-white"
-                  : "border-border text-foreground hover:border-[#264143]"
-              }`}
-            >
-              {option === 6 ? "5+ BHK" : `${option} BHK`}
-            </button>
-          ))}
         </div>
       </div>
     </div>
@@ -307,89 +324,109 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
 
   const renderBudgetDropdown = () => {
     const { min, max } = getBudgetRanges(normalizedFilter)
-    
-    // Validation: Max should be greater than Min if both are selected
     const isInvalid = selectedMinBudget !== null && selectedMaxBudget !== null && selectedMaxBudget < selectedMinBudget
 
     return (
-      <div className="absolute top-full md:top-12 left-1/2 -translate-x-1/2 md:left-0 md:translate-x-0 w-[calc(100vw-2rem)] sm:w-[360px] rounded-2xl border border-border bg-white shadow-xl p-4 z-[9999] mt-2 md:mt-0 max-h-[80vh] overflow-y-auto">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Min Price</p>
-            <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-              {min.map((value) => (
-                <button
-                  key={`min-${value}`}
-                  type="button"
-                  onClick={() => setSelectedMinBudget(value)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                    selectedMinBudget === value
-                      ? "border-[#eb6239] bg-[#fff1eb] text-[#eb6239]"
-                      : "border-border text-foreground hover:border-[#eb6239]"
-                  }`}
-                >
-                  ₹{formatBudgetValue(value, normalizedFilter)}
-                </button>
-              ))}
+      <div
+        data-open={showBudgetDropdown}
+        className="budget-dropdown pg-mobile-sheet opacity-0 pointer-events-none data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto md:absolute md:right-0 md:top-[calc(100%+0.75rem)] md:w-[360px] md:translate-y-2 md:rounded-[26px] md:border md:border-border md:bg-white md:p-4 md:shadow-[0_28px_56px_-34px_rgba(15,23,42,0.28)] md:data-[open=true]:translate-y-0"
+      >
+        <div className="px-4 pb-5 pt-2 md:p-0">
+          <div className="mb-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">Budget</p>
+            <p className="mt-1 text-sm text-muted-foreground">Slide into the right price band before you jump into listings.</p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Min Price</p>
+              <div className="max-h-48 space-y-2 overflow-y-auto pr-2">
+                {min.map((value) => (
+                  <button
+                    key={`min-${value}`}
+                    type="button"
+                    onClick={() => setSelectedMinBudget(value)}
+                    className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
+                      selectedMinBudget === value
+                        ? "border-[#eb6239] bg-[#fff1eb] text-[#eb6239]"
+                        : "border-border text-foreground hover:border-[#eb6239]"
+                    }`}
+                  >
+                    ₹{formatBudgetValue(value, normalizedFilter)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase text-muted-foreground">Max Price</p>
+              <div className="max-h-48 space-y-2 overflow-y-auto pr-2">
+                {max.map((value) => (
+                  <button
+                    key={`max-${value}`}
+                    type="button"
+                    onClick={() => setSelectedMaxBudget(value)}
+                    className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
+                      selectedMaxBudget === value
+                        ? "border-[#264143] bg-[#264143] text-white"
+                        : "border-border text-foreground hover:border-[#264143]"
+                    }`}
+                  >
+                    ₹{formatBudgetValue(value, normalizedFilter)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-          <div>
-            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Max Price</p>
-            <div className="max-h-48 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
-              {max.map((value) => (
-                <button
-                  key={`max-${value}`}
-                  type="button"
-                  onClick={() => setSelectedMaxBudget(value)}
-                  className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                    selectedMaxBudget === value
-                      ? "border-[#264143] bg-[#264143] text-white"
-                      : "border-border text-foreground hover:border-[#264143]"
-                  }`}
-                >
-                  ₹{formatBudgetValue(value, normalizedFilter)}
-                </button>
-              ))}
+
+          {isInvalid ? (
+            <div className="mt-4 rounded-xl border border-red-100 bg-red-50 p-3">
+              <p className="text-[11px] font-medium text-red-600">Max budget should be greater than Min budget.</p>
             </div>
-          </div>
-        </div>
+          ) : null}
 
-        {isInvalid && (
-          <div className="mt-4 p-2 bg-red-50 border border-red-100 rounded-lg">
-            <p className="text-[11px] text-red-600 font-medium text-center">
-              Max budget should be greater than Min budget
-            </p>
+          <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedMinBudget(null)
+                setSelectedMaxBudget(null)
+              }}
+              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Clear All
+            </button>
+            <Button
+              type="button"
+              disabled={isInvalid}
+              onClick={() => setShowBudgetDropdown(false)}
+              className={`bg-[#eb6239] px-6 text-white hover:bg-[#d6522f] ${isInvalid ? 'cursor-not-allowed opacity-50 grayscale' : ''}`}
+            >
+              Apply
+            </Button>
           </div>
-        )}
-
-        <div className="flex justify-between items-center mt-4 pt-3 border-t border-border">
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedMinBudget(null)
-              setSelectedMaxBudget(null)
-            }}
-            className="text-sm font-semibold text-muted-foreground hover:text-foreground transition-colors"
-          >
-            Clear All
-          </button>
-          <Button
-            type="button"
-            disabled={isInvalid}
-            onClick={() => setShowBudgetDropdown(false)}
-            className={`bg-[#eb6239] hover:bg-[#d6522f] text-white px-6 transition-all ${isInvalid ? 'opacity-50 grayscale cursor-not-allowed' : ''}`}
-          >
-            Apply
-          </Button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="max-w-3xl w-full search-bar-container">
-      <div className="flex flex-col md:flex-row gap-1 md:gap-2 items-stretch md:items-center bg-background rounded-md md:rounded-full border-2 border-black shadow-sm md:hover:shadow-md transition-shadow p-0.5 md:p-1.5 active:shadow-md md:active:shadow-md">
-        <div className="flex items-center gap-0.5 md:gap-2 px-1 md:px-3 flex-1 min-w-0 relative">
+    <div
+      className="search-bar-container relative w-full max-w-4xl"
+      data-mobile-reveal="pending"
+      data-mobile-reveal-delay="180"
+      style={{ ["--pg-reveal-delay" as string]: "180ms" }}
+      suppressHydrationWarning
+    >
+      <button
+        type="button"
+        aria-label="Close search filters"
+        data-open={isSheetOpen}
+        onClick={closeSheets}
+        className="pg-mobile-backdrop md:hidden"
+      />
+
+      <div className="flex flex-col gap-2 rounded-[30px] border border-white/18 bg-white/92 p-2 shadow-[0_24px_60px_-36px_rgba(10,24,39,0.56)] backdrop-blur-md md:flex-row md:items-center md:rounded-full md:p-1.5">
+        <div className="flex min-w-0 items-center gap-2 rounded-[22px] bg-[#f8fbfd]/92 px-3 py-2 md:flex-1 md:bg-transparent md:px-3">
           <LucknowLocationAutocomplete
             value={location}
             onChange={handleLocationInputChange}
@@ -397,76 +434,64 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
             dense
             showDetectButton
             className="flex-1"
-            inputClassName="text-xs md:text-sm"
+            inputClassName="text-base md:text-sm"
           />
           <Button
             onClick={handleVoiceInput}
             variant="ghost"
-            size="sm"
-            className="h-4 w-4 md:h-7 md:w-auto md:px-2 p-0 hover:bg-primary/10 rounded-md transition-all group flex-shrink-0"
+            size="icon"
+            className="h-11 w-11 flex-shrink-0 rounded-full border border-[#e2e8f0] bg-white/90 text-muted-foreground transition-all hover:bg-primary/10 hover:text-primary md:h-10 md:w-10 md:border-transparent md:bg-transparent"
             title="Voice input"
           >
-            <Mic className={`w-2 h-2 md:w-3.5 md:h-3.5 transition-all duration-200 ${isListening ? "text-primary animate-pulse" : "text-muted-foreground group-hover:text-primary"}`} />
+            <Mic className={`h-4 w-4 transition-all duration-200 ${isListening ? "animate-pulse text-primary" : ""}`} />
           </Button>
         </div>
 
-        <div className="relative flex items-center gap-0.5 md:gap-2 px-1 md:px-3 border-t md:border-t-0 md:border-l border-border min-w-[90px] md:min-w-[160px] overflow-visible">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowPropertyDropdown((prev) => !prev)
-              setShowBudgetDropdown(false)
-            }}
-            className="property-type-button flex w-full items-center justify-between text-xs md:text-sm font-semibold text-foreground active:opacity-70 touch-manipulation truncate py-0.5 md:py-1"
-          >
-            <span className="truncate min-w-0">{propertySummary}</span>
-            <ChevronDown className="w-2 h-2 md:w-3.5 md:h-3.5 text-muted-foreground flex-shrink-0 ml-0.5" />
-          </button>
-          {showPropertyDropdown && (
-            <div className="property-dropdown" onClick={(e) => e.stopPropagation()}>
-              {renderPropertyDropdown()}
-            </div>
-          )}
-        </div>
+        <div className="grid grid-cols-2 gap-2 md:flex md:min-w-0 md:items-center md:gap-2">
+          <div className="relative md:min-w-[180px]">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                setShowPropertyDropdown((prev) => !prev)
+                setShowBudgetDropdown(false)
+              }}
+              className="property-type-button flex h-11 w-full items-center justify-between rounded-[18px] bg-[#f8fbfd] px-4 text-sm font-semibold text-foreground transition md:rounded-full md:bg-transparent md:px-3"
+            >
+              <span className="truncate">{propertySummary}</span>
+              <ChevronDown className={`ml-2 h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform ${showPropertyDropdown ? "rotate-180" : ""}`} />
+            </button>
+          </div>
 
-        <div className="relative flex items-center gap-0.5 md:gap-2 px-1 md:px-3 border-t md:border-t-0 md:border-l border-border min-w-[70px] md:min-w-[150px] overflow-visible">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowBudgetDropdown((prev) => !prev)
-              setShowPropertyDropdown(false)
-            }}
-            className="budget-button flex w-full items-center justify-between text-xs md:text-sm font-semibold text-foreground active:opacity-70 touch-manipulation truncate py-0.5 md:py-1"
-          >
-            <span className="truncate min-w-0">{getBudgetDisplayText(selectedMinBudget, selectedMaxBudget, normalizedFilter)}</span>
-            <ChevronDown className="w-2 h-2 md:w-3.5 md:h-3.5 text-muted-foreground flex-shrink-0 ml-0.5" />
-          </button>
-          {showBudgetDropdown && (
-            <div className="budget-dropdown" onClick={(e) => e.stopPropagation()}>
-              {renderBudgetDropdown()}
-            </div>
-          )}
+          <div className="relative md:min-w-[180px]">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation()
+                setShowBudgetDropdown((prev) => !prev)
+                setShowPropertyDropdown(false)
+              }}
+              className="budget-button flex h-11 w-full items-center justify-between rounded-[18px] bg-[#f8fbfd] px-4 text-sm font-semibold text-foreground transition md:rounded-full md:bg-transparent md:px-3"
+            >
+              <span className="truncate">{getBudgetDisplayText(selectedMinBudget, selectedMaxBudget, normalizedFilter)}</span>
+              <ChevronDown className={`ml-2 h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform ${showBudgetDropdown ? "rotate-180" : ""}`} />
+            </button>
+          </div>
         </div>
 
         <button
           onClick={handleSearch}
-          className="flex items-center text-white border-none rounded-full transition-all md:hover:scale-105 active:scale-95 group touch-manipulation w-full md:w-auto justify-center flex-shrink-0 overflow-hidden"
-          style={{
-            background: "linear-gradient(to right, #eb6239, #d6522f)",
-            padding: "0.4em 0.6em 0.4em 0.5em",
-            fontSize: "11px",
-            fontWeight: "500",
-            letterSpacing: "0.05em",
-          }}
+          className="group flex h-11 w-full items-center justify-center overflow-hidden rounded-[20px] bg-[linear-gradient(90deg,#eb6239_0%,#d6522f_100%)] px-5 text-sm font-semibold tracking-[0.08em] text-white transition-all md:w-auto md:min-w-[132px] md:rounded-full md:hover:scale-[1.02]"
         >
-          <Search className="mr-0 h-2.5 w-2.5 md:h-4 md:w-4 transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:translate-x-1 group-hover:rotate-12" />
-          <span className="transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:translate-x-1.5 hidden sm:inline">
+          <Search className="mr-2 h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:translate-x-0.5" />
+          <span className="transition-transform duration-500 ease-[cubic-bezier(0.76,0,0.24,1)] group-hover:translate-x-0.5">
             Search
           </span>
         </button>
       </div>
+
+      {renderPropertyDropdown()}
+      {renderBudgetDropdown()}
     </div>
   )
 }

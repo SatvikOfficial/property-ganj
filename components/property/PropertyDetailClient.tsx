@@ -197,6 +197,11 @@ export function PropertyDetailClient({
     phone: viewer.phone || '',
     email: viewer.email || '',
   });
+  const [mobileGalleryTouchStart, setMobileGalleryTouchStart] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [showMobileCta, setShowMobileCta] = useState(false);
 
   const galleryImages = useMemo(
     () =>
@@ -218,6 +223,29 @@ export function PropertyDetailClient({
   useEffect(() => {
     if (property.id) addRecentlyViewed(property.id);
   }, [property.id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const updateMobileCta = () => {
+      if (window.innerWidth >= 768) {
+        setShowMobileCta(false);
+        return;
+      }
+
+      const threshold = Math.max(window.innerHeight * 0.62, 280);
+      setShowMobileCta(window.scrollY > threshold);
+    };
+
+    updateMobileCta();
+    window.addEventListener('scroll', updateMobileCta, { passive: true });
+    window.addEventListener('resize', updateMobileCta);
+
+    return () => {
+      window.removeEventListener('scroll', updateMobileCta);
+      window.removeEventListener('resize', updateMobileCta);
+    };
+  }, []);
 
   const activeImage = galleryImages[currentImageIndex] || galleryImages[0];
   const locationLine = [property.location.locality, property.location.area, property.location.city]
@@ -464,13 +492,45 @@ export function PropertyDetailClient({
   const canMovePrev = galleryImages.length > 1;
   const canMoveNext = galleryImages.length > 1;
 
+  const handleMobileGalleryTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    setMobileGalleryTouchStart({
+      x: touch.clientX,
+      y: touch.clientY,
+    });
+  };
+
+  const handleMobileGalleryTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.changedTouches[0];
+    if (!touch || !mobileGalleryTouchStart || galleryImages.length <= 1) {
+      setMobileGalleryTouchStart(null);
+      return;
+    }
+
+    const deltaX = touch.clientX - mobileGalleryTouchStart.x;
+    const deltaY = touch.clientY - mobileGalleryTouchStart.y;
+    const isHorizontalSwipe = Math.abs(deltaX) > 48 && Math.abs(deltaX) > Math.abs(deltaY);
+
+    if (isHorizontalSwipe) {
+      setCurrentImageIndex((prev) => {
+        if (deltaX < 0) return (prev + 1) % galleryImages.length;
+        return (prev - 1 + galleryImages.length) % galleryImages.length;
+      });
+      setZoomLevel(1);
+    }
+
+    setMobileGalleryTouchStart(null);
+  };
+
   return (
     <>
-      <div className="mx-auto max-w-7xl px-4 py-8 md:px-6 md:py-10">
-        <section className="overflow-hidden rounded-[34px] border border-[#eadcca] bg-[linear-gradient(135deg,rgba(255,248,241,0.95),rgba(255,255,255,0.98))] shadow-[0_32px_100px_-56px_rgba(15,23,42,0.42)]">
-          <div className="grid gap-6 p-5 md:p-6 lg:grid-cols-[1.3fr,0.7fr] lg:gap-8 lg:p-8">
+      <div className="mx-auto max-w-7xl px-4 py-6 pb-[calc(7.5rem+env(safe-area-inset-bottom))] md:px-6 md:py-10 md:pb-10">
+        <section className="overflow-hidden rounded-[30px] border border-[#eadcca] bg-[linear-gradient(135deg,rgba(255,248,241,0.95),rgba(255,255,255,0.98))] shadow-[0_32px_100px_-56px_rgba(15,23,42,0.42)] md:rounded-[34px]" data-mobile-reveal="pending">
+          <div className="grid gap-6 p-4 md:p-6 lg:grid-cols-[1.3fr,0.7fr] lg:gap-8 lg:p-8">
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2" data-mobile-reveal="pending">
                 <span className="rounded-full bg-[#1f2a2e] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white">
                   {property.purpose === 'rent' ? 'For rent' : 'For sale'}
                 </span>
@@ -487,11 +547,11 @@ export function PropertyDetailClient({
                 ) : null}
               </div>
 
-              <div className="space-y-3">
+              <div className="space-y-3" data-mobile-reveal="pending" data-mobile-reveal-delay="80" style={{ ["--pg-reveal-delay" as string]: "80ms" }}>
                 <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-[#9ca3af]">
                   Listing ref · {property.listingId}
                 </p>
-                <h1 className="max-w-4xl text-3xl font-black tracking-tight text-[#1f2a2e] md:text-[2.7rem] md:leading-[1.04]">
+                <h1 className="max-w-4xl text-[2rem] font-black tracking-tight text-[#1f2a2e] md:text-[2.7rem] md:leading-[1.04]">
                   {property.title}
                 </h1>
                 <div className="flex flex-wrap items-center gap-2 text-sm text-[#667085]">
@@ -500,7 +560,7 @@ export function PropertyDetailClient({
                 </div>
               </div>
 
-              <div className="grid gap-4 rounded-[28px] border border-[#eadcca] bg-white/88 p-4 md:grid-cols-[1fr,auto] md:items-end">
+              <div className="grid gap-4 rounded-[24px] border border-[#eadcca] bg-white/88 p-4 md:grid-cols-[1fr,auto] md:items-end md:rounded-[28px]" data-mobile-reveal="pending" data-mobile-reveal-delay="160" style={{ ["--pg-reveal-delay" as string]: "160ms" }}>
                 <div>
                   <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#9ca3af]">
                     {property.purpose === 'rent' ? 'Monthly rent' : 'Quoted price'}
@@ -528,115 +588,182 @@ export function PropertyDetailClient({
                 </div>
               </div>
 
-              {/* Gallery Grid Layout */}
-              <div className="overflow-hidden rounded-[30px] border border-[#eadcca] bg-[#f7f2ec]">
-                {galleryImages.length >= 3 ? (
-                  <div className="grid grid-cols-4 grid-rows-2 gap-1 aspect-[16/8]">
-                    <div className="col-span-2 row-span-2 relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(0); setIsLightboxOpen(true); }}>
-                      <img src={galleryImages[0]?.url || '/placeholder.svg'} alt={galleryImages[0]?.label || property.title} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
-                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
-                    </div>
-                    <div className="relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(1); setIsLightboxOpen(true); }}>
-                      <img src={galleryImages[1]?.url || '/placeholder.svg'} alt={galleryImages[1]?.label || 'Photo 2'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
-                    </div>
-                    <div className="relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(2); setIsLightboxOpen(true); }}>
-                      <img src={galleryImages[2]?.url || '/placeholder.svg'} alt={galleryImages[2]?.label || 'Photo 3'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
-                    </div>
-                    {galleryImages.length >= 4 ? (
-                      <div className="relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(3); setIsLightboxOpen(true); }}>
-                        <img src={galleryImages[3]?.url || '/placeholder.svg'} alt={galleryImages[3]?.label || 'Photo 4'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
-                      </div>
-                    ) : (
-                      <div className="bg-[#f1ebe4]" />
-                    )}
-                    {galleryImages.length >= 5 ? (
-                      <div className="relative overflow-hidden cursor-pointer" onClick={() => { setCurrentImageIndex(4); setIsLightboxOpen(true); }}>
-                        <img src={galleryImages[4]?.url || '/placeholder.svg'} alt={galleryImages[4]?.label || 'Photo 5'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
-                        {galleryImages.length > 5 && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                            <span className="text-lg font-bold text-white">+{galleryImages.length - 5} more</span>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="bg-[#f1ebe4]" />
-                    )}
-                  </div>
-                ) : (
-                  <div className="relative aspect-[16/9] overflow-hidden bg-[#f1ebe4]">
+              <div className="overflow-hidden rounded-[28px] border border-[#eadcca] bg-[#f7f2ec] md:rounded-[30px]" data-mobile-reveal="pending" data-mobile-reveal-delay="240" style={{ ["--pg-reveal-delay" as string]: "240ms" }}>
+                <div className="relative md:hidden">
+                  <div
+                    className="relative aspect-[16/12] overflow-hidden bg-[#f1ebe4]"
+                    onTouchStart={handleMobileGalleryTouchStart}
+                    onTouchEnd={handleMobileGalleryTouchEnd}
+                  >
                     <img
                       src={activeImage?.url || '/placeholder.svg'}
                       alt={activeImage?.label || property.title}
-                      className="h-full w-full object-cover cursor-pointer"
+                      className="h-full w-full scale-[1.015] cursor-pointer object-cover transition-transform duration-500"
                       onClick={() => setIsLightboxOpen(true)}
                     />
-                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/28 via-transparent to-transparent" />
-                    {canMovePrev ? (
-                      <button
-                        type="button"
-                        onClick={() => setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)}
-                        className="absolute left-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
-                      >
-                        <ChevronLeft className="h-5 w-5" />
-                      </button>
-                    ) : null}
-                    {canMoveNext ? (
-                      <button
-                        type="button"
-                        onClick={() => setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length)}
-                        className="absolute right-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
-                      >
-                        <ChevronRight className="h-5 w-5" />
-                      </button>
-                    ) : null}
-                  </div>
-                )}
-                {/* Thumbnail strip */}
-                {galleryImages.length > 1 ? (
-                  <div className="flex gap-2 overflow-x-auto px-3 py-3 scrollbar-hide">
-                    {galleryImages.map((image, index) => (
-                      <button
-                        key={image.id}
-                        type="button"
-                        onClick={() => { setCurrentImageIndex(index); setIsLightboxOpen(true); }}
-                        className={cn(
-                          'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-xl border transition',
-                          index === currentImageIndex
-                            ? 'border-[#eb6239] ring-2 ring-[#f9c7b4]'
-                            : 'border-[#eadcca] opacity-70 hover:opacity-100',
-                        )}
-                      >
-                        <img src={image.url} alt={image.label || `Gallery ${index + 1}`} className="h-full w-full object-cover" />
-                      </button>
-                    ))}
-                    {property.media.videoUrl ? (
-                      <div className="flex h-16 w-20 flex-shrink-0 items-center justify-center rounded-xl border border-[#eadcca] bg-[#1f2a2e] text-white cursor-pointer hover:bg-[#2d3c40] transition">
-                        <PlayCircle className="h-6 w-6" />
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+                    <div className="absolute left-3 top-3 inline-flex items-center gap-2 rounded-full border border-white/35 bg-white/88 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#1f2a2e] backdrop-blur">
+                      <ImageIcon className="h-3.5 w-3.5" />
+                      <span>{currentImageIndex + 1} / {galleryImages.length}</span>
+                    </div>
+                    <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between gap-3">
+                      <div className="rounded-full bg-black/38 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-white/88 backdrop-blur">
+                        Swipe to browse
                       </div>
-                    ) : null}
+                      <button
+                        type="button"
+                        onClick={() => setIsLightboxOpen(true)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/35 bg-white/92 px-3 py-2 text-xs font-semibold text-[#1f2a2e] shadow-[0_18px_34px_-24px_rgba(31,42,46,0.48)]"
+                      >
+                        <Maximize2 className="h-3.5 w-3.5" />
+                        View all
+                      </button>
+                    </div>
                   </div>
-                ) : null}
-                {/* View all / photo count badge */}
-                <div className="flex items-center justify-between px-4 pb-3">
-                  <div className="flex items-center gap-2 text-xs text-[#667085]">
-                    <ImageIcon className="h-3.5 w-3.5" />
-                    <span>{galleryImages.length} photos</span>
-                    {property.media.videoUrl ? <span>• 1 video</span> : null}
+
+                  {galleryImages.length > 1 ? (
+                    <div className="pg-mobile-scroll-row px-3 pb-3 pt-3">
+                      {galleryImages.map((image, index) => (
+                        <button
+                          key={image.id}
+                          type="button"
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={cn(
+                            'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-2xl border transition',
+                            index === currentImageIndex
+                              ? 'border-[#eb6239] ring-2 ring-[#f9c7b4]'
+                              : 'border-[#eadcca] opacity-80',
+                          )}
+                        >
+                          <img src={image.url} alt={image.label || `Gallery ${index + 1}`} className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                      {property.media.videoUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => setIsLightboxOpen(true)}
+                          className="flex h-16 w-20 flex-shrink-0 items-center justify-center rounded-2xl border border-[#eadcca] bg-[#1f2a2e] text-white transition"
+                        >
+                          <PlayCircle className="h-6 w-6" />
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="hidden md:block">
+                  {galleryImages.length >= 3 ? (
+                    <div className="grid aspect-[16/8] grid-cols-4 grid-rows-2 gap-1">
+                      <div className="relative col-span-2 row-span-2 cursor-pointer overflow-hidden" onClick={() => { setCurrentImageIndex(0); setIsLightboxOpen(true); }}>
+                        <img src={galleryImages[0]?.url || '/placeholder.svg'} alt={galleryImages[0]?.label || property.title} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                      </div>
+                      <div className="relative cursor-pointer overflow-hidden" onClick={() => { setCurrentImageIndex(1); setIsLightboxOpen(true); }}>
+                        <img src={galleryImages[1]?.url || '/placeholder.svg'} alt={galleryImages[1]?.label || 'Photo 2'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                      </div>
+                      <div className="relative cursor-pointer overflow-hidden" onClick={() => { setCurrentImageIndex(2); setIsLightboxOpen(true); }}>
+                        <img src={galleryImages[2]?.url || '/placeholder.svg'} alt={galleryImages[2]?.label || 'Photo 3'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                      </div>
+                      {galleryImages.length >= 4 ? (
+                        <div className="relative cursor-pointer overflow-hidden" onClick={() => { setCurrentImageIndex(3); setIsLightboxOpen(true); }}>
+                          <img src={galleryImages[3]?.url || '/placeholder.svg'} alt={galleryImages[3]?.label || 'Photo 4'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                        </div>
+                      ) : (
+                        <div className="bg-[#f1ebe4]" />
+                      )}
+                      {galleryImages.length >= 5 ? (
+                        <div className="relative cursor-pointer overflow-hidden" onClick={() => { setCurrentImageIndex(4); setIsLightboxOpen(true); }}>
+                          <img src={galleryImages[4]?.url || '/placeholder.svg'} alt={galleryImages[4]?.label || 'Photo 5'} className="h-full w-full object-cover transition duration-500 hover:scale-105" />
+                          {galleryImages.length > 5 && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                              <span className="text-lg font-bold text-white">+{galleryImages.length - 5} more</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="bg-[#f1ebe4]" />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="relative aspect-[16/9] overflow-hidden bg-[#f1ebe4]">
+                      <img
+                        src={activeImage?.url || '/placeholder.svg'}
+                        alt={activeImage?.label || property.title}
+                        className="h-full w-full cursor-pointer object-cover"
+                        onClick={() => setIsLightboxOpen(true)}
+                      />
+                      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/28 via-transparent to-transparent" />
+                      {canMovePrev ? (
+                        <button
+                          type="button"
+                          onClick={() => setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length)}
+                          className="absolute left-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
+                        >
+                          <ChevronLeft className="h-5 w-5" />
+                        </button>
+                      ) : null}
+                      {canMoveNext ? (
+                        <button
+                          type="button"
+                          onClick={() => setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length)}
+                          className="absolute right-4 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[#1f2a2e] shadow-lg transition hover:bg-white"
+                        >
+                          <ChevronRight className="h-5 w-5" />
+                        </button>
+                      ) : null}
+                    </div>
+                  )}
+
+                  {galleryImages.length > 1 ? (
+                    <div className="flex gap-2 overflow-x-auto px-3 py-3 scrollbar-hide">
+                      {galleryImages.map((image, index) => (
+                        <button
+                          key={image.id}
+                          type="button"
+                          onClick={() => { setCurrentImageIndex(index); setIsLightboxOpen(true); }}
+                          className={cn(
+                            'relative h-16 w-20 flex-shrink-0 overflow-hidden rounded-xl border transition',
+                            index === currentImageIndex
+                              ? 'border-[#eb6239] ring-2 ring-[#f9c7b4]'
+                              : 'border-[#eadcca] opacity-70 hover:opacity-100',
+                          )}
+                        >
+                          <img src={image.url} alt={image.label || `Gallery ${index + 1}`} className="h-full w-full object-cover" />
+                        </button>
+                      ))}
+                      {property.media.videoUrl ? (
+                        <button
+                          type="button"
+                          onClick={() => setIsLightboxOpen(true)}
+                          className="flex h-16 w-20 flex-shrink-0 items-center justify-center rounded-xl border border-[#eadcca] bg-[#1f2a2e] text-white cursor-pointer transition hover:bg-[#2d3c40]"
+                        >
+                          <PlayCircle className="h-6 w-6" />
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <div className="flex items-center justify-between px-4 pb-3">
+                    <div className="flex items-center gap-2 text-xs text-[#667085]">
+                      <ImageIcon className="h-3.5 w-3.5" />
+                      <span>{galleryImages.length} photos</span>
+                      {property.media.videoUrl ? <span>• 1 video</span> : null}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsLightboxOpen(true)}
+                      className="inline-flex items-center gap-1.5 rounded-full border border-[#eadcca] bg-white px-3 py-1.5 text-xs font-semibold text-[#1f2a2e] transition hover:border-[#eb6239] hover:text-[#eb6239]"
+                    >
+                      <Maximize2 className="h-3 w-3" />
+                      View all photos
+                    </button>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsLightboxOpen(true)}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-[#eadcca] bg-white px-3 py-1.5 text-xs font-semibold text-[#1f2a2e] transition hover:border-[#eb6239] hover:text-[#eb6239]"
-                  >
-                    <Maximize2 className="h-3 w-3" />
-                    View all photos
-                  </button>
                 </div>
               </div>
             </div>
 
             <div className="space-y-4">
-              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5 shadow-[0_22px_60px_-36px_rgba(15,23,42,0.34)]">
+              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5 shadow-[0_22px_60px_-36px_rgba(15,23,42,0.34)]" data-mobile-reveal="pending" data-mobile-reveal-delay="300" style={{ ["--pg-reveal-delay" as string]: "300ms" }}>
                 <div className="flex items-center gap-2 text-sm font-semibold text-[#1f2a2e]">
                   <ShieldCheck className="h-4 w-4 text-[#eb6239]" />
                   Managed buyer flow
@@ -671,7 +798,7 @@ export function PropertyDetailClient({
                 ) : null}
               </div>
 
-              <div className="rounded-[30px] border border-[#eadcca] bg-[#1f2a2e] p-5 text-white shadow-[0_24px_64px_-40px_rgba(15,23,42,0.58)]">
+              <div className="rounded-[30px] border border-[#eadcca] bg-[#1f2a2e] p-5 text-white shadow-[0_24px_64px_-40px_rgba(15,23,42,0.58)]" data-mobile-reveal="pending" data-mobile-reveal-delay="360" style={{ ["--pg-reveal-delay" as string]: "360ms" }}>
                 <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/55">Quick snapshot</p>
                 <div className="mt-4 grid gap-3">
                   {heroFacts.map((fact) => (
@@ -684,7 +811,7 @@ export function PropertyDetailClient({
               </div>
 
               {property.tags.length > 0 ? (
-                <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5">
+                <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5" data-mobile-reveal="pending" data-mobile-reveal-delay="420" style={{ ["--pg-reveal-delay" as string]: "420ms" }}>
                   <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#9ca3af]">Search tags</p>
                   <div className="mt-4 flex flex-wrap gap-2">
                     {property.tags.map((tag) => (
@@ -699,9 +826,9 @@ export function PropertyDetailClient({
           </div>
         </section>
 
-        <section className="mt-8 grid gap-8 lg:grid-cols-[minmax(0,1fr),340px]">
+        <section className="mt-8 grid gap-6 md:gap-8 lg:grid-cols-[minmax(0,1fr),340px]">
           <div className="space-y-8">
-            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]" data-mobile-reveal="pending">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-[#fff1ea] p-3 text-[#eb6239]">
                   <Building2 className="h-5 w-5" />
@@ -726,7 +853,7 @@ export function PropertyDetailClient({
               ) : null}
             </div>
 
-            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]" data-mobile-reveal="pending">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-[#eff8f0] p-3 text-[#2f6f4f]">
                   <Compass className="h-5 w-5" />
@@ -747,7 +874,7 @@ export function PropertyDetailClient({
             </div>
 
             {property.amenities.length > 0 ? (
-              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]" data-mobile-reveal="pending">
                 <div className="flex items-center gap-3">
                   <div className="rounded-2xl bg-[#fff1ea] p-3 text-[#eb6239]">
                     <CheckCircle2 className="h-5 w-5" />
@@ -769,7 +896,7 @@ export function PropertyDetailClient({
             ) : null}
 
             {property.media.floorplans.length > 0 ? (
-              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]" data-mobile-reveal="pending">
                 <div className="flex items-center gap-3">
                   <div className="rounded-2xl bg-[#eef4ff] p-3 text-[#4460e6]">
                     <Layers3 className="h-5 w-5" />
@@ -795,7 +922,7 @@ export function PropertyDetailClient({
             ) : null}
 
             {property.media.videoUrl ? (
-              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+              <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]" data-mobile-reveal="pending">
                 <div className="flex items-center gap-3">
                   <div className="rounded-2xl bg-[#fff1ea] p-3 text-[#eb6239]">
                     <PlayCircle className="h-5 w-5" />
@@ -819,7 +946,7 @@ export function PropertyDetailClient({
               </div>
             ) : null}
 
-            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]" data-mobile-reveal="pending">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-[#fff1ea] p-3 text-[#eb6239]">
                   <MapPin className="h-5 w-5" />
@@ -945,7 +1072,7 @@ export function PropertyDetailClient({
           </div>
 
           <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]" data-mobile-reveal="pending">
               <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#9ca3af]">Commercial summary</p>
               <div className="mt-4 space-y-3">
                 {pricingFacts.length > 0 ? (
@@ -963,7 +1090,7 @@ export function PropertyDetailClient({
               </div>
             </div>
 
-            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]">
+            <div className="rounded-[30px] border border-[#eadcca] bg-white/92 p-5 shadow-[0_24px_70px_-48px_rgba(15,23,42,0.32)]" data-mobile-reveal="pending">
               <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#9ca3af]">Timeline</p>
               <div className="mt-4 space-y-3">
                 {timelineFacts.map((fact) => (
@@ -975,7 +1102,7 @@ export function PropertyDetailClient({
               </div>
             </div>
 
-            <div className="rounded-[30px] border border-[#eadcca] bg-[#1f2a2e] p-5 text-white shadow-[0_24px_70px_-48px_rgba(15,23,42,0.42)]">
+            <div className="rounded-[30px] border border-[#eadcca] bg-[#1f2a2e] p-5 text-white shadow-[0_24px_70px_-48px_rgba(15,23,42,0.42)]" data-mobile-reveal="pending">
               <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-white/55">Seller access policy</p>
               <p className="mt-3 text-sm leading-7 text-white/76">
                 Property Ganj keeps the direct builder / owner contact private on the public listing page. Use the callback request button above if you want the team to connect you.
@@ -991,7 +1118,7 @@ export function PropertyDetailClient({
         </section>
 
         {similar.length > 0 ? (
-          <section className="mt-10 rounded-[34px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.36)] md:p-8">
+          <section className="mt-10 rounded-[34px] border border-[#eadcca] bg-white/92 p-6 shadow-[0_28px_80px_-56px_rgba(15,23,42,0.36)] md:p-8" data-mobile-reveal="pending">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#9ca3af]">More inventory</p>
@@ -1000,11 +1127,14 @@ export function PropertyDetailClient({
               </div>
             </div>
             <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {similar.map((item) => (
+              {similar.map((item, index) => (
                 <Link
                   key={item.id}
                   href={`/property/${item.id}`}
                   className="group overflow-hidden rounded-[28px] border border-[#eadcca] bg-[#fffaf5] transition hover:-translate-y-1 hover:shadow-[0_28px_60px_-42px_rgba(15,23,42,0.34)]"
+                  data-mobile-reveal="pending"
+                  data-mobile-reveal-delay={String(Math.min(index * 70, 280))}
+                  style={{ ["--pg-reveal-delay" as string]: `${Math.min(index * 70, 280)}ms` }}
                 >
                   <div className="relative h-44 overflow-hidden bg-[#f3ece5]">
                     <img
@@ -1034,6 +1164,39 @@ export function PropertyDetailClient({
             </div>
           </section>
         ) : null}
+      </div>
+
+      <div
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-[65] border-t border-[#eadcca] bg-white/96 shadow-[0_-18px_48px_-30px_rgba(15,23,42,0.34)] backdrop-blur-xl transition-transform duration-300 motion-reduce:transition-none md:hidden',
+          showMobileCta ? 'translate-y-0' : 'translate-y-full'
+        )}
+      >
+        <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 pg-mobile-safe-bottom">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">
+              {property.purpose === 'rent' ? 'Monthly rent' : 'Quoted price'}
+            </p>
+            <p className="mt-1 truncate text-lg font-black tracking-tight text-[#1f2a2e]">
+              {formatCurrency(property.price, property.currency)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleShare}
+            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-[#eadcca] bg-white text-[#1f2a2e] shadow-[0_14px_30px_-24px_rgba(15,23,42,0.46)]"
+          >
+            <Share2 className="h-4 w-4" />
+          </button>
+          <Button
+            type="button"
+            onClick={() => setIsInterestOpen(true)}
+            className="h-12 flex-1 rounded-full bg-[#eb6239] px-5 text-sm font-bold text-white shadow-[0_18px_36px_-18px_rgba(235,98,57,0.68)] hover:bg-[#d85a35]"
+          >
+            <HeartHandshake className="mr-2 h-4 w-4" />
+            {interestRequested ? 'Interest Sent' : 'Request Callback'}
+          </Button>
+        </div>
       </div>
 
       {/* Fullscreen Lightbox */}
@@ -1145,7 +1308,7 @@ export function PropertyDetailClient({
                     type="text"
                     value={interestForm.name}
                     onChange={(event) => setInterestForm((prev) => ({ ...prev, name: event.target.value }))}
-                    className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                    className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-base outline-none transition focus:border-[#eb6239] md:text-sm"
                     placeholder="Full name"
                   />
                 </div>
@@ -1155,7 +1318,7 @@ export function PropertyDetailClient({
                     type="text"
                     value={interestForm.phone}
                     onChange={(event) => setInterestForm((prev) => ({ ...prev, phone: event.target.value }))}
-                    className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                    className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-base outline-none transition focus:border-[#eb6239] md:text-sm"
                     placeholder="Mobile number"
                   />
                 </div>
@@ -1165,7 +1328,7 @@ export function PropertyDetailClient({
                     type="email"
                     value={interestForm.email}
                     onChange={(event) => setInterestForm((prev) => ({ ...prev, email: event.target.value }))}
-                    className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+                    className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-base outline-none transition focus:border-[#eb6239] md:text-sm"
                     placeholder="Email address"
                   />
                 </div>
