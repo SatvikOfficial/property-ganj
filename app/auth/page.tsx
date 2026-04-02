@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ChangeEvent, type FormEvent } from 'react';
+import { useMemo, useState, type ChangeEvent, type FormEvent } from 'react';
 import {
   ArrowLeft,
   Eye,
@@ -39,7 +39,7 @@ function getAuthErrorMessage(error: unknown) {
 export default function AuthPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
 
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);

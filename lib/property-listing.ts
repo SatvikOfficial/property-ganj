@@ -319,6 +319,7 @@ const compactArray = (values?: (string | undefined | null)[]) =>
   (values || []).map((value) => value?.trim()).filter((value): value is string => Boolean(value));
 
 const normalizeText = (value?: string | null) => value?.trim() || undefined;
+const normalizeComparable = (value?: string | null) => (value || '').trim().toLowerCase();
 
 const normalizeNumber = (value?: number | null) =>
   typeof value === 'number' && Number.isFinite(value) ? value : undefined;

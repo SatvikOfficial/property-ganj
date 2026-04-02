@@ -14,6 +14,23 @@ async function getRouteError(response: Response) {
   return 'Please try again.'
 }
 
+async function postAuthRoute(path: string, payload: Record<string, unknown>) {
+  try {
+    return await fetch(path, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'same-origin',
+      cache: 'no-store',
+      body: JSON.stringify(payload),
+    })
+  } catch (error) {
+    console.error(`Auth route request failed for ${path}:`, error)
+    return null
+  }
+}
+
 export function createClient() {
   const client = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,18 +63,17 @@ export function createClient() {
     const fullName = typeof metadata.full_name === 'string' ? metadata.full_name : ''
     const phone = typeof metadata.phone === 'string' ? metadata.phone : ''
 
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: fullName,
-        email: credentials.email,
-        password: credentials.password,
-        phone,
-      }),
+    const response = await postAuthRoute('/api/auth/register', {
+      name: fullName,
+      email: credentials.email,
+      password: credentials.password,
+      phone,
     })
+
+    // Fall back to the default Supabase flow if the custom route is temporarily unavailable.
+    if (!response) {
+      return originalSignUp(credentials)
+    }
 
     if (!response.ok) {
       return {
@@ -94,18 +110,12 @@ export function createClient() {
       return result
     }
 
-    const repairResponse = await fetch('/api/auth/repair-login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        email: credentials.email,
-        password: credentials.password,
-      }),
+    const repairResponse = await postAuthRoute('/api/auth/repair-login', {
+      email: credentials.email,
+      password: credentials.password,
     })
 
-    if (!repairResponse.ok) {
+    if (!repairResponse?.ok) {
       return result
     }
 
