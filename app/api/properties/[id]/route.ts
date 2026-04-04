@@ -184,6 +184,23 @@ export async function PATCH(
 
       return NextResponse.json({ success: true, message: 'Hold released successfully' });
     }
+    
+    if (action === 'set_hold') {
+      const { error } = await auth.admin
+        .from('properties')
+        .update({
+          hold_by_user_id: auth.user.id,
+          hold_expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id);
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+
+      return NextResponse.json({ success: true, message: 'Hold set successfully for 48 hours' });
+    }
 
     if (action === 'mark_sold') {
       const { error } = await auth.admin

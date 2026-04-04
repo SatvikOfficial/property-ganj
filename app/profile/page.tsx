@@ -36,7 +36,7 @@ export default async function ProfilePage() {
       : profile?.role === 'agent'
         ? '/agent'
         : profile?.role === 'builder'
-          ? '/builder'
+          ? '/builder-dashboard'
           : null;
 
   const dashboardLabel =
@@ -54,11 +54,6 @@ export default async function ProfilePage() {
       <div className="max-w-6xl mx-auto p-6 mt-10">
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-3xl font-bold text-foreground">My Profile</h1>
-          {dashboardHref && dashboardLabel && (
-            <a href={dashboardHref} className="inline-flex items-center justify-center px-5 py-2.5 bg-foreground text-background font-bold rounded-xl hover:opacity-90 transition shadow-md">
-              {dashboardLabel}
-            </a>
-          )}
         </div>
         
         {isEmailUnverified && (

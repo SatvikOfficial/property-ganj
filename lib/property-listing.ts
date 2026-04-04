@@ -261,6 +261,17 @@ export const PROPERTY_TYPE_OPTIONS = [
   'Industrial',
 ] as const;
 
+export const FACING_OPTIONS = [
+  'North',
+  'South',
+  'East',
+  'West',
+  'North-East',
+  'North-West',
+  'South-East',
+  'South-West',
+] as const;
+
 export const AREA_UNIT_OPTIONS = [
   { value: 'sqft', label: 'Sq-ft' },
   { value: 'sq-yrd', label: 'Sq-yrd' },

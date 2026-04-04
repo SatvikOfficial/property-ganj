@@ -219,7 +219,7 @@ export default function Header() {
       : user?.role === "agent"
         ? "/agent"
         : user?.role === "builder"
-          ? "/builder"
+          ? "/builder-dashboard"
           : null
 
   const dashboardLabel =
@@ -302,6 +302,7 @@ export default function Header() {
                     <Link href="/profile/my-ads" className="block rounded-xl px-4 py-3 text-sm font-medium transition hover:bg-accent">
                       My Ads
                     </Link>
+
                     {dashboardHref && dashboardLabel ? (
                       <Link href={dashboardHref} className="block rounded-xl px-4 py-3 text-sm font-medium text-primary transition hover:bg-accent">
                         {dashboardLabel}
@@ -555,6 +556,7 @@ export default function Header() {
                     {item.label}
                   </Link>
                 ))}
+
                 {dashboardHref && dashboardLabel ? (
                   <Link
                     href={dashboardHref}

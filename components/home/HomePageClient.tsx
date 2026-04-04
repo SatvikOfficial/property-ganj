@@ -10,6 +10,7 @@ import FeaturedProjectsShowcase from "@/components/home/FeaturedProjectsShowcase
 import LikeButton from "@/components/LikeButton"
 import { useCity } from "@/components/CityContext"
 import { createClient } from "@/utils/supabase/client"
+import RecommendationsSection from "@/components/home/RecommendationsSection"
 import {
   PROPERTY_GANJ_SUBDIVISIONS,
   getPropertyGanjSubdivisionFromProperty,
@@ -436,9 +437,9 @@ export default function HomePage() {
       <HomeHero />
 
       {/* Featured Projects Section */}
-      <section className="bg-background pb-3 max-md:pb-1 pt-0">
-        <div className="w-full rounded-[32px] border border-amber-100 bg-[linear-gradient(135deg,#fff9ef_0%,#ffffff_58%,#fff1e4_100%)] p-3 max-md:rounded-[26px] max-md:p-2.5 shadow-[0_18px_60px_rgba(235,98,57,0.08)] sm:p-4">
-          <div className="mb-3 flex items-center justify-between gap-4 max-md:mb-2.5">
+      <section className="bg-background pb-1.5 md:pb-2 pt-0">
+        <div className="w-full rounded-[32px] border border-amber-100 bg-[linear-gradient(135deg,#fff9ef_0%,#ffffff_58%,#fff1e4_100%)] p-2 max-md:p-1.5 shadow-[0_12px_44px_rgba(235,98,57,0.06)] sm:p-3">
+          <div className="mb-1.5 flex items-center justify-between gap-2 max-md:mb-1.5">
             <div className="flex items-center gap-3">
               <div className="rounded-2xl bg-amber-100 p-2.5 max-md:p-2 shadow-sm">
                 <Sparkles className="h-5 w-5 max-md:h-4 max-md:w-4 text-amber-600" />
@@ -606,6 +607,11 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ============================================================ */}
+      {/* SECTION: Recommendations */}
+      {/* ============================================================ */}
+      <RecommendationsSection />
 
       {/* ═══════════════════════════════════════════════════════════ */}
       {/* Discover Properties — Themed Gradient Cards */}

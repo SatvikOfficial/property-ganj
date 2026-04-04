@@ -69,7 +69,7 @@ export function ProfileClient({ user }: ProfileClientProps) {
       : user.role === 'agent'
         ? '/agent'
         : user.role === 'builder'
-          ? '/builder'
+          ? '/builder-dashboard'
           : null;
 
   const dashboardLabel =

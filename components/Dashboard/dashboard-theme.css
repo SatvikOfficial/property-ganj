@@ -1,0 +1,42 @@
+@theme {
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  
+  --color-brand-orange-50: #fff7ed;
+  --color-brand-orange-500: #f97316;
+  --color-brand-orange-600: #ea580c;
+
+  --color-brand-green-50: #f0fdf4;
+  --color-brand-green-500: #22c55e;
+  --color-brand-green-600: #16a34a;
+
+  --color-surface: #ffffff;
+  --color-background: #f8fafc;
+}
+
+.dashboard-root {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--color-background);
+  color: #1e293b;
+}
+
+/* Custom Scrollbar scoped to dashboard */
+.dashboard-root ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.dashboard-root ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dashboard-root ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.dashboard-root ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

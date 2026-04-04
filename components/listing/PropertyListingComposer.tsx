@@ -31,6 +31,7 @@ import {
   OWNER_TYPE_OPTIONS,
   PHOTO_CATEGORIES,
   PROPERTY_TYPE_OPTIONS,
+  FACING_OPTIONS,
   PURPOSE_OPTIONS,
   TAG_OPTIONS,
   buildPublicStorageUrl,
@@ -1283,7 +1284,18 @@ export default function PropertyListingComposer({
           </div>
           <div>
             <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Facing</label>
-            <input type="text" value={form.specs.facing} onChange={(event) => setSpecsField('facing', event.target.value)} className="w-full rounded-[20px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]" />
+            <select
+              value={form.specs.facing}
+              onChange={(event) => setSpecsField('facing', event.target.value)}
+              className="w-full rounded-[20px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239]"
+            >
+              <option value="">Select</option>
+              {FACING_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Parking slots</label>

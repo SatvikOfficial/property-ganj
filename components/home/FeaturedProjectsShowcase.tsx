@@ -60,7 +60,7 @@ export default function FeaturedProjectsShowcase({
       className={`group relative overflow-hidden rounded-[28px] border border-[#f3d4b5] bg-[#102324] transition-all duration-500 hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(16,35,36,0.12)] ${
         mobile
           ? "min-h-[208px] min-w-[84vw] max-w-[22rem] shrink-0 snap-start"
-          : "min-h-[196px] xl:min-h-[228px]"
+          : "min-h-[160px] xl:min-h-[185px]"
       }`}
     >
       <Image
@@ -91,7 +91,7 @@ export default function FeaturedProjectsShowcase({
             {project.type}
           </span>
         </div>
-        <div className="mt-4 flex items-center justify-between gap-3 max-md:mt-3">
+        <div className="mt-2.5 flex items-center justify-between gap-3 max-md:mt-2.5">
           <p className="text-sm font-semibold text-[#ffd7b4] sm:text-base">{project.price}</p>
           <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-white/20">
             View
@@ -103,7 +103,7 @@ export default function FeaturedProjectsShowcase({
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <div className="pg-mobile-scroll-row -mx-3 px-3 pb-1 md:hidden">
         {visibleProjects.map((project, index) => renderProjectCard(project, index, true))}
       </div>

@@ -12,9 +12,9 @@ export default function HomeHero() {
   const [activeFilter, setActiveFilter] = useState("Buy")
 
   return (
-    <section id="hero-section" className="relative z-20 bg-background pb-2 pt-1 md:pb-1 md:pt-2">
+    <section id="hero-section" className="relative z-20 bg-background pb-1 pt-0 md:pb-0 md:pt-1">
       <div className="w-full">
-        <div className="relative overflow-hidden rounded-[26px] border border-slate-200/80 shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:rounded-[32px]">
+        <div className="relative rounded-[26px] border border-slate-200/80 shadow-[0_24px_80px_rgba(15,23,42,0.16)] sm:rounded-[32px]">
           {/* Background Wrapper with Overflow Hidden to keep video/overlays clipped */}
           <div className="absolute inset-0 overflow-hidden rounded-[32px] sm:rounded-[32px]">
             <video
@@ -30,11 +30,11 @@ export default function HomeHero() {
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(255,255,255,0.16),transparent_22%),radial-gradient(circle_at_84%_20%,rgba(235,98,57,0.18),transparent_26%)]" />
           </div>
 
-          <div className="relative z-10 flex min-h-[240px] max-md:min-h-0 flex-col justify-center gap-3 px-4 py-4 max-md:py-3 sm:px-8 sm:py-3 lg:min-h-[228px] lg:px-10 lg:py-3">
-            <div className="flex w-full flex-col gap-5 max-md:gap-3 lg:flex-row lg:items-stretch lg:gap-7 xl:gap-8">
-              <div className="flex min-w-0 flex-1 flex-col justify-center gap-4 max-md:gap-3">
+          <div className="relative z-10 flex flex-col justify-center gap-2 px-4 py-3 sm:px-8 sm:py-2 lg:px-10 lg:py-1.5">
+            <div className="flex w-full flex-col gap-3 max-md:gap-2 lg:flex-row lg:items-stretch lg:gap-7 xl:gap-8">
+              <div className="flex min-w-0 flex-1 flex-col justify-center gap-3 max-md:gap-2">
                 <div className="max-w-3xl pg-mobile-hero-item" style={{ ['--pg-enter-delay' as string]: '0ms' }}>
-                  <div className="mt-2 max-w-4xl [&_.text-foreground]:!text-white [&_h1]:!mb-0 [&_h1]:!text-white">
+                  <div className="mt-1 max-w-4xl [&_.text-foreground]:!text-white [&_h1]:!mb-0 [&_h1]:!text-white">
                     <DynamicGreeting />
                   </div>
                   <p

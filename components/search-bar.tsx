@@ -163,22 +163,8 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [showPropertyDropdown, showBudgetDropdown])
 
-  useEffect(() => {
-    if (typeof document === "undefined") return
-
-    const previousOverflow = document.body.style.overflow
-    const previousTouchAction = document.body.style.touchAction
-
-    if (!isSheetOpen) return
-
-    document.body.style.overflow = "hidden"
-    document.body.style.touchAction = "none"
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-      document.body.style.touchAction = previousTouchAction
-    }
-  }, [showPropertyDropdown, showBudgetDropdown])
+  // Scroll locking has been removed to allow the page to be scrollable when dropdowns are open.
+  // This ensures the full dropdown can be seen on smaller desktop screens or when zoomed in.
 
   const handleLocationInputChange = (text: string) => {
     setLocation(text)
@@ -269,7 +255,7 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
   const renderPropertyDropdown = () => (
     <div
       data-open={showPropertyDropdown}
-      className="property-dropdown pg-mobile-sheet opacity-0 pointer-events-none data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto md:absolute md:left-1/2 md:top-[calc(100%+0.75rem)] md:w-[360px] md:-translate-x-1/2 md:translate-y-2 md:rounded-[26px] md:border md:border-border md:bg-white md:p-4 md:shadow-[0_28px_56px_-34px_rgba(15,23,42,0.28)] md:data-[open=true]:translate-y-0"
+      className="property-dropdown pg-mobile-sheet z-50 opacity-0 pointer-events-none data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto md:absolute md:left-1/2 md:top-[calc(100%+0.75rem)] md:w-[360px] md:-translate-x-1/2 md:translate-y-2 md:rounded-[26px] md:border md:border-border md:bg-white md:p-4 md:shadow-[0_28px_56px_-34px_rgba(15,23,42,0.28)] md:data-[open=true]:translate-y-0"
     >
       <div className="px-4 pb-5 pt-2 md:p-0">
         <div className="mb-4">
@@ -309,8 +295,8 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
                 onClick={() => setSelectedBedroom((prev) => (prev === option ? null : option))}
                 className={`min-h-11 rounded-full border px-4 py-2 text-sm transition-all ${
                   selectedBedroom === option
-                    ? "border-[#264143] bg-[#264143] text-white"
-                    : "border-border text-foreground hover:border-[#264143]"
+                    ? "border-[#eb6239] bg-[#fff1eb] text-[#eb6239] shadow-[inset_0_0_0_1px_rgba(235,98,57,0.1)]"
+                    : "border-border text-foreground hover:border-[#eb6239]"
                 }`}
               >
                 {option === 6 ? "5+ BHK" : `${option} BHK`}
@@ -329,7 +315,7 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
     return (
       <div
         data-open={showBudgetDropdown}
-        className="budget-dropdown pg-mobile-sheet opacity-0 pointer-events-none data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto md:absolute md:right-0 md:top-[calc(100%+0.75rem)] md:w-[360px] md:translate-y-2 md:rounded-[26px] md:border md:border-border md:bg-white md:p-4 md:shadow-[0_28px_56px_-34px_rgba(15,23,42,0.28)] md:data-[open=true]:translate-y-0"
+        className="budget-dropdown pg-mobile-sheet z-50 opacity-0 pointer-events-none data-[open=true]:opacity-100 data-[open=true]:pointer-events-auto md:absolute md:right-0 md:top-[calc(100%+0.75rem)] md:w-[360px] md:translate-y-2 md:rounded-[26px] md:border md:border-border md:bg-white md:p-4 md:shadow-[0_28px_56px_-34px_rgba(15,23,42,0.28)] md:data-[open=true]:translate-y-0"
       >
         <div className="px-4 pb-5 pt-2 md:p-0">
           <div className="mb-4">
@@ -367,8 +353,8 @@ export default function SearchBar({ defaultLocation, activeFilter = "Buy" }: Sea
                     onClick={() => setSelectedMaxBudget(value)}
                     className={`w-full rounded-xl border px-3 py-2.5 text-left text-sm transition-colors ${
                       selectedMaxBudget === value
-                        ? "border-[#264143] bg-[#264143] text-white"
-                        : "border-border text-foreground hover:border-[#264143]"
+                        ? "border-[#eb6239] bg-[#fff1eb] text-[#eb6239]"
+                        : "border-border text-foreground hover:border-[#eb6239]"
                     }`}
                   >
                     ₹{formatBudgetValue(value, normalizedFilter)}

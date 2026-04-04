@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -25,6 +25,8 @@ import {
   Sparkles,
   X,
   Maximize2,
+  ZoomIn,
+  ZoomOut,
 } from 'lucide-react';
 
 import LikeButton from '@/components/LikeButton';
@@ -185,6 +187,11 @@ export function PropertyDetailClient({
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [zoomLevel, setZoomLevel] = useState(1);
+  const [panX, setPanX] = useState(0);
+  const [panY, setPanY] = useState(0);
+  const lightboxRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const dragStart = useRef<{ x: number; y: number; panX: number; panY: number } | null>(null);
   const [isInterestOpen, setIsInterestOpen] = useState(false);
   const [isSubmittingInterest, setIsSubmittingInterest] = useState(false);
   const [interestRequested, setInterestRequested] = useState(initialInterest);
@@ -221,7 +228,10 @@ export function PropertyDetailClient({
 
   // Track this property view
   useEffect(() => {
-    if (property.id) addRecentlyViewed(property.id);
+    if (property.id) {
+      console.log('Recording view for property:', property.id);
+      addRecentlyViewed(property.id);
+    }
   }, [property.id]);
 
   useEffect(() => {
@@ -245,6 +255,81 @@ export function PropertyDetailClient({
       window.removeEventListener('scroll', updateMobileCta);
       window.removeEventListener('resize', updateMobileCta);
     };
+  }, []);
+
+  // Lock body scroll and enter fullscreen when lightbox is open
+  useEffect(() => {
+    if (isLightboxOpen) {
+      document.body.style.overflow = 'hidden';
+      // Enter native fullscreen
+      const el = lightboxRef.current;
+      if (el && document.fullscreenEnabled && !document.fullscreenElement) {
+        el.requestFullscreen().catch(() => {/* silently ignore if denied */});
+      }
+    } else {
+      document.body.style.overflow = '';
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isLightboxOpen]);
+
+  // Sync state if user presses Esc to exit native fullscreen
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement && isLightboxOpen) {
+        setIsLightboxOpen(false);
+        setZoomLevel(1);
+      }
+    };
+    document.addEventListener('fullscreenchange', onFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', onFullscreenChange);
+  }, [isLightboxOpen]);
+
+  const resetView = useCallback(() => {
+    setZoomLevel(1);
+    setPanX(0);
+    setPanY(0);
+  }, []);
+
+  const closeLightbox = useCallback(() => {
+    setIsLightboxOpen(false);
+    resetView();
+  }, [resetView]);
+
+  // Reset pan when zoom returns to 1 from outside
+  useEffect(() => {
+    if (zoomLevel === 1) { setPanX(0); setPanY(0); }
+  }, [zoomLevel]);
+
+  // Reset view when navigating to a different image
+  useEffect(() => {
+    setPanX(0);
+    setPanY(0);
+    setZoomLevel(1);
+  }, [currentImageIndex]);
+
+  // --- Drag-to-pan handlers ---
+  const handleDragStart = useCallback((clientX: number, clientY: number) => {
+    if (zoomLevel <= 1) return;
+    isDragging.current = true;
+    dragStart.current = { x: clientX, y: clientY, panX, panY };
+  }, [zoomLevel, panX, panY]);
+
+  const handleDragMove = useCallback((clientX: number, clientY: number) => {
+    if (!isDragging.current || !dragStart.current) return;
+    const dx = clientX - dragStart.current.x;
+    const dy = clientY - dragStart.current.y;
+    setPanX(dragStart.current.panX + dx);
+    setPanY(dragStart.current.panY + dy);
+  }, []);
+
+  const handleDragEnd = useCallback(() => {
+    isDragging.current = false;
+    dragStart.current = null;
   }, []);
 
   const activeImage = galleryImages[currentImageIndex] || galleryImages[0];
@@ -956,57 +1041,10 @@ export function PropertyDetailClient({
                   <p className="text-sm text-[#667085]">Enough micro-location detail to decide whether the property deserves a visit.</p>
                 </div>
               </div>
-              <div className="mt-6 grid gap-4 xl:grid-cols-[minmax(0,1.12fr),minmax(300px,0.88fr)]">
-                <div className="overflow-hidden rounded-[28px] border border-[#eadcca] bg-[#f6f0ea]">
-                  {mapPreviewUrl ? (
-                    <div className="relative">
-                      <img
-                        src={mapPreviewUrl}
-                        alt={`Map preview for ${property.title}`}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(31,42,46,0.02)_0%,rgba(31,42,46,0)_40%,rgba(31,42,46,0.42)_100%)]" />
-                      <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/85 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.18em] text-[#1f2a2e] backdrop-blur">
-                        Locality map
-                      </div>
-                      <div className="absolute bottom-4 left-4 right-4 flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-white/70">Pinned around</p>
-                          <p className="mt-1 text-lg font-black text-white">{locationLine || property.location.city || 'Property location'}</p>
-                        </div>
-                        {googleMapsSearchUrl ? (
-                          <a
-                            href={googleMapsSearchUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1f2a2e] shadow-[0_18px_34px_-24px_rgba(31,42,46,0.48)] transition hover:-translate-y-0.5"
-                          >
-                            Open in Google Maps
-                            <ArrowUpRight className="h-4 w-4" />
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-                  ) : googleMapsEmbedUrl ? (
-                    <iframe
-                      src={googleMapsEmbedUrl}
-                      title={`Map for ${property.title}`}
-                      className="h-[320px] w-full"
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                    />
-                  ) : (
-                    <div className="flex min-h-[320px] items-center justify-center px-6 text-center text-sm leading-7 text-[#667085]">
-                      The listing has location details, but the live map could not be loaded right now.
-                    </div>
-                  )}
-                </div>
-
-                <div className="space-y-4">
+              <div className="mt-6 space-y-4">
                   <div className="rounded-[26px] border border-[#eadcca] bg-[#fffaf5] p-5">
                     <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Neighbourhood snapshot</p>
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2">
                       <div className="rounded-[20px] border border-[#eadcca] bg-white px-4 py-4">
                         <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#9ca3af]">Locality</p>
                         <p className="mt-2 text-sm font-semibold leading-6 text-[#1f2a2e]">
@@ -1028,7 +1066,7 @@ export function PropertyDetailClient({
                   </div>
 
                   {locationFacts.length > 0 ? (
-                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       {locationFacts.map((fact) => (
                         <div key={fact.label} className="rounded-[22px] border border-[#eadcca] bg-white px-4 py-4">
                           <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9ca3af]">{fact.label}</p>
@@ -1037,7 +1075,6 @@ export function PropertyDetailClient({
                       ))}
                     </div>
                   ) : null}
-                </div>
               </div>
 
               {googleMapsEmbedUrl ? (
@@ -1202,81 +1239,158 @@ export function PropertyDetailClient({
       {/* Fullscreen Lightbox */}
       {isLightboxOpen && (
         <div
-          className="fixed inset-0 z-[100] flex flex-col bg-black/95"
-          onClick={() => { setIsLightboxOpen(false); setZoomLevel(1); }}
+          ref={lightboxRef}
+          className="fixed inset-0 z-[99999] flex flex-col bg-black"
+          onClick={closeLightbox}
           onKeyDown={(e) => {
-            if (e.key === 'Escape') { setIsLightboxOpen(false); setZoomLevel(1); }
-            if (e.key === 'ArrowRight') setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length);
-            if (e.key === 'ArrowLeft') setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowRight') { setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length); setZoomLevel(1); }
+            if (e.key === 'ArrowLeft') { setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length); setZoomLevel(1); }
+            if (e.key === '+' || e.key === '=') setZoomLevel((z) => Math.min(4, z + 0.25));
+            if (e.key === '-') setZoomLevel((z) => Math.max(0.5, z - 0.25));
+            if (e.key === '0') setZoomLevel(1);
           }}
           tabIndex={0}
           role="dialog"
           aria-label="Image lightbox"
+          aria-modal="true"
         >
-          {/* Top bar */}
-          <div className="flex items-center justify-between px-4 py-3 z-20" onClick={(e) => e.stopPropagation()}>
-            <div className="rounded-full bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur">
-              {currentImageIndex + 1} / {galleryImages.length}
+          {/* ── Top bar ── */}
+          <div
+            className="relative z-20 flex items-center justify-between gap-3 px-4 py-3 bg-gradient-to-b from-black/80 to-transparent"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Counter + label */}
+            <div className="flex items-center gap-3">
+              <span className="rounded-full bg-white/12 px-4 py-1.5 text-sm font-semibold text-white backdrop-blur-md">
+                {currentImageIndex + 1} <span className="text-white/50">/</span> {galleryImages.length}
+              </span>
+              {galleryImages[currentImageIndex]?.label && (
+                <span className="hidden sm:block text-sm text-white/60 truncate max-w-[260px]">
+                  {galleryImages[currentImageIndex].label}
+                </span>
+              )}
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Controls */}
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={() => setZoomLevel((z) => Math.max(0.5, z - 0.25))}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 text-lg font-bold"
-                title="Zoom out"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition hover:bg-white/22"
+                title="Zoom out (−)"
+                aria-label="Zoom out"
               >
-                −
+                <ZoomOut className="h-4 w-4" />
               </button>
-              <span className="text-white/70 text-sm font-medium min-w-[3rem] text-center">
+              <button
+                type="button"
+                onClick={() => setZoomLevel(1)}
+                className="min-w-[3.2rem] rounded-full bg-white/12 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-white/22"
+                title="Reset zoom (0)"
+                aria-label="Reset zoom"
+              >
                 {Math.round(zoomLevel * 100)}%
-              </span>
-              <button
-                type="button"
-                onClick={() => setZoomLevel((z) => Math.min(3, z + 0.25))}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20 text-lg font-bold"
-                title="Zoom in"
-              >
-                +
               </button>
               <button
                 type="button"
-                onClick={() => { setIsLightboxOpen(false); setZoomLevel(1); }}
-                className="ml-2 inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-                title="Close"
+                onClick={() => setZoomLevel((z) => Math.min(4, z + 0.25))}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition hover:bg-white/22"
+                title="Zoom in (+)"
+                aria-label="Zoom in"
               >
-                <X className="h-5 w-5" />
+                <ZoomIn className="h-4 w-4" />
+              </button>
+              <div className="mx-1 h-5 w-px bg-white/20" />
+              <button
+                type="button"
+                onClick={closeLightbox}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white/12 text-white transition hover:bg-red-500/80"
+                title="Close (Esc)"
+                aria-label="Close lightbox"
+              >
+                <X className="h-4 w-4" />
               </button>
             </div>
           </div>
-          {/* Image area — clicking the image itself doesn't close, clicking outside does */}
-          <div className="flex flex-1 items-center justify-center overflow-auto px-16 py-4">
+
+          {/* ── Main image area ── */}
+          <div
+            className="relative flex flex-1 items-center justify-center overflow-hidden"
+            onClick={closeLightbox}
+          >
             <img
               src={galleryImages[currentImageIndex]?.url || '/placeholder.svg'}
               alt={galleryImages[currentImageIndex]?.label || `Photo ${currentImageIndex + 1}`}
-              className="max-h-full object-contain rounded-lg transition-transform duration-200"
-              style={{ transform: `scale(${zoomLevel})`, cursor: zoomLevel > 1 ? 'grab' : 'default' }}
+              className="max-h-full max-w-full object-contain select-none"
+              style={{
+                transform: `scale(${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`,
+                cursor: isDragging.current ? 'grabbing' : zoomLevel > 1 ? 'grab' : 'zoom-in',
+                transformOrigin: 'center center',
+                transition: isDragging.current ? 'none' : 'transform 0.15s ease',
+                willChange: 'transform',
+              }}
               onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                if (zoomLevel > 1) { resetView(); } else { setZoomLevel(2); }
+              }}
+              onMouseDown={(e) => { e.stopPropagation(); e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
+              onMouseMove={(e) => { e.stopPropagation(); handleDragMove(e.clientX, e.clientY); }}
+              onMouseUp={(e) => { e.stopPropagation(); handleDragEnd(); }}
+              onMouseLeave={() => handleDragEnd()}
+              onTouchStart={(e) => { e.stopPropagation(); const t = e.touches[0]; handleDragStart(t.clientX, t.clientY); }}
+              onTouchMove={(e) => { e.stopPropagation(); const t = e.touches[0]; handleDragMove(t.clientX, t.clientY); }}
+              onTouchEnd={(e) => { e.stopPropagation(); handleDragEnd(); }}
               draggable={false}
             />
+
+            {/* Prev / Next arrows */}
+            {galleryImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length); setZoomLevel(1); }}
+                  className="absolute left-3 top-1/2 z-20 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/70"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="h-6 w-6" />
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length); setZoomLevel(1); }}
+                  className="absolute right-3 top-1/2 z-20 -translate-y-1/2 inline-flex h-12 w-12 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/70"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
           </div>
-          {/* Navigation arrows — always visible for single images too (as close hints) */}
+
+          {/* ── Bottom filmstrip ── */}
           {galleryImages.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length); setZoomLevel(1); }}
-                className="absolute left-4 top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-              >
-                <ChevronLeft className="h-6 w-6" />
-              </button>
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); setCurrentImageIndex((prev) => (prev + 1) % galleryImages.length); setZoomLevel(1); }}
-                className="absolute right-4 top-1/2 z-20 inline-flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/20"
-              >
-                <ChevronRight className="h-6 w-6" />
-              </button>
-            </>
+            <div
+              className="relative z-20 flex items-center gap-2 overflow-x-auto px-4 py-3 bg-gradient-to-t from-black/80 to-transparent scrollbar-hide"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {galleryImages.map((image, index) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  onClick={() => { setCurrentImageIndex(index); setZoomLevel(1); }}
+                  className={cn(
+                    'relative h-14 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition-all duration-150',
+                    index === currentImageIndex
+                      ? 'border-white scale-105 opacity-100'
+                      : 'border-transparent opacity-50 hover:opacity-80',
+                  )}
+                  aria-label={`View photo ${index + 1}`}
+                >
+                  <img src={image.url} alt={image.label || `Photo ${index + 1}`} className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
           )}
         </div>
       )}

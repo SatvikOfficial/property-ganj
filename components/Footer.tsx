@@ -17,7 +17,6 @@ const footerSections = [
     links: [
       { label: 'List a property', href: '/list-property' },
       { label: 'My ads', href: '/profile/my-ads' },
-      { label: 'Builder dashboard', href: '/builder' },
       { label: 'Agent dashboard', href: '/agent' },
     ],
   },

@@ -85,6 +85,7 @@ export function recordPropertyActivity(
     lastAction,
   });
   persist(items.slice(0, MAX_ITEMS));
+  console.log(`[RecentlyViewed] Recorded activity '${lastAction}' for property ${propertyId}. Current count: ${items.length}`);
 }
 
 export function addRecentlyViewed(propertyId: string): void {

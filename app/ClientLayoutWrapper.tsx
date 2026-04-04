@@ -12,15 +12,18 @@ export default function ClientLayoutWrapper({ children }: { children: ReactNode 
   // Don't show on 404 page
   const isNotFoundPage = pathname === '/not-found';
 
+  // Hide common layout elements for builder dashboard
+  const isBuilderDashboard = pathname === '/builder-dashboard' || pathname?.startsWith('/builder-dashboard/');
+
   return (
     <CityProvider>
       <div className="flex min-h-screen w-full flex-col overflow-x-clip">
         <div className="flex-grow w-full">
           {children}
         </div>
-        {!isNotFoundPage && <Footer />}
+        {!isNotFoundPage && !isBuilderDashboard && <Footer />}
       </div>
-      {!isNotFoundPage && <StickyContact />}
+      {!isNotFoundPage && !isBuilderDashboard && <StickyContact />}
     </CityProvider>
   );
 }
