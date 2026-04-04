@@ -15,12 +15,14 @@ export interface RecommendedProperty {
   bedrooms?: number
   bathrooms?: number
   carpet_area_sqft?: number
+  matchScore?: number
+  matchReasons?: string[]
 }
 
 async function fetchFallbackRecommendations(supabase: any, limit: number): Promise<RecommendedProperty[]> {
   const { data } = await supabase
     .from('properties')
-    .select('id, title, price, rent, locality, city, property_type, for_sale, for_rent, provider, bedrooms, bathrooms')
+    .select('id, title, price, rent, locality, city, property_type, for_sale, for_rent, provider, bedrooms, bathrooms, carpet_area_sqft')
     .neq('status', 'draft')
     .limit(limit)
     .order('created_at', { ascending: false });
@@ -28,13 +30,20 @@ async function fetchFallbackRecommendations(supabase: any, limit: number): Promi
 }
 
 /**
- * Analyzes user history to find recommended properties.
- * Logic:
- * 1. Gather last 10 interactions from localStorage.
- * 2. Fetch their details to understand preferences.
- * 3. Weight: 'like'/'interest' = 3, 'view' = 1.
- * 4. Find properties in the same locality, type, or price range.
- * 5. Exclude already viewed properties.
+ * AI-style recommendation engine for PropertyGanj.
+ *
+ * Analyses user's recently viewed / interacted-with properties and builds
+ * a multi-dimensional preference profile then scores candidate properties.
+ *
+ * Factors weighted:
+ *   - Location/locality   (strongest signal)
+ *   - Property type match
+ *   - Price band proximity
+ *   - Area/space similarity
+ *   - Bedroom count pref
+ *   - Purpose match (sale vs rent)
+ *   - Recency of interaction (more recent = higher weight)
+ *   - Interaction type (like > interest > view)
  */
 export async function getRecommendations(limit = 6): Promise<RecommendedProperty[]> {
   const history = getRecentlyViewed()
@@ -51,80 +60,181 @@ export async function getRecommendations(limit = 6): Promise<RecommendedProperty
     return fetchFallbackRecommendations(supabase, limit)
   }
 
-  // Fetch details for historical properties to calculate weights
+  // Fetch details for historical properties
   const { data: historyDetails } = await supabase
     .from('properties')
-    .select('id, locality, city, property_type, price, rent, for_sale, for_rent, bedrooms')
+    .select('id, locality, city, property_type, price, rent, for_sale, for_rent, bedrooms, carpet_area_sqft')
     .in('id', viewedIds)
 
   if (!historyDetails || historyDetails.length === 0) {
-    // If no real properties in history, return fallback
     return fetchFallbackRecommendations(supabase, limit)
   }
 
-  // Weighting & Frequency Map
+  // ─── Build Multi-Dimensional Preference Profile ───
+  const actionWeights: Record<string, number> = { like: 5, interest: 4, view: 1, other: 1 }
+
   const preferences = {
     localities: {} as Record<string, number>,
     types: {} as Record<string, number>,
     cities: {} as Record<string, number>,
     bedrooms: {} as Record<number, number>,
+    purposes: { sale: 0, rent: 0 },
+    prices: [] as number[],
+    areas: [] as number[],
   }
 
-  history.forEach(item => {
+  history.forEach((item, index) => {
     const detail = historyDetails.find(d => d.id === item.propertyId)
     if (!detail) return
 
-    const weight = (item.lastAction === 'like' || item.lastAction === 'interest') ? 3 : 1
-    
-    if (detail.locality) preferences.localities[detail.locality] = (preferences.localities[detail.locality] || 0) + weight
-    if (detail.property_type) preferences.types[detail.property_type] = (preferences.types[detail.property_type] || 0) + weight
-    if (detail.city) preferences.cities[detail.city] = (preferences.cities[detail.city] || 0) + weight
-    if (detail.bedrooms) preferences.bedrooms[detail.bedrooms] = (preferences.bedrooms[detail.bedrooms] || 0) + weight
+    // Recency factor: most recent items get higher weight (decays linearly)
+    const recencyMultiplier = 1 + (history.length - index) / history.length
+    const baseWeight = actionWeights[item.lastAction] || 1
+    const weight = baseWeight * recencyMultiplier
+
+    if (detail.locality) {
+      preferences.localities[detail.locality] = (preferences.localities[detail.locality] || 0) + weight
+    }
+    if (detail.property_type) {
+      preferences.types[detail.property_type] = (preferences.types[detail.property_type] || 0) + weight
+    }
+    if (detail.city) {
+      preferences.cities[detail.city] = (preferences.cities[detail.city] || 0) + weight
+    }
+    if (detail.bedrooms) {
+      preferences.bedrooms[detail.bedrooms] = (preferences.bedrooms[detail.bedrooms] || 0) + weight
+    }
+    // Purpose tracking
+    if (detail.for_rent) preferences.purposes.rent += weight
+    if (detail.for_sale) preferences.purposes.sale += weight
+
+    // Price and area collection (for band matching)
+    const effectivePrice = detail.for_rent ? (detail.rent || 0) : (detail.price || 0)
+    if (effectivePrice > 0) preferences.prices.push(effectivePrice)
+    if (detail.carpet_area_sqft && detail.carpet_area_sqft > 0) preferences.areas.push(detail.carpet_area_sqft)
   })
 
-  // Get Top Preferences
-  const topLocality = Object.entries(preferences.localities).sort((a, b) => b[1] - a[1])[0]?.[0]
-  const topType = Object.entries(preferences.types).sort((a, b) => b[1] - a[1])[0]?.[0]
-  const topCity = Object.entries(preferences.cities).sort((a, b) => b[1] - a[1])[0]?.[0]
-  const topBHK = Object.entries(preferences.bedrooms).sort((a, b) => b[1] - a[1])[0]?.[0]
+  // ─── Derive Top Preferences ───
+  const sortDesc = (obj: Record<string, number>) =>
+    Object.entries(obj).sort((a, b) => b[1] - a[1])
 
-  // Construct Recommendation Query
-  // We'll search for properties matching Top Locality OR Top Type
+  const topLocalities = sortDesc(preferences.localities).slice(0, 3).map(e => e[0])
+  const topTypes = sortDesc(preferences.types).slice(0, 2).map(e => e[0])
+  const topCity = sortDesc(preferences.cities)[0]?.[0]
+  const topBHKs = Object.entries(preferences.bedrooms)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(e => Number(e[0]))
+  const preferredPurpose = preferences.purposes.sale >= preferences.purposes.rent ? 'sale' : 'rent'
+
+  // Price band: compute median and acceptable range (±40%)
+  const medianPrice = preferences.prices.length > 0
+    ? preferences.prices.sort((a, b) => a - b)[Math.floor(preferences.prices.length / 2)]
+    : 0
+  const priceFloor = medianPrice * 0.6
+  const priceCeil = medianPrice * 1.5
+
+  // Area band: same approach
+  const medianArea = preferences.areas.length > 0
+    ? preferences.areas.sort((a, b) => a - b)[Math.floor(preferences.areas.length / 2)]
+    : 0
+
+  // ─── Fetch Candidate Properties ───
   let query = supabase
     .from('properties')
-    .select('id, title, price, rent, locality, city, property_type, for_sale, for_rent, provider, bedrooms, bathrooms')
+    .select('id, title, price, rent, locality, city, property_type, for_sale, for_rent, provider, bedrooms, bathrooms, carpet_area_sqft')
     .neq('status', 'draft')
 
   if (viewedIds.length > 0) {
     query = query.not('id', 'in', `(${viewedIds.join(',')})`)
   }
 
-  if (topLocality) {
-    query = query.or(`locality.eq."${topLocality}",property_type.eq."${topType || ''}"`)
-  } else if (topType) {
-    query = query.eq('property_type', topType)
+  // Build OR conditions for locality + type matching to cast a wider net
+  const orClauses: string[] = []
+  topLocalities.forEach(loc => orClauses.push(`locality.eq."${loc}"`))
+  topTypes.forEach(t => orClauses.push(`property_type.eq."${t}"`))
+
+  if (orClauses.length > 0) {
+    query = query.or(orClauses.join(','))
   }
 
   if (topCity) {
     query = query.eq('city', topCity)
   }
 
-  const { data: recommendations, error } = await query
-    .limit(limit * 2) // Fetch more to allow re-sorting
+  const { data: candidates, error } = await query
+    .limit(limit * 4) // Fetch more to allow rich scoring
     .order('created_at', { ascending: false })
 
-  if (error || !recommendations) return []
+  if (error || !candidates || candidates.length === 0) {
+    // Fallback: if no matches found with strict criteria, try broader search
+    return fetchFallbackRecommendations(supabase, limit)
+  }
 
-  // Score and Sort Recommendations
-  const scored = recommendations.map(p => {
+  // ─── Multi-Factor Scoring ───
+  const scored = candidates.map(p => {
     let score = 0
-    if (p.locality === topLocality) score += 5
-    if (p.property_type === topType) score += 3
-    if (p.bedrooms?.toString() === topBHK) score += 2
-    return { ...p, score }
+    const reasons: string[] = []
+
+    // Location match (strongest signal, weight: 10)
+    if (p.locality && topLocalities.includes(p.locality)) {
+      const localityRank = topLocalities.indexOf(p.locality)
+      const locationScore = (10 - localityRank * 2)
+      score += locationScore
+      reasons.push(`Near ${p.locality}`)
+    }
+
+    // Property type match (weight: 6)
+    if (p.property_type && topTypes.includes(p.property_type)) {
+      score += 6
+      reasons.push(`${p.property_type} match`)
+    }
+
+    // Price band proximity (weight: 0-8)
+    if (medianPrice > 0) {
+      const effectivePrice = p.for_rent ? (p.rent || 0) : (p.price || 0)
+      if (effectivePrice > 0) {
+        if (effectivePrice >= priceFloor && effectivePrice <= priceCeil) {
+          // Within comfortable range
+          const proximity = 1 - Math.abs(effectivePrice - medianPrice) / medianPrice
+          score += Math.round(proximity * 8)
+          reasons.push('Budget fit')
+        } else if (effectivePrice < priceFloor) {
+          // Below range — slight bonus (good deal)
+          score += 3
+          reasons.push('Below budget')
+        }
+        // Above range → no bonus
+      }
+    }
+
+    // Area/space similarity (weight: 0-5)
+    if (medianArea > 0 && p.carpet_area_sqft && p.carpet_area_sqft > 0) {
+      const areaRatio = p.carpet_area_sqft / medianArea
+      if (areaRatio >= 0.7 && areaRatio <= 1.4) {
+        const areaProximity = 1 - Math.abs(areaRatio - 1)
+        score += Math.round(areaProximity * 5)
+        reasons.push('Similar space')
+      }
+    }
+
+    // BHK preference (weight: 4)
+    if (p.bedrooms && topBHKs.includes(p.bedrooms)) {
+      score += 4
+      reasons.push(`${p.bedrooms} BHK`)
+    }
+
+    // Purpose match (weight: 3)
+    if (preferredPurpose === 'rent' && p.for_rent) {
+      score += 3
+    } else if (preferredPurpose === 'sale' && p.for_sale) {
+      score += 3
+    }
+
+    return { ...p, matchScore: score, matchReasons: reasons.slice(0, 3) } as RecommendedProperty
   })
 
   return scored
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit) as RecommendedProperty[]
+    .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+    .slice(0, limit)
 }

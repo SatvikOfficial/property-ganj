@@ -10,6 +10,8 @@ const profileUpdateSchema = z.object({
   phone: z.string().trim().min(6).max(20).optional(),
   agent_id: z.string().trim().min(3).max(40).optional(),
   avatar_url: z.union([z.string().trim().url(), z.null()]).optional(),
+  city: z.string().trim().max(200).optional(),
+  agent_application: z.any().optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field is required',
 });

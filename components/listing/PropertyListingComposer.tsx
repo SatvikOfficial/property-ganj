@@ -452,6 +452,53 @@ export default function PropertyListingComposer({
   const [submitting, setSubmitting] = useState(false);
   const [locationQuery, setLocationQuery] = useState(initialState.form.location.locality);
 
+  const [showExitWarning, setShowExitWarning] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+
+  const isDirty = useMemo(() => {
+    return (
+      JSON.stringify(form) !== JSON.stringify(initialState.form) ||
+      JSON.stringify(photos) !== JSON.stringify(initialState.photos) ||
+      JSON.stringify(floorplans) !== JSON.stringify(initialState.floorplans)
+    );
+  }, [form, photos, floorplans, initialState]);
+
+  useEffect(() => {
+    const handleNavigationCapture = (e: MouseEvent) => {
+      if (!isDirty || submitting) return;
+
+      const target = e.target as Element;
+      const formEl = target.closest('form');
+      const flexLink = target.closest('a');
+      const flexBtn = target.closest('button');
+
+      const isExternalLink = flexLink && !formEl?.contains(flexLink);
+      const isOutsideButton = flexBtn && !formEl?.contains(flexBtn);
+
+      if (isExternalLink) {
+        const href = flexLink.getAttribute('href');
+        if (href && !href.startsWith('#') && !flexLink.hasAttribute('target')) {
+          e.preventDefault();
+          e.stopPropagation();
+          setPendingAction(() => () => { window.location.href = href; });
+          setShowExitWarning(true);
+        }
+      } else if (isOutsideButton) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPendingAction(() => () => {
+          setForm(initialState.form);
+          setPhotos(initialState.photos);
+          setFloorplans(initialState.floorplans);
+        });
+        setShowExitWarning(true);
+      }
+    };
+
+    document.addEventListener('click', handleNavigationCapture, { capture: true });
+    return () => document.removeEventListener('click', handleNavigationCapture, { capture: true });
+  }, [isDirty, submitting, initialState]);
+
   useEffect(() => {
     setForm(initialState.form);
     setPhotos(initialState.photos);
@@ -1362,7 +1409,7 @@ export default function PropertyListingComposer({
           <label className="mb-2 block text-sm font-semibold text-[#1f2a2e]">Buyer-facing highlights</label>
           <div className="space-y-3">
             {form.highlights.map((highlight, index) => (
-              <div key={`${index}-${highlight}`} className="flex gap-2">
+              <div key={index} className="flex gap-2">
                 <input
                   type="text"
                   value={highlight}
@@ -1579,6 +1626,42 @@ export default function PropertyListingComposer({
           </Button>
         </div>
       </div>
+      {showExitWarning && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-2xl text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 text-red-600">
+              <AlertCircle className="h-6 w-6" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800">Discard changes?</h3>
+            <p className="mt-2 text-sm text-slate-600">You have unsaved details in your listing. If you leave now, they will be lost.</p>
+            <div className="mt-6 flex flex-col gap-3">
+              <button 
+                type="button"
+                onClick={() => {
+                  setShowExitWarning(false);
+                  if (pendingAction) {
+                    pendingAction();
+                    setPendingAction(null);
+                  }
+                }}
+                className="w-full rounded-xl bg-red-600 px-4 py-3.5 text-sm font-bold text-white hover:bg-red-700 transition"
+              >
+                Yes, discard changes
+              </button>
+              <button 
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowExitWarning(false);
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-sm font-bold text-slate-700 hover:bg-slate-50 transition"
+              >
+                Cancel and keep editing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }

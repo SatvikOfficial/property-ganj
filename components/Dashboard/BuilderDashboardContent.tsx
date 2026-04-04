@@ -14,6 +14,7 @@ import {
   Clock
 } from 'lucide-react';
 import { createClient } from '@/utils/supabase/client';
+import ListPropertyForm from '@/components/listing/ListPropertyForm';
 import './dashboard-theme.css';
 
 interface NavItem {
@@ -276,153 +277,26 @@ const BuilderDashboardContent = () => {
 
   // Helper component for the form
   const AddUnitForm = () => {
-    const [formData, setFormData] = useState({
-      id: '',
-      projectName: '',
-      floor: '',
-      type: '3 BHK Flat',
-      area: '',
-      price: ''
-    });
-
-    const handleSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!formData.id || !formData.area || !formData.price) return;
-      
-      const payload = {
-        title: `${formData.projectName || 'New Unit'} - ${formData.id}`,
-        propertyType: formData.type,
-        purpose: 'sale',
-        price: parseInt(formData.price.replace(/[^\d]/g, '')) || 0,
-        specs: {
-          floorNo: parseInt(formData.floor.replace(/[^\d]/g, '')) || 0,
-          carpetArea: parseInt(formData.area.replace(/[^\d]/g, '')) || 0,
-          areaUnit: 'sqft'
-        },
-        builder: {
-          projectName: formData.projectName,
-          unitLabel: formData.id
-        },
-        status: 'published'
-      };
-
-      try {
-        const response = await fetch('/api/properties', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        
-        if (response.ok) {
-          fetchProperties();
-          setActiveTab('My Inventory');
-        } else {
-          const error = await response.json();
-          alert(`Error: ${error.error || 'Failed to list property'}`);
-        }
-      } catch (err) {
-        console.error("Listing failed", err);
-      }
-    };
-
     return (
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden max-w-2xl">
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden max-w-4xl">
         <div className="px-8 py-6 border-b border-slate-100 bg-slate-50/50">
-          <h3 className="text-xl font-bold text-slate-800">List New Property</h3>
-          <p className="text-sm text-slate-500 mt-1">Fill in the details to add a unit to your inventory.</p>
+          <h3 className="text-xl font-bold text-slate-800">List New Project or Unit</h3>
+          <p className="text-sm text-slate-500 mt-1">Fill in the exhaustive details for your development or unit using the unified listing interface.</p>
         </div>
-        <form onSubmit={handleSubmit} className="p-8 space-y-6">
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Project Name</label>
-              <input 
-                type="text" 
-                placeholder="e.g. Godrej Meridian"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-sans"
-                value={formData.projectName}
-                onChange={e => setFormData({...formData, projectName: e.target.value})}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Unit ID / Number</label>
-              <input 
-                type="text" 
-                placeholder="e.g. U-108"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-sans"
-                value={formData.id}
-                onChange={e => setFormData({...formData, id: e.target.value})}
-                required
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Floor</label>
-              <input 
-                type="text" 
-                placeholder="e.g. 8th"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-sans"
-                value={formData.floor}
-                onChange={e => setFormData({...formData, floor: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Property Type</label>
-              <select 
-                className="w-full px-4 py-3 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all bg-white font-sans"
-                value={formData.type}
-                onChange={e => setFormData({...formData, type: e.target.value})}
-              >
-                <option>2 BHK Flat</option>
-                <option>3 BHK Flat</option>
-                <option>4 BHK Flat</option>
-                <option>4 BHK Penthouse</option>
-                <option>Office Space</option>
-                <option>Studio Apartment</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Area (sqft)</label>
-              <input 
-                type="text" 
-                placeholder="e.g. 1650 sqft"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-sans"
-                value={formData.area}
-                onChange={e => setFormData({...formData, area: e.target.value})}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Listing Price</label>
-              <input 
-                type="text" 
-                placeholder="e.g. ₹1.45 Cr"
-                className="w-full px-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all font-sans"
-                value={formData.price}
-                onChange={e => setFormData({...formData, price: e.target.value})}
-                required
-              />
-            </div>
-          </div>
-          <div className="pt-4 flex gap-4">
-            <button 
-              type="submit"
-              className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg transition-all shadow-md shadow-orange-500/20 font-sans"
-            >
-              List Property Directly
-            </button>
-            <button 
-              type="button"
-              onClick={() => setActiveTab('Overview')}
-              className="px-6 py-3 border border-slate-200 text-slate-600 font-semibold rounded-lg hover:bg-slate-50 transition-all font-sans"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+        <div className="p-8">
+          <ListPropertyForm 
+            user={{ name: builderInfo.name }}
+            mode="public"
+            defaultOwnerType="builder"
+            lockOwnerType={true}
+            showBuilderFields={true}
+            submitLabel="List Unit as Builder"
+            onSuccess={() => {
+              fetchProperties();
+              setActiveTab('My Inventory');
+            }}
+          />
+        </div>
       </div>
     );
   };

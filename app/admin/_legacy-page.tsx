@@ -905,6 +905,7 @@ export default function AdminDashboardPage() {
                       <tr>
                         <th className="text-left p-4 font-semibold text-muted-foreground">User</th>
                         <th className="text-left p-4 font-semibold text-muted-foreground">Phone</th>
+                        <th className="text-left p-4 font-semibold text-muted-foreground">City</th>
                         <th className="text-left p-4 font-semibold text-muted-foreground">Role</th>
                         <th className="text-left p-4 font-semibold text-muted-foreground">Joined</th>
                         <th className="text-right p-4 font-semibold text-muted-foreground">Actions</th>
@@ -914,10 +915,23 @@ export default function AdminDashboardPage() {
                       {filteredUsers.map((user) => (
                         <tr key={user.user_id || user.id} className="border-b border-border/30 hover:bg-accent/5 transition">
                           <td className="p-4">
-                            <p className="font-semibold text-foreground">{user.full_name || '—'}</p>
-                            <p className="text-xs text-muted-foreground">{user.email || '—'}</p>
+                            {user.role === 'agent' ? (
+                              <Link href={`/agent/${user.user_id}`} className="hover:text-primary transition-colors">
+                                <p className="font-semibold text-foreground hover:underline">{user.full_name || '—'}</p>
+                                {user.company_name && <p className="text-xs text-muted-foreground">{user.company_name}</p>}
+                                <p className="text-xs text-muted-foreground">{user.email || '—'}</p>
+                              </Link>
+                            ) : (
+                              <>
+                                <p className="font-semibold text-foreground">{user.full_name || '—'}</p>
+                                <p className="text-xs text-muted-foreground">{user.email || '—'}</p>
+                              </>
+                            )}
                           </td>
                           <td className="p-4 text-muted-foreground">{user.phone || '—'}</td>
+                          <td className="p-4 text-muted-foreground text-xs">
+                            {user.city ? user.city.split(',').map((c: string) => c.trim()).join(', ') : '—'}
+                          </td>
                           <td className="p-4">
                             <select
                               value={user.role || 'user'}

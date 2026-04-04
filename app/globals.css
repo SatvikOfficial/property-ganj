@@ -237,6 +237,27 @@ img[data-nimg='1'] {
   box-shadow: 0 20px 56px rgba(16, 35, 36, 0.1);
 }
 
+/* Developer tile hover animations */
+.developer-card {
+  transition:
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.4s ease,
+    border-color 0.35s ease;
+  will-change: transform, box-shadow;
+}
+
+.developer-card:hover {
+  transform: scale(1.03) translateY(-2px);
+  box-shadow:
+    0 16px 32px -8px rgba(15, 23, 42, 0.15),
+    0 0 0 1px rgba(235, 98, 57, 0.15);
+  border-color: rgba(235, 98, 57, 0.25) !important;
+}
+
+.developer-card:active {
+  transform: scale(0.98);
+}
+
 /* Hide scrollbar for Chrome, Safari and Opera */
 .scrollbar-hide::-webkit-scrollbar {
   display: none;

@@ -68,11 +68,23 @@ const propertyGanjSectionStyles: Record<
   },
 }
 
+type LocalityCard = {
+  id: string
+  name: string
+  area?: string
+  pincode?: string
+  priceRange: string
+  properties: number
+}
+
 export default function HomePage() {
   const [liveProperties, setLiveProperties] = useState<any[]>([])
   const [likedProperties, setLikedProperties] = useState<string[]>([])
   const [liveAgents, setLiveAgents] = useState<any[]>([])
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [dynamicLocalities, setDynamicLocalities] = useState<LocalityCard[]>([])
+  const [visibleAgentCount, setVisibleAgentCount] = useState(8)
+  const [visibleLocalityCount, setVisibleLocalityCount] = useState(8)
   const { cityConfig } = useCity()
   const cityName = cityConfig.name
 
@@ -122,9 +134,12 @@ export default function HomePage() {
       try {
         const supabase = createClient();
         
-        // Fetch agents
-        const { data: dbAgents } = await supabase.from('profiles').select('*').eq('role', 'agent').limit(4);
-        if (dbAgents) setLiveAgents(dbAgents);
+        // Fetch all agents via API to bypass RLS issues for admin/builder users
+        const agentsRes = await fetch('/api/agents');
+        if (agentsRes.ok) {
+          const { agents } = await agentsRes.json();
+          if (agents) setLiveAgents(agents);
+        }
 
         const { data: properties, error } = await supabase
           .from('properties')
@@ -141,16 +156,23 @@ export default function HomePage() {
                 setLikedProperties(likes.map(l => l.property_id));
              }
           }
-          
-          const ownerIds = properties.map(p => p.owner_user_id).filter(Boolean);
+          const ownerIds = [...new Set(properties.map(p => p.owner_user_id).filter(Boolean))];
           if (ownerIds.length > 0) {
-            const { data: profiles } = await supabase.from('profiles').select('user_id, role, full_name, phone').in('user_id', ownerIds);
-            properties.forEach(p => {
-               const profile = profiles?.find(prof => prof.user_id === p.owner_user_id);
-               p.owner_role = profile?.role;
-               p.owner_name = profile?.full_name;
-               p.owner_phone = profile?.phone;
+            // Bypass RLS issues for admin/builder users by using server-side batch API
+            const profilesRes = await fetch('/api/profiles/batch', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userIds: ownerIds })
             });
+            if (profilesRes.ok) {
+              const { profiles } = await profilesRes.json();
+              properties.forEach(p => {
+                 const profile = profiles?.find((prof: any) => prof.user_id === p.owner_user_id);
+                 p.owner_role = profile?.role;
+                 p.owner_name = profile?.full_name;
+                 p.owner_phone = profile?.phone;
+              });
+            }
           }
           
           setLiveProperties(properties);
@@ -165,6 +187,60 @@ export default function HomePage() {
 
     fetchProperties();
   }, [])
+
+  // ─── Fetch real locality counts for this city ───
+  useEffect(() => {
+    async function fetchLocalityCounts() {
+      const supabase = createClient()
+      const topLocalities = cityConfig.localities.slice(0, 12)
+      const localityNames = topLocalities.map(l => l.locality || l.label)
+
+      const { data: props } = await supabase
+        .from('properties')
+        .select('locality, price, carpet_area_sqft')
+        .eq('city', cityConfig.name)
+        .neq('status', 'draft')
+        .in('locality', localityNames)
+
+      const countMap: Record<string, { count: number; prices: number[] }> = {}
+      ;(props || []).forEach(p => {
+        const loc = p.locality as string
+        if (!countMap[loc]) countMap[loc] = { count: 0, prices: [] }
+        countMap[loc].count++
+        if (p.price && p.carpet_area_sqft) {
+          countMap[loc].prices.push(Math.round(p.price / p.carpet_area_sqft))
+        }
+      })
+
+      const cards: LocalityCard[] = topLocalities.map((loc, i) => {
+        const key = loc.locality || loc.label
+        const stats = countMap[key]
+        let priceRange = 'Prices on request'
+        if (stats?.prices.length && stats.prices.length >= 2) {
+          const sorted = [...stats.prices].sort((a, b) => a - b)
+          const lo = sorted[Math.floor(sorted.length * 0.1)]
+          const hi = sorted[Math.floor(sorted.length * 0.9)]
+          priceRange = `₹${lo.toLocaleString('en-IN')} – ₹${hi.toLocaleString('en-IN')} /sqft`
+        } else if (stats?.prices.length === 1) {
+          priceRange = `~₹${stats.prices[0].toLocaleString('en-IN')} /sqft`
+        }
+        return {
+          id: `${cityConfig.id}-${i}`,
+          name: loc.label,
+          area: loc.area,
+          pincode: loc.pincode,
+          priceRange,
+          properties: stats?.count || 0,
+        }
+      })
+
+      // Sort so localities with actual listings appear first
+      cards.sort((a, b) => b.properties - a.properties)
+      setDynamicLocalities(cards.slice(0, 8))
+    }
+
+    fetchLocalityCounts()
+  }, [cityConfig])
 
   const formatPrice = (value?: number) => {
     if (!value) return '₹ —'
@@ -208,7 +284,8 @@ export default function HomePage() {
 
   // === Section Feeds ===
   const agentFeed = derivedProperties.filter(p => p.ownerType === 'agent');
-  const ownerFeed = derivedProperties.filter(p => p.ownerType === 'user' || p.ownerType === 'builder');
+  const ownerFeed = derivedProperties.filter(p => p.ownerType === 'user' || p.ownerType === 'owner');
+  const builderFeed = derivedProperties.filter(p => p.ownerType === 'builder');
 
   // Property Ganj listings from properties table
   const pgListingsRaw = derivedProperties.filter(p => isPropertyGanjAddressLine2(p.address_line2));
@@ -256,36 +333,36 @@ export default function HomePage() {
     listings: displayPgListings.filter((listing) => listing.subdivision === section.id),
   })).filter((section) => section.listings.length > 0)
 
-  const localities = [
-    { id: 1, name: "Kanpur Road", priceRange: "₹2,509 - ₹12,500 per sqft", rating: 3.9, reviews: 127, properties: 193, image: "/kanpur-road-locality.jpg" },
-    { id: 2, name: "Sushant Golf City", priceRange: "₹4,904 - ₹12,500 per sqft", rating: 4.4, reviews: 139, properties: 727, image: "/sushant-golf-city.jpg" },
-    { id: 3, name: "Kishan Path", priceRange: "₹2,737 - ₹12,500 per sqft", rating: 4.1, reviews: 28, properties: 89, image: "/kishan-path.jpg" },
-    { id: 4, name: "IIM Road", priceRange: "₹3,200 - ₹15,000 per sqft", rating: 4.3, reviews: 156, properties: 412, image: "/iim-road.jpg" },
-  ]
+  // Use dynamic localities from real DB data (falls back to empty gracefully)
+  const localities = dynamicLocalities
 
-  const agents = [
-    { id: 1, name: "Vivid Infra", company: "Vivid Infra Land Pvt Ltd", since: 2012, buyers: "1000+", propertiesSale: 65, propertiesRent: 0, image: "/agent-profile-photo.jpg" },
-    { id: 2, name: "Saurabh Gupta", company: "Safe Invest Realty", since: 2012, buyers: "100+", propertiesSale: 56, propertiesRent: 0, image: "/agent-profile.png" },
-    { id: 3, name: "Rahul Juyal", company: "Pratham Realty Solutions", since: 2011, buyers: "4000+", propertiesSale: 71, propertiesRent: 0, image: "/agent-photo.jpg" },
-    { id: 4, name: "Shiyaram Singh", company: "S.R. Broker LLP", since: 2017, buyers: "4000+", propertiesSale: 144, propertiesRent: 10, image: "/agent-profile-photo.jpg" },
-  ]
+  const fallbackImages = ["/agent-profile-photo.jpg", "/agent-profile.png", "/agent-photo.jpg"]
+  const displayAgents = liveAgents.map(a => {
+    const agentProps = derivedProperties.filter(p => p.ownerId === a.user_id);
+    return {
+      id: a.user_id,
+      name: a.full_name || 'Agent',
+      company: a.company_name || a.agent_bio || 'PG Certified Agent',
+      since: a.created_at ? new Date(a.created_at).getFullYear() : 2024,
+      buyers: `${Math.max(10, agentProps.length * 3)}+`,
+      propertiesSale: agentProps.filter(p => p.status === 'Available').length || agentProps.length,
+      propertiesRent: agentProps.filter(p => p.status === 'Available for Rent').length,
+      image: a.avatar_url || fallbackImages[Math.abs(a.user_id?.charCodeAt(0) || 0) % fallbackImages.length],
+      city: a.city || '',
+    };
+  });
 
-  let displayAgents = agents;
-  if (liveAgents.length > 0) {
-    displayAgents = liveAgents.map(a => {
-      const agentProps = derivedProperties.filter(p => p.ownerId === a.user_id);
-      return {
-        id: a.user_id,
-        name: a.full_name || 'Agent',
-        company: a.agent_bio ? 'Independent Agent' : 'PG Certified Agent',
-        since: a.created_at ? new Date(a.created_at).getFullYear() : 2024,
-        buyers: `${Math.floor(Math.random() * 50) + 10}+`,
-        propertiesSale: agentProps.filter(p => p.status === 'Available').length || agentProps.length,
-        propertiesRent: agentProps.filter(p => p.status === 'Available for Rent').length,
-        image: a.avatar_url || agents[Math.floor(Math.random() * agents.length)].image
-      };
-    });
-  }
+  // Filter agents by current city — handles comma-separated cities like "Lucknow,Noida"
+  const cityFilteredAgents = displayAgents.filter(a => {
+    if (!a.city) return false;
+    const agentCities = a.city.split(',').map((c: string) => c.trim().toLowerCase());
+    return agentCities.includes(cityName.toLowerCase());
+  });
+  const visibleAgents = (cityFilteredAgents.length > 0 ? cityFilteredAgents : displayAgents).slice(0, visibleAgentCount);
+  const totalAgentCount = cityFilteredAgents.length > 0 ? cityFilteredAgents.length : displayAgents.length;
+
+  // Visible localities with load more
+  const visibleLocalities = localities.slice(0, visibleLocalityCount);
 
   const quickCards = [
     { id: 1, title: "Over 10,000+ Properties waiting for you", subtitle: "Continue your last search", bgColor: "bg-accent/20" },
@@ -609,6 +686,25 @@ export default function HomePage() {
       </section>
 
       {/* ============================================================ */}
+      {/* SECTION 4: Listed by Builder */}
+      {/* ============================================================ */}
+      <section className="bg-gradient-to-br from-background via-orange-50/20 to-background py-8 max-md:py-6 md:py-14 border-t border-border/30">
+        <div className="w-full">
+          <SectionHeader
+            icon={<Building2 className="w-5 h-5 text-orange-600" />}
+            title="Listed by Builder"
+            subtitle="Directly from developers and premium builders"
+            href="/search?ownerType=builder"
+            gradient="bg-orange-100"
+          />
+          <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide px-0 snap-x snap-mandatory">
+            {builderFeed.length === 0 && <div className="min-w-full">{renderEmptyState("builder listings")}</div>}
+            {builderFeed.map((property, index) => renderPropertyCard(property, index))}
+          </div>
+        </div>
+      </section>
+
+      {/* ============================================================ */}
       {/* SECTION: Recommendations */}
       {/* ============================================================ */}
       <RecommendationsSection />
@@ -650,51 +746,67 @@ export default function HomePage() {
       </section>
 
       {/* ═══════════════════════════════════════════════════════════ */}
-      {/* Popular Localities — Image Background Cards */}
+      {/* Popular Localities — Dynamic from DB + City Config */}
       {/* ═══════════════════════════════════════════════════════════ */}
       <section className="bg-[#faf8f5] py-8 max-md:py-6 md:py-14 border-t border-border/30">
         <div className="w-full">
-          <div className="mb-5 md:mb-8 flex items-end justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Top neighbourhoods</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">Popular Localities in {cityName}</h2>
-            </div>
-            <Link href={`/search?q=${cityName}`} className="text-primary text-sm font-semibold hover:underline hidden md:block">View all →</Link>
+          <div className="mb-5 md:mb-8">
+            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Top neighbourhoods</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">Popular Localities in {cityName}</h2>
           </div>
           <div className="relative">
             <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory" data-locality-scroll>
-              {localities.map((locality) => (
+              {visibleLocalities.length === 0 ? (
+                <div className="min-w-full rounded-2xl border border-dashed border-border bg-white p-8 text-center">
+                  <p className="text-sm text-muted-foreground">Loading localities for {cityName}…</p>
+                </div>
+              ) : visibleLocalities.map((locality) => (
                 <Link
                   key={locality.id}
-                  href={`/search?q=${locality.name},${cityName}`}
-                  className="group relative min-w-[300px] snap-start flex-shrink-0 overflow-hidden rounded-[22px] border border-border bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                  href={`/search?q=${locality.name}&locality=${locality.name}&city=${cityName}`}
+                  className="group min-w-[270px] max-w-[300px] snap-start flex-shrink-0 overflow-hidden rounded-[22px] border border-border bg-white shadow-sm transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
                 >
-                  {/* Image header */}
-                  <div className="relative h-36 overflow-hidden bg-gradient-to-br from-slate-200 to-slate-100">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="relative h-28 overflow-hidden bg-gradient-to-br from-[#eb6239]/80 via-[#d6522f]/60 to-amber-500/40">
+                    <div className="absolute inset-0 opacity-[0.05]" style={{
+                      backgroundImage: 'radial-gradient(circle at 30% 70%, white 1px, transparent 1px)',
+                      backgroundSize: '14px 14px'
+                    }} />
+                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
                     <div className="absolute bottom-3 left-4 right-4">
-                      <h3 className="text-lg font-black text-white drop-shadow">{locality.name}</h3>
+                      <h3 className="text-lg font-black text-white drop-shadow-sm">{locality.name}</h3>
+                      {locality.area && locality.area !== locality.name && (
+                        <p className="text-[11px] text-white/70 font-medium">{locality.area}</p>
+                      )}
                     </div>
-                    <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-black/40 backdrop-blur-sm px-2 py-1">
-                      <span className="text-yellow-400 text-xs">★</span>
-                      <span className="text-white text-xs font-bold">{locality.rating}</span>
-                    </div>
+                    {locality.pincode && (
+                      <div className="absolute top-3 right-3 rounded-full bg-white/20 backdrop-blur-sm px-2 py-0.5">
+                        <span className="text-white text-[10px] font-bold">{locality.pincode}</span>
+                      </div>
+                    )}
                   </div>
-                  {/* Content */}
                   <div className="p-4">
                     <p className="text-sm font-semibold text-foreground">{locality.priceRange}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{locality.reviews} reviews</p>
                     <div className="mt-3 flex items-center justify-between">
                       <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary">
                         <MapPin className="h-3 w-3" />
-                        {locality.properties} Properties
+                        {locality.properties > 0 ? `${locality.properties} Properties` : 'Explore area'}
                       </span>
                       <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
                   </div>
                 </Link>
               ))}
+
+              {/* Load more button at end of scroll */}
+              {localities.length > visibleLocalityCount && (
+                <button
+                  onClick={() => setVisibleLocalityCount(prev => prev + 8)}
+                  className="min-w-[160px] snap-start flex-shrink-0 flex flex-col items-center justify-center rounded-[22px] border border-dashed border-primary/30 bg-primary/5 p-6 text-center transition-all hover:bg-primary/10 hover:border-primary/50"
+                >
+                  <span className="text-2xl mb-2">+{localities.length - visibleLocalityCount}</span>
+                  <span className="text-sm font-bold text-primary">Load more</span>
+                </button>
+              )}
             </div>
             <button
               onClick={() => {
@@ -715,76 +827,91 @@ export default function HomePage() {
       {/* ═══════════════════════════════════════════════════════════ */}
       <section className="py-8 max-md:py-6 md:py-14 border-t border-border/30">
         <div className="w-full">
-          <div className="flex items-end justify-between mb-5 md:mb-8">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Verified professionals</p>
-              <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">Ganj Trusted Agents in {cityName}</h2>
-            </div>
-            <Link href="/search?ownerType=agent" className="text-primary font-semibold hover:underline text-sm hidden md:block">
-              See all →
-            </Link>
+          <div className="mb-5 md:mb-8">
+            <p className="text-[11px] font-bold uppercase tracking-[0.28em] text-muted-foreground">Verified professionals</p>
+            <h2 className="mt-2 text-2xl font-black tracking-tight text-foreground md:text-3xl">Ganj Trusted Agents in {cityName}</h2>
           </div>
-          <div className="relative">
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory" data-agent-scroll>
-              {displayAgents.map((agent) => (
-                <Link
-                  key={agent.id}
-                  href={`/agent/${agent.id}`}
-                  className="group min-w-[300px] snap-start flex-shrink-0 overflow-hidden rounded-[22px] border border-border bg-white p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
-                >
-                  <div className="flex items-start gap-4 mb-4">
-                    <div className="relative">
-                      <img src={agent.image || "/placeholder.svg"} alt={agent.name} loading="lazy" className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md" />
-                      <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-xs shadow-sm ring-2 ring-white">
-                        ✓
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-foreground text-base truncate">{agent.name}</h3>
-                      <p className="text-sm text-muted-foreground truncate">{agent.company}</p>
-                      <div className="mt-1.5 flex items-center gap-1">
-                        <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
-                          Verified
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#faf8f5] p-3 mb-3">
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Since</p>
-                      <p className="font-bold text-foreground text-sm">{agent.since}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted-foreground">Buyers</p>
-                      <p className="font-bold text-foreground text-sm">{agent.buyers}</p>
-                    </div>
-                  </div>
-                  <div className="flex gap-3 text-center">
-                    <div className="flex-1 rounded-xl bg-primary/5 p-2.5">
-                      <p className="font-black text-primary text-xl">{agent.propertiesSale}</p>
-                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">For Sale</p>
-                    </div>
-                    {agent.propertiesRent > 0 && (
-                      <div className="flex-1 rounded-xl bg-sky-50 p-2.5">
-                        <p className="font-black text-sky-600 text-xl">{agent.propertiesRent}</p>
-                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">For Rent</p>
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
+
+          {visibleAgents.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-white p-8 text-center">
+              <p className="text-foreground font-semibold mb-2">No agents in {cityName} yet</p>
+              <p className="text-sm text-muted-foreground mb-4">Be the first agent to register in this city.</p>
+              <Link href={currentUser ? '/agent/register' : '/auth'} className="inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition">Apply as Agent</Link>
             </div>
-            <button
-              onClick={() => {
-                const container = document.querySelector('[data-agent-scroll]');
-                if (container) container.scrollBy({ left: 320, behavior: 'smooth' });
-              }}
-              className="hidden md:flex absolute right-0 md:-right-3 top-1/2 -translate-y-1/2 h-10 w-10 items-center justify-center rounded-full bg-white border border-border shadow-lg z-10"
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="w-5 h-5 text-foreground" />
-            </button>
-          </div>
+          ) : (
+            <div className="relative">
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide snap-x snap-mandatory" data-agent-scroll>
+                {visibleAgents.map((agent) => (
+                  <Link
+                    key={agent.id}
+                    href={`/agent/${agent.id}`}
+                    className="group min-w-[300px] snap-start flex-shrink-0 overflow-hidden rounded-[22px] border border-border bg-white p-5 transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+                  >
+                    <div className="flex items-start gap-4 mb-4">
+                      <div className="relative">
+                        <img src={agent.image || "/placeholder.svg"} alt={agent.name} loading="lazy" className="w-16 h-16 rounded-2xl object-cover border-2 border-white shadow-md" />
+                        <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-xs shadow-sm ring-2 ring-white">
+                          ✓
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-foreground text-base truncate">{agent.name}</h3>
+                        <p className="text-sm text-muted-foreground truncate">{agent.company}</p>
+                        <div className="mt-1.5 flex items-center gap-1">
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
+                            Verified
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 rounded-xl bg-[#faf8f5] p-3 mb-3">
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground">Since</p>
+                        <p className="font-bold text-foreground text-sm">{agent.since}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-muted-foreground">Buyers</p>
+                        <p className="font-bold text-foreground text-sm">{agent.buyers}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 text-center">
+                      <div className="flex-1 rounded-xl bg-primary/5 p-2.5">
+                        <p className="font-black text-primary text-xl">{agent.propertiesSale}</p>
+                        <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">For Sale</p>
+                      </div>
+                      {agent.propertiesRent > 0 && (
+                        <div className="flex-1 rounded-xl bg-sky-50 p-2.5">
+                          <p className="font-black text-sky-600 text-xl">{agent.propertiesRent}</p>
+                          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">For Rent</p>
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+
+                {/* Load more button at end of scroll */}
+                {totalAgentCount > visibleAgentCount && (
+                  <button
+                    onClick={() => setVisibleAgentCount(prev => prev + 8)}
+                    className="min-w-[160px] snap-start flex-shrink-0 flex flex-col items-center justify-center rounded-[22px] border border-dashed border-primary/30 bg-primary/5 p-6 text-center transition-all hover:bg-primary/10 hover:border-primary/50"
+                  >
+                    <span className="text-2xl mb-2">+{totalAgentCount - visibleAgentCount}</span>
+                    <span className="text-sm font-bold text-primary">Load more</span>
+                  </button>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  const container = document.querySelector('[data-agent-scroll]');
+                  if (container) container.scrollBy({ left: 320, behavior: 'smooth' });
+                }}
+                className="hidden md:flex absolute right-0 md:-right-3 top-1/2 -translate-y-1/2 h-10 w-10 items-center justify-center rounded-full bg-white border border-border shadow-lg z-10"
+                aria-label="Scroll right"
+              >
+                <ChevronRight className="w-5 h-5 text-foreground" />
+              </button>
+            </div>
+          )}
 
           {/* Become an Agent CTA */}
           <div className="mt-10 max-md:mt-8 overflow-hidden rounded-[26px] bg-gradient-to-r from-[#1f2a2e] to-[#2d3c42] p-6 max-md:p-5 md:p-10 flex flex-col md:flex-row items-center justify-between gap-6 max-md:gap-4 shadow-2xl">

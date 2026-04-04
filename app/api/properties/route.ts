@@ -302,8 +302,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message, properties: [] }, { status: 500 });
   }
 
-  const mappedProperties = (data || []).map((property) => {
-    const mapped = mapDbPropertyForDetail(property as any, null);
+  // Batch-fetch owner profiles so ownerType resolves correctly from role
+  const ownerIds = [...new Set((data || []).map((p: any) => p.owner_user_id).filter(Boolean))];
+  let profileMap: Record<string, { full_name?: string; role?: string; phone?: string; email?: string }> = {};
+  if (ownerIds.length > 0) {
+    const { data: profiles } = await admin
+      .from('profiles')
+      .select('user_id, full_name, role, phone, email')
+      .in('user_id', ownerIds);
+    for (const p of profiles || []) {
+      profileMap[p.user_id] = p;
+    }
+  }
+
+  const mappedProperties = (data || []).map((property: any) => {
+    const ownerProfile = property.owner_user_id ? profileMap[property.owner_user_id] || null : null;
+    const mapped = mapDbPropertyForDetail(property as any, ownerProfile);
     const distanceKm = calculateDistanceKm(
       lat,
       lng,

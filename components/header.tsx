@@ -261,13 +261,15 @@ export default function Header() {
               className={`rounded-xl object-contain transition-all duration-300 ${isScrolled ? "h-10 w-10" : "h-[42px] w-[42px]"}`}
             />
             <div className="min-w-0 overflow-hidden md:hidden">
-              <span
-                className={`block whitespace-nowrap text-sm font-black tracking-[0.22em] text-[#1f2a2e] transition-all duration-300 ${
-                  isScrolled ? "max-w-0 translate-y-[-2px] opacity-0" : "max-w-[10rem] opacity-100"
+              <Image
+                src="/logotext.png"
+                alt="PropertyGanj"
+                width={140}
+                height={28}
+                className={`object-contain transition-all duration-300 ${
+                  isScrolled ? "max-w-0 opacity-0 scale-95" : "max-w-[140px] opacity-100 scale-100"
                 }`}
-              >
-                PROPERTYGANJ
-              </span>
+              />
             </div>
             <Image src="/logotext.png" alt="PropertyGanj" width={184} height={36} className={`hidden object-contain md:block transition-all duration-300 ${isScrolled ? "h-8 w-[163px]" : "h-[36px] w-[184px]"}`} />
           </Link>

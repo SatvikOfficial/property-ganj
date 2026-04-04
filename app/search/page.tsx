@@ -919,47 +919,87 @@ function SearchFiltersContent() {
                 </div>
               )}
 
-              <div className="overflow-hidden rounded-[24px] border border-[#eadcca] bg-white shadow-[0_18px_42px_-30px_rgba(31,42,46,0.24)]" data-mobile-reveal="pending">
-                <div className="border-b border-[#eadcca] px-5 py-4">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Search snapshot</p>
-                  <h3 className="mt-2 text-lg font-black tracking-tight text-[#1f2a2e]">What this shortlist is optimized for</h3>
-                </div>
-                <div className="grid gap-3 px-5 py-5">
-                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Budget</p>
-                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{budgetSummary}</p>
+              {/* Locality Guide — dynamic from localities data */}
+              {filters.locality && (() => {
+                const matchedLocality = cityConfig.localities.find(
+                  l => l.label.toLowerCase() === filters.locality?.toLowerCase() ||
+                       l.locality.toLowerCase() === filters.locality?.toLowerCase() ||
+                       l.area?.toLowerCase() === filters.locality?.toLowerCase()
+                )
+                const nearbyLocalities = cityConfig.localities
+                  .filter(l => {
+                    if (!matchedLocality?.latitude || !l.latitude) return false
+                    if (l.label === matchedLocality.label) return false
+                    const dist = Math.sqrt(
+                      Math.pow((l.latitude! - matchedLocality.latitude!) * 111, 2) +
+                      Math.pow((l.longitude! - matchedLocality.longitude!) * 85, 2)
+                    )
+                    return dist < 5
+                  })
+                  .slice(0, 5)
+
+                if (!matchedLocality) return null
+
+                return (
+                  <div className="overflow-hidden rounded-[24px] border border-[#eadcca] bg-white shadow-[0_18px_42px_-30px_rgba(31,42,46,0.24)]" data-mobile-reveal="pending">
+                    <div className="border-b border-[#eadcca] px-5 py-4">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Locality guide</p>
+                      <h3 className="mt-2 text-lg font-black tracking-tight text-[#1f2a2e]">{matchedLocality.label}</h3>
+                    </div>
+                    <div className="grid gap-3 px-5 py-5">
+                      {matchedLocality.area && (
+                        <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Area</p>
+                          <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{matchedLocality.area}</p>
+                        </div>
+                      )}
+                      {matchedLocality.pincode && (
+                        <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Pincode</p>
+                          <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{matchedLocality.pincode}</p>
+                        </div>
+                      )}
+                      {matchedLocality.sector && (
+                        <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Sector</p>
+                          <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{matchedLocality.sector}</p>
+                        </div>
+                      )}
+                      {matchedLocality.road && (
+                        <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Key Road</p>
+                          <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{matchedLocality.road}</p>
+                        </div>
+                      )}
+                      {nearbyLocalities.length > 0 && (
+                        <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
+                          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af] mb-2">Nearby localities</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {nearbyLocalities.map(nl => (
+                              <Link
+                                key={nl.label}
+                                href={`/search?q=${nl.label}&locality=${nl.locality}&city=${cityConfig.name}&purpose=${filters.purpose}`}
+                                className="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-primary border border-primary/20 hover:bg-primary/5 transition-colors"
+                              >
+                                {nl.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div className="border-t border-[#eadcca] px-5 py-4">
+                      <button
+                        type="button"
+                        onClick={clearAllFilters}
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:underline"
+                      >
+                        Reset search filters
+                      </button>
+                    </div>
                   </div>
-                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Property type</p>
-                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{propertyTypeSummary}</p>
-                  </div>
-                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Configuration</p>
-                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{bhkSummary}</p>
-                  </div>
-                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Listed by</p>
-                    <p className="mt-1 text-sm font-semibold capitalize text-[#1f2a2e]">{ownerSummary}</p>
-                  </div>
-                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Tags</p>
-                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{tagSummary}</p>
-                  </div>
-                  <div className="rounded-2xl bg-[#f8f4ef] px-4 py-3">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Sort</p>
-                    <p className="mt-1 text-sm font-semibold text-[#1f2a2e]">{sortSummary}</p>
-                  </div>
-                </div>
-                <div className="border-t border-[#eadcca] px-5 py-4">
-                  <button
-                    type="button"
-                    onClick={clearAllFilters}
-                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition hover:underline"
-                  >
-                    Reset search filters
-                  </button>
-                </div>
-              </div>
+                )
+              })()}
 
               <div className="rounded-[24px] border border-dashed border-[#d9c6ae] bg-[#fffaf4] px-5 py-5" data-mobile-reveal="pending">
                 <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#9ca3af]">Shortlisting tip</p>

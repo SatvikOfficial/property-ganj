@@ -26,6 +26,7 @@ const specialtyOptions = [
   'First-time Buyers',
 ];
 const languageOptions = ['English', 'Hindi'];
+const cityOptions = ['Lucknow', 'Noida', 'Ghaziabad', 'Greater Noida'];
 
 export default function AgentRegisterPage() {
   const router = useRouter();
@@ -42,6 +43,7 @@ export default function AgentRegisterPage() {
     bio: '',
     specialties: [] as string[],
     languages: [] as string[],
+    operatingCities: [] as string[],
     experience: '',
     image: '',
   });
@@ -74,7 +76,7 @@ export default function AgentRegisterPage() {
     })();
   }, [supabase, router]);
 
-  const handleToggle = (field: 'specialties' | 'languages', value: string) => {
+  const handleToggle = (field: 'specialties' | 'languages' | 'operatingCities', value: string) => {
     setFormData((prev) => ({
       ...prev,
       [field]: prev[field].includes(value)
@@ -101,6 +103,10 @@ export default function AgentRegisterPage() {
       toast({ title: 'Select at least one specialty', variant: 'destructive' });
       return;
     }
+    if (formData.operatingCities.length === 0) {
+      toast({ title: 'Select at least one operating city', variant: 'destructive' });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -109,10 +115,12 @@ export default function AgentRegisterPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full_name: formData.fullName.trim(),
+          city: formData.operatingCities.join(','),
           agent_application: {
             bio: formData.bio.trim(),
             specialties: formData.specialties,
             languages: formData.languages,
+            operatingCities: formData.operatingCities,
             experience: formData.experience,
             status: 'pending',
             appliedAt: new Date().toISOString(),
@@ -260,6 +268,29 @@ export default function AgentRegisterPage() {
                     onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                     className="w-full rounded-[18px] border border-[#eadcca] bg-white px-4 py-3 text-sm outline-none transition focus:border-[#eb6239] resize-none"
                   />
+                </div>
+
+                {/* Operating Cities */}
+                <div>
+                  <label className="text-sm font-semibold text-[#1f2a2e] mb-2 block">
+                    Operating Cities <span className="font-normal text-[#667085]">(Select where you operate)</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {cityOptions.map((city) => (
+                      <button
+                        type="button"
+                        key={city}
+                        onClick={() => handleToggle('operatingCities', city)}
+                        className={`rounded-full px-4 py-2 text-sm font-semibold border transition ${
+                          formData.operatingCities.includes(city)
+                            ? 'bg-[#1f2a2e] border-[#1f2a2e] text-white'
+                            : 'bg-white border-[#eadcca] text-[#667085] hover:bg-[#fff8f3]'
+                        }`}
+                      >
+                        {city}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Specialties */}
